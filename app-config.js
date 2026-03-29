@@ -8,7 +8,7 @@ window.APP_CONFIG = {
         NAME: "MacTec Support",
         CITY: "São Bernardo do Campo",
         STATE: "SP",
-        WHATSAPP: "5511999999999"
+        WHATSAPP: "5511958085210"
     },
 
     // CONFIG DE FRETE
