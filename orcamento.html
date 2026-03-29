@@ -1879,10 +1879,16 @@
             showAlert('Item removido do carrinho', 'success');
         }
 
-        function openCartModal() {
-            document.getElementById('cartModal').style.display = 'block';
-            updateCartDisplay();
-        }
+       function openCartModal() {
+    const modal = document.getElementById('cartModal');
+
+    if (!modal) {
+        console.error("cartModal não encontrado");
+        return;
+    }
+
+    modal.style.display = 'block';
+}
 
         function closeCartModal() {
             document.getElementById('cartModal').style.display = 'none';
@@ -2144,14 +2150,16 @@
         }
 
         // Load brands when quote modal opens
-        function openQuoteModal() {
-            document.getElementById('quoteModal').style.display = 'block';
-            if (!ensureSupabaseClient(true)) {
-                showAlert('Configure o Supabase no app-config.js para listar marcas e modelos.', 'warning');
-                return;
-            }
-            loadBrands();
-        }
+function openQuoteModal() {
+    const modal = document.getElementById('quoteModal');
+
+    if (!modal) {
+        console.error("quoteModal não encontrado");
+        return;
+    }
+
+    modal.style.display = 'block';
+}
 
         // Handle Service Selection
         function onServiceChange() {
@@ -3853,6 +3861,14 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("SUPABASE OK");
 
 });
+
 </script>
+<div id="quoteModal" style="display:none;">
+    <!-- conteúdo do orçamento -->
+</div>
+
+<div id="cartModal" style="display:none;">
+    <!-- conteúdo do carrinho -->
+</div>
 </body>
 </html>
