@@ -1879,16 +1879,16 @@
             showAlert('Item removido do carrinho', 'success');
         }
 
-       function openCartModal() {
-    const modal = document.getElementById('cartModal');
+        function openCartModal() {
+            const modal = document.getElementById('cartModal');
 
-    if (!modal) {
-        console.error("cartModal não encontrado");
-        return;
-    }
+            if (!modal) {
+               console.error('ERRO: cartModal não encontrado no DOM');
+                return;
+            }
 
-    modal.style.display = 'block';
-}
+            modal.style.display = 'block';
+        }
 
         function closeCartModal() {
             document.getElementById('cartModal').style.display = 'none';
@@ -3812,39 +3812,46 @@ async function getMelhorEnvioShipping(cep, type) {
                 showAlert('Erro ao gerar PDF', 'error');
             }
         }
+</script> <!-- 🔥 FECHAMENTO CORRETO -->
+<!-- MODAIS -->
+<div id="quoteModal" style="display:none;"></div>
+<div id="cartModal" style="display:none;"></div>
 
-        // Alert Function
-        function showAlert(message, type = 'info') {
-            const container = document.getElementById('alertContainer');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type} show`;
-            alert.textContent = message;
-            container.appendChild(alert);
+<!-- SEU SCRIPT PRINCIPAL -->
+<script>
+    // Alert Function
+    function showAlert(message, type = 'info') {
+        const container = document.getElementById('alertContainer');
+        if (!container) return;
 
-            setTimeout(() => {
-                alert.remove();
-            }, 5000);
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} show`;
+        alert.textContent = message;
+        container.appendChild(alert);
+
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+
+    window.onclick = function(event) {
+        const quoteModal = document.getElementById('quoteModal');
+        if (event.target === quoteModal) {
+            closeQuoteModal();
         }
+    };
+</script>
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const quoteModal = document.getElementById('quoteModal');
-            if (event.target == quoteModal) {
-                closeQuoteModal();
-            }
-        }
-</script> <!-- 🔥 FECHAR AQUI -->
 <!-- CONFIG -->
 <script src="/app-config.js"></script>
 
-<!-- SUPABASE -->
+<!-- SUPABASE (CORRETO) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
-<!-- INIT GLOBAL -->
+<!-- INIT -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    // TESTE
     console.log("CONFIG:", window.APP_CONFIG);
 
     const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || '';
@@ -3859,16 +3866,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     console.log("SUPABASE OK");
-
 });
-
 </script>
-<div id="quoteModal" style="display:none;">
-    <!-- conteúdo do orçamento -->
-</div>
 
-<div id="cartModal" style="display:none;">
-    <!-- conteúdo do carrinho -->
-</div>
 </body>
 </html>
