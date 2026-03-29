@@ -3158,82 +3158,84 @@ async function calculateFreight() {
         }
 
         // Accessories Functions
-        async function loadAccessoriesTable() {
-            try {
-                const { data: accessories } = await supabaseClient.from('acessorios').select('*').order('criado_em', { ascending: false });
-                const tbody = document.getElementById('accessoriesTable');
-                tbody.innerHTML = '';
+async function addAccessory() {
+    const name = document.getElementById('newAccessoryName').value.trim();
+    const desc = document.getElementById('newAccessoryDesc').value.trim();
+    const category = document.getElementById('newAccessoryCategory').value.trim();
 
-                if (!accessories || accessories.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">Nenhum acessorio cadastrado</td></tr>';
-                    return;
-                }
+    const price = Number(document.getElementById('newAccessoryPrice').value);
+    const stock = Number(document.getElementById('newAccessoryStock').value);
 
-                accessories.forEach(acc => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${acc.nome}</td>
-                        <td>${acc.categoria}</td>
-                        <td>R$ ${acc.preco.toFixed(2)}</td>
-                        <td>${acc.estoque}</td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-small btn-edit" onclick="editAccessory(${acc.id})">Editar</button>
-                                <button class="btn-small btn-delete" onclick="deleteAccessory(${acc.id})">Deletar</button>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            } catch (error) {
-                console.error('Erro ao carregar acessorios:', error);
-            }
-        }
+    const imageInput = document.getElementById('newAccessoryImage');
+    const imageFile = imageInput ? imageInput.files[0] : null;
 
-        async function addAccessory() {
-            const name = document.getElementById('newAccessoryName').value.trim();
-            const desc = document.getElementById('newAccessoryDesc').value.trim();
-            const category = document.getElementById('newAccessoryCategory').value.trim();
-            const price = parseFloat(document.getElementById('newAccessoryPrice').value);
-            const stock = parseInt(document.getElementById('newAccessoryStock').value);
-            const imageFile = document.getElementById('newAccessoryImage').files[0];
+    // ✅ VALIDAÇÃO CORRETA
+    if (!name || !desc || !category) {
+        showAlert('Preencha nome, descrição e categoria', 'error');
+        return;
+    }
 
-            if (!name || !desc || !category || !price || !stock) {
-                showAlert('Por favor, preencha todos os campos', 'error');
+    if (isNaN(price) || price <= 0) {
+        showAlert('Preço inválido', 'error');
+        return;
+    }
+
+    if (isNaN(stock) || stock < 0) {
+        showAlert('Estoque inválido', 'error');
+        return;
+    }
+
+    try {
+        let imageUrl = null;
+
+        if (imageFile) {
+            if (imageFile.size > 2 * 1024 * 1024) {
+                showAlert('Imagem muito grande (máx 2MB)', 'error');
                 return;
             }
 
-            try {
-                let imageUrl = '';
-                
-                if (imageFile) {
-                    if (imageFile.size > 2 * 1024 * 1024) {
-                        showAlert('Imagem muito grande. Maximo 2MB', 'error');
-                        return;
-                    }
-                    
-                    const reader = new FileReader();
-                    imageUrl = await new Promise((resolve, reject) => {
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(imageFile);
-                    });
-                }
+            const reader = new FileReader();
+            imageUrl = await new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(imageFile);
+            });
+        }
 
-                const { error } = await supabaseClient
-                    .from('acessorios')
-                    .insert([{
-                        nome: name,
-                        descricao: desc,
-                        categoria: category,
-                        preco: price,
-                        estoque: stock,
-                        foto: imageUrl
-                    }]);
+        console.log("ENVIANDO:", {
+            nome: name,
+            descricao: desc,
+            categoria: category,
+            preco: price,
+            estoque: stock,
+            foto: imageUrl
+        });
 
-                if (error) throw error;
+        const { data, error } = await supabaseClient
+            .from('acessorios')
+            .insert([{
+                nome: name,
+                descricao: desc,
+                categoria: category,
+                preco: price,
+                estoque: stock,
+                foto: imageUrl
+            }])
+            .select();
 
-                showAlert('Acessorio adicionado com sucesso!', 'success');
+        if (error) {
+            console.error("ERRO SUPABASE:", error);
+            showAlert('Erro ao salvar: ' + error.message, 'error');
+            return;
+        }
+
+        showAlert('Acessório adicionado com sucesso!', 'success');
+
+    } catch (err) {
+        console.error(err);
+        showAlert('Erro inesperado', 'error');
+    }
+}
                 document.getElementById('newAccessoryName').value = '';
                 document.getElementById('newAccessoryDesc').value = '';
                 document.getElementById('newAccessoryCategory').value = '';
