@@ -1772,6 +1772,11 @@
                 return;
             }
 
+            if (!whatsapp || whatsapp.length < 10) {
+                showAlert('WhatsApp inválido', 'error');
+                return;
+            }
+
             if (currentQuote.totalPrice <= 0) {
                 showAlert('Por favor, selecione uma peca e calcule o frete', 'error');
                 return;
@@ -2811,19 +2816,32 @@ async function calculateFreight() {
         }
 
         async function completePaymentSelection(method, label) {
-            const orderId = 'ORD-' + Date.now();
-            currentQuote.paymentMethod = method;
-            currentQuote.paymentLabel = label;
+           const orderId = 'ORD-' + Date.now();
+           currentQuote.paymentMethod = method;
+           currentQuote.paymentLabel = label;
 
-            try {
-                const savedOrder = await saveOrder(orderId);
-                currentQuote.savedOrderId = savedOrder.id;
-                closePaymentOptionsModal();
-                completePayment(orderId);
-            } catch (error) {
-                showAlert('Erro ao salvar pedido: ' + error.message, 'error');
-            }
-        }
+           try {
+               console.log("SALVANDO PEDIDO...", currentQuote);
+
+               const savedOrder = await saveOrder(orderId);
+
+               console.log("PEDIDO SALVO:", savedOrder);
+
+               if (!savedOrder || !savedOrder.id) {
+                   throw new Error("Pedido não retornou ID");
+               }
+
+               currentQuote.savedOrderId = savedOrder.id;
+
+               closePaymentOptionsModal();
+
+               completePayment(orderId);
+
+           } catch (error) {
+               console.error("ERRO AO SALVAR PEDIDO:", error);
+               showAlert('Erro ao salvar pedido: ' + error.message, 'error');
+           }
+       }
 
         // Save Order
         async function saveOrder(orderCode, quote = currentQuote) {
@@ -2892,15 +2910,14 @@ async function calculateFreight() {
         }
 
         // Complete Payment
-        function completePayment(orderId) {
+                function completePayment(orderId) {
             closeQuoteModal();
-            const paymentLabel = currentQuote.paymentLabel || 'não informado';
-            showAlert(`Pedido confirmado! Forma de pagamento: ${paymentLabel}.`, 'success');
-            
-            // Automatically share on WhatsApp and close
+
+            showAlert(`Pedido confirmado!`, 'success');
+
             setTimeout(() => {
                 shareOnWhatsApp(orderId);
-            }, 1500);
+            }, 1000);
         }
 
         // Update Order Status
@@ -2960,52 +2977,30 @@ async function calculateFreight() {
         }
 
         // Share on WhatsApp
-        function shareOnWhatsApp(orderId) {
-<<<<<<< HEAD
+                function shareOnWhatsApp(orderId) {
 
-    const cliente = currentQuote.customerName;
-    const numeroCliente = getNormalizedWhatsApp(currentQuote.customerWhatsApp);
+            const SEU_NUMERO = "5511958085210"; // 🔥 TROCAR
 
-    const mensagem = `
-📋 *Pedido Confirmado - ${orderId}*
+            const mensagem = `
+        📦 *NOVO PEDIDO - ${orderId}*
 
-👤 Cliente: ${cliente}
-📱 WhatsApp: ${currentQuote.customerWhatsApp}
+        👤 Cliente: ${currentQuote.customerName}
+        📱 WhatsApp: ${currentQuote.customerWhatsApp}
 
-📦 Serviço: ${currentQuote.serviceLabel}
-📱 Aparelho: ${currentQuote.brand} ${currentQuote.model}
+        📱 Aparelho: ${currentQuote.brand} ${currentQuote.model}
+        🔧 Serviço: ${currentQuote.serviceLabel}
 
-🚚 Entrega: ${currentQuote.shippingLabel}
-💰 Total: R$ ${currentQuote.totalPrice.toFixed(2)}
-💳 Pagamento: ${currentQuote.paymentLabel}
+        🚚 Frete: ${currentQuote.shippingLabel}
+        💰 Total: R$ ${currentQuote.totalPrice.toFixed(2)}
 
-📅 Previsão: ${new Date(getDeliveryDate()).toLocaleDateString('pt-BR')}
+        💳 Pagamento: ${currentQuote.paymentLabel}
+        📅 Entrega: ${new Date(getDeliveryDate()).toLocaleDateString('pt-BR')}
+        `;
 
-Obrigado pela preferência 🙌
-`;
+            const url = `https://wa.me/${SEU_NUMERO}?text=${encodeURIComponent        (mensagem)}`;
 
-    // 🔵 WhatsApp do CLIENTE
-    const urlCliente = `https://wa.me/55${numeroCliente}?text=${encodeURIComponent(mensagem)}`;
-
-    // 🟢 SEU WhatsApp (ALTERE AQUI)
-    const SEU_NUMERO = "5511958085210"; // <-- COLOCA O SEU
-
-    const mensagemAdmin = `
-🚨 *NOVO PEDIDO RECEBIDO*
-
-${mensagem}
-`;
-
-    const urlAdmin = `https://wa.me/${SEU_NUMERO}?text=${encodeURIComponent(mensagemAdmin)}`;
-
-    // abre os dois
-    window.open(urlCliente, '_blank');
-
-    setTimeout(() => {
-        window.open(urlAdmin, '_blank');
-    }, 800);
-}
-
+            window.open(url, '_blank');
+        }
         // Admin Functions
         function handleAdminSearch(event) {
             if (event.key === 'Enter') {
