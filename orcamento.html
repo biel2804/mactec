@@ -2823,79 +2823,57 @@ async function calculateFreight() {
             }
         }
 
-        async function completePaymentSelection(method, label) {
-           const orderId = 'ORD-' + Date.now();
-           currentQuote.paymentMethod = method;
-           currentQuote.paymentLabel = label;
+async function completePaymentSelection(method, label) {
+    currentQuote.paymentMethod = method;
+    currentQuote.paymentLabel = label;
 
-           try {
-               console.log("SALVANDO PEDIDO...", currentQuote);
+    const savedOrder = await saveOrder();
 
-               const savedOrder = await saveOrder(orderId);
+    if (!savedOrder) return;
 
-               console.log("PEDIDO SALVO:", savedOrder);
-
-               if (!savedOrder || !savedOrder.id) {
-                   throw new Error("Pedido não retornou ID");
-               }
-
-               currentQuote.savedOrderId = savedOrder.id;
-
-               closePaymentOptionsModal();
-
-               completePayment(orderId);
-
-           } catch (error) {
-               console.error("ERRO AO SALVAR PEDIDO:", error);
-               showAlert('Erro ao salvar pedido: ' + error.message, 'error');
-           }
-       }
+    sendOrderToWhatsApp(savedOrder);
+}
 
         // Save Order
-        async function saveOrder(orderCode, quote = currentQuote) {
-            try {
-                syncQuoteSelections(quote);
+async function saveOrder() {
+    const client = window.supabaseClient;
 
-                const payload = {
-                    cliente_nome: quote.customerName,
-                    whatsapp: quote.customerWhatsApp,
-                    endereco: quote.customerAddress,
-                    modelo_dispositivo: `${quote.brand} ${quote.model}`.trim(),
-                    servico: quote.serviceLabel || getServiceLabel(quote.service),
-                    valor_total: quote.totalPrice,
-                    status: ORDER_STATUS.PENDENTE,
-                    distancia_km: quote.distance,
-                    valor_frete: quote.freightCost,
-                    tipo_envio: quote.shippingType || null,
-                    observacoes: [
-                        quote.shippingLabel ? `Frete escolhido: ${quote.shippingLabel}` : '',
-                        quote.shippingEtaText || '',
-                        quote.shippingCarrier ? `Transportadora: ${quote.shippingCarrier}` : '',
-                        quote.paymentLabel ? `Forma de pagamento: ${quote.paymentLabel}` : ''
-                    ].filter(Boolean).join(' | '),
-                    previsao_entrega: getDeliveryDate()
-                };
+    if (!client) {
+        showAlert('Supabase não conectado', 'error');
+        return;
+    }
 
-                const client = ensureSupabaseClient(true);
-                if (!client) {
-                    throw new Error('Supabase não configurado.');
-                }
+    const payload = {
+        cliente_nome: currentQuote.customerName,
+        whatsapp: currentQuote.customerWhatsApp,
+        endereco: currentQuote.customerAddress,
 
-                const { data, error } = await client
-                    .from('pedidos')
-                    .insert([payload])
-                    .select()
-                    .single();
+        aparelho: `${currentQuote.brand} ${currentQuote.model}`,
+        servico: currentQuote.serviceLabel,
 
-                if (error) throw error;
+        valor_total: currentQuote.totalPrice,
+        valor_frete: currentQuote.freightCost,
 
-                await createServiceOrder(quote, data, orderCode);
-                return data;
-            } catch (error) {
-                console.error('Erro ao salvar pedido:', error);
-                throw error;
-            }
-        }
+        tipo_envio: currentQuote.shippingLabel,
+        forma_pagamento: currentQuote.paymentLabel,
+
+        status: 'pendente'
+    };
+
+    const { data, error } = await client
+        .from('pedidos')
+        .insert([payload])
+        .select()
+        .single();
+
+    if (error) {
+        console.error(error);
+        showAlert('Erro ao salvar pedido: ' + error.message, 'error');
+        return null;
+    }
+
+    return data;
+}
 
         // Get Delivery Date
         function getDeliveryDate() {
@@ -2985,30 +2963,34 @@ async function calculateFreight() {
         }
 
         // Share on WhatsApp
-                function shareOnWhatsApp(orderId) {
+function sendOrderToWhatsApp(order) {
 
-            const SEU_NUMERO = "5511958085210"; // 🔥 TROCAR
+    const ADMIN_PHONE = '5511958085210'; // 🔥 SEU NÚMERO
 
-            const mensagem = `
-        📦 *NOVO PEDIDO - ${orderId}*
+    const msg = `
+📦 *NOVO PEDIDO - SITE*
 
-        👤 Cliente: ${currentQuote.customerName}
-        📱 WhatsApp: ${currentQuote.customerWhatsApp}
+👤 Cliente: ${order.cliente_nome}
+📱 WhatsApp: ${order.whatsapp}
+📍 Endereço: ${order.endereco}
 
-        📱 Aparelho: ${currentQuote.brand} ${currentQuote.model}
-        🔧 Serviço: ${currentQuote.serviceLabel}
+📲 Aparelho: ${order.aparelho}
+🔧 Serviço: ${order.servico}
 
-        🚚 Frete: ${currentQuote.shippingLabel}
-        💰 Total: R$ ${currentQuote.totalPrice.toFixed(2)}
+🚚 Envio: ${order.tipo_envio}
+💰 Frete: R$ ${order.valor_frete}
 
-        💳 Pagamento: ${currentQuote.paymentLabel}
-        📅 Entrega: ${new Date(getDeliveryDate()).toLocaleDateString('pt-BR')}
-        `;
+💳 Pagamento: ${order.forma_pagamento}
 
-            const url = `https://wa.me/${SEU_NUMERO}?text=${encodeURIComponent        (mensagem)}`;
+💵 Total: R$ ${order.valor_total}
 
-            window.open(url, '_blank');
-        }
+🆔 Pedido: ${order.id}
+    `;
+
+    const url = `https://wa.me/${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`;
+
+    window.open(url, '_blank');
+}
         // Admin Functions
         function handleAdminSearch(event) {
             if (event.key === 'Enter') {
