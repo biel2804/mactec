@@ -1772,11 +1772,6 @@
                 return;
             }
 
-            if (!whatsapp || whatsapp.length < 10) {
-                showAlert('WhatsApp inválido', 'error');
-                return;
-            }
-
             if (currentQuote.totalPrice <= 0) {
                 showAlert('Por favor, selecione uma peca e calcule o frete', 'error');
                 return;
@@ -1880,14 +1875,8 @@
         }
 
         function openCartModal() {
-            const modal = document.getElementById('cartModal');
-
-            if (!modal) {
-               console.error('ERRO: cartModal não encontrado no DOM');
-                return;
-            }
-
-            modal.style.display = 'block';
+            document.getElementById('cartModal').style.display = 'block';
+            updateCartDisplay();
         }
 
         function closeCartModal() {
@@ -2150,16 +2139,14 @@
         }
 
         // Load brands when quote modal opens
-function openQuoteModal() {
-    const modal = document.getElementById('quoteModal');
-
-    if (!modal) {
-        console.error("quoteModal não encontrado");
-        return;
-    }
-
-    modal.style.display = 'block';
-}
+        function openQuoteModal() {
+            document.getElementById('quoteModal').style.display = 'block';
+            if (!ensureSupabaseClient(true)) {
+                showAlert('Configure o Supabase no app-config.js para listar marcas e modelos.', 'warning');
+                return;
+            }
+            loadBrands();
+        }
 
         // Handle Service Selection
         function onServiceChange() {
@@ -2823,57 +2810,66 @@ async function calculateFreight() {
             }
         }
 
-async function completePaymentSelection(method, label) {
-    currentQuote.paymentMethod = method;
-    currentQuote.paymentLabel = label;
+        async function completePaymentSelection(method, label) {
+            const orderId = 'ORD-' + Date.now();
+            currentQuote.paymentMethod = method;
+            currentQuote.paymentLabel = label;
 
-    const savedOrder = await saveOrder();
-
-    if (!savedOrder) return;
-
-    sendOrderToWhatsApp(savedOrder);
-}
+            try {
+                const savedOrder = await saveOrder(orderId);
+                currentQuote.savedOrderId = savedOrder.id;
+                closePaymentOptionsModal();
+                completePayment(orderId);
+            } catch (error) {
+                showAlert('Erro ao salvar pedido: ' + error.message, 'error');
+            }
+        }
 
         // Save Order
-async function saveOrder() {
-    const client = window.supabaseClient;
+        async function saveOrder(orderCode, quote = currentQuote) {
+            try {
+                syncQuoteSelections(quote);
 
-    if (!client) {
-        showAlert('Supabase não conectado', 'error');
-        return;
-    }
+                const payload = {
+                    cliente_nome: quote.customerName,
+                    whatsapp: quote.customerWhatsApp,
+                    endereco: quote.customerAddress,
+                    modelo_dispositivo: `${quote.brand} ${quote.model}`.trim(),
+                    servico: quote.serviceLabel || getServiceLabel(quote.service),
+                    valor_total: quote.totalPrice,
+                    status: ORDER_STATUS.PENDENTE,
+                    distancia_km: quote.distance,
+                    valor_frete: quote.freightCost,
+                    tipo_envio: quote.shippingType || null,
+                    observacoes: [
+                        quote.shippingLabel ? `Frete escolhido: ${quote.shippingLabel}` : '',
+                        quote.shippingEtaText || '',
+                        quote.shippingCarrier ? `Transportadora: ${quote.shippingCarrier}` : '',
+                        quote.paymentLabel ? `Forma de pagamento: ${quote.paymentLabel}` : ''
+                    ].filter(Boolean).join(' | '),
+                    previsao_entrega: getDeliveryDate()
+                };
 
-    const payload = {
-        cliente_nome: currentQuote.customerName,
-        whatsapp: currentQuote.customerWhatsApp,
-        endereco: currentQuote.customerAddress,
+                const client = ensureSupabaseClient(true);
+                if (!client) {
+                    throw new Error('Supabase não configurado.');
+                }
 
-        aparelho: `${currentQuote.brand} ${currentQuote.model}`,
-        servico: currentQuote.serviceLabel,
+                const { data, error } = await client
+                    .from('pedidos')
+                    .insert([payload])
+                    .select()
+                    .single();
 
-        valor_total: currentQuote.totalPrice,
-        valor_frete: currentQuote.freightCost,
+                if (error) throw error;
 
-        tipo_envio: currentQuote.shippingLabel,
-        forma_pagamento: currentQuote.paymentLabel,
-
-        status: 'pendente'
-    };
-
-    const { data, error } = await client
-        .from('pedidos')
-        .insert([payload])
-        .select()
-        .single();
-
-    if (error) {
-        console.error(error);
-        showAlert('Erro ao salvar pedido: ' + error.message, 'error');
-        return null;
-    }
-
-    return data;
-}
+                await createServiceOrder(quote, data, orderCode);
+                return data;
+            } catch (error) {
+                console.error('Erro ao salvar pedido:', error);
+                throw error;
+            }
+        }
 
         // Get Delivery Date
         function getDeliveryDate() {
@@ -2896,14 +2892,15 @@ async function saveOrder() {
         }
 
         // Complete Payment
-                function completePayment(orderId) {
+        function completePayment(orderId) {
             closeQuoteModal();
-
-            showAlert(`Pedido confirmado!`, 'success');
-
+            const paymentLabel = currentQuote.paymentLabel || 'não informado';
+            showAlert(`Pedido confirmado! Forma de pagamento: ${paymentLabel}.`, 'success');
+            
+            // Automatically share on WhatsApp and close
             setTimeout(() => {
                 shareOnWhatsApp(orderId);
-            }, 1000);
+            }, 1500);
         }
 
         // Update Order Status
@@ -2963,34 +2960,13 @@ async function saveOrder() {
         }
 
         // Share on WhatsApp
-function sendOrderToWhatsApp(order) {
+        function shareOnWhatsApp(orderId) {
+            const paymentInfo = currentQuote.paymentLabel ? ` Forma de pagamento: ${currentQuote.paymentLabel}.` : '';
+            const message = `Olá! Seu pedido ${orderId} foi confirmado. Valor total: R$ ${currentQuote.totalPrice.toFixed(2)}.${paymentInfo} Prazo de entrega: ${new Date(getDeliveryDate()).toLocaleDateString('pt-BR')}. Obrigado!`;
+            const whatsappUrl = `https://wa.me/55${getNormalizedWhatsApp(currentQuote.customerWhatsApp)}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        }
 
-    const ADMIN_PHONE = '5511958085210'; // 🔥 SEU NÚMERO
-
-    const msg = `
-📦 *NOVO PEDIDO - SITE*
-
-👤 Cliente: ${order.cliente_nome}
-📱 WhatsApp: ${order.whatsapp}
-📍 Endereço: ${order.endereco}
-
-📲 Aparelho: ${order.aparelho}
-🔧 Serviço: ${order.servico}
-
-🚚 Envio: ${order.tipo_envio}
-💰 Frete: R$ ${order.valor_frete}
-
-💳 Pagamento: ${order.forma_pagamento}
-
-💵 Total: R$ ${order.valor_total}
-
-🆔 Pedido: ${order.id}
-    `;
-
-    const url = `https://wa.me/${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`;
-
-    window.open(url, '_blank');
-}
         // Admin Functions
         function handleAdminSearch(event) {
             if (event.key === 'Enter') {
@@ -3140,84 +3116,82 @@ function sendOrderToWhatsApp(order) {
         }
 
         // Accessories Functions
-async function addAccessory() {
-    const name = document.getElementById('newAccessoryName').value.trim();
-    const desc = document.getElementById('newAccessoryDesc').value.trim();
-    const category = document.getElementById('newAccessoryCategory').value.trim();
+        async function loadAccessoriesTable() {
+            try {
+                const { data: accessories } = await supabaseClient.from('acessorios').select('*').order('criado_em', { ascending: false });
+                const tbody = document.getElementById('accessoriesTable');
+                tbody.innerHTML = '';
 
-    const price = Number(document.getElementById('newAccessoryPrice').value);
-    const stock = Number(document.getElementById('newAccessoryStock').value);
+                if (!accessories || accessories.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">Nenhum acessorio cadastrado</td></tr>';
+                    return;
+                }
 
-    const imageInput = document.getElementById('newAccessoryImage');
-    const imageFile = imageInput ? imageInput.files[0] : null;
+                accessories.forEach(acc => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${acc.nome}</td>
+                        <td>${acc.categoria}</td>
+                        <td>R$ ${acc.preco.toFixed(2)}</td>
+                        <td>${acc.estoque}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-small btn-edit" onclick="editAccessory(${acc.id})">Editar</button>
+                                <button class="btn-small btn-delete" onclick="deleteAccessory(${acc.id})">Deletar</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar acessorios:', error);
+            }
+        }
 
-    // ✅ VALIDAÇÃO CORRETA
-    if (!name || !desc || !category) {
-        showAlert('Preencha nome, descrição e categoria', 'error');
-        return;
-    }
+        async function addAccessory() {
+            const name = document.getElementById('newAccessoryName').value.trim();
+            const desc = document.getElementById('newAccessoryDesc').value.trim();
+            const category = document.getElementById('newAccessoryCategory').value.trim();
+            const price = parseFloat(document.getElementById('newAccessoryPrice').value);
+            const stock = parseInt(document.getElementById('newAccessoryStock').value);
+            const imageFile = document.getElementById('newAccessoryImage').files[0];
 
-    if (isNaN(price) || price <= 0) {
-        showAlert('Preço inválido', 'error');
-        return;
-    }
-
-    if (isNaN(stock) || stock < 0) {
-        showAlert('Estoque inválido', 'error');
-        return;
-    }
-
-    try {
-        let imageUrl = null;
-
-        if (imageFile) {
-            if (imageFile.size > 2 * 1024 * 1024) {
-                showAlert('Imagem muito grande (máx 2MB)', 'error');
+            if (!name || !desc || !category || !price || !stock) {
+                showAlert('Por favor, preencha todos os campos', 'error');
                 return;
             }
 
-            const reader = new FileReader();
-            imageUrl = await new Promise((resolve, reject) => {
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(imageFile);
-            });
-        }
+            try {
+                let imageUrl = '';
+                
+                if (imageFile) {
+                    if (imageFile.size > 2 * 1024 * 1024) {
+                        showAlert('Imagem muito grande. Maximo 2MB', 'error');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    imageUrl = await new Promise((resolve, reject) => {
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(imageFile);
+                    });
+                }
 
-        console.log("ENVIANDO:", {
-            nome: name,
-            descricao: desc,
-            categoria: category,
-            preco: price,
-            estoque: stock,
-            foto: imageUrl
-        });
+                const { error } = await supabaseClient
+                    .from('acessorios')
+                    .insert([{
+                        nome: name,
+                        descricao: desc,
+                        categoria: category,
+                        preco: price,
+                        estoque: stock,
+                        foto: imageUrl
+                    }]);
 
-        const { data, error } = await supabaseClient
-            .from('acessorios')
-            .insert([{
-                nome: name,
-                descricao: desc,
-                categoria: category,
-                preco: price,
-                estoque: stock,
-               foto: imageUrl // A chave tem que ser 'foto', o valor é sua variável 'imageUrl'
-            }])
-            .select();
+                if (error) throw error;
 
-        if (error) {
-            console.error("ERRO SUPABASE:", error);
-            showAlert('Erro ao salvar: ' + error.message, 'error');
-            return;
-        }
-
-        showAlert('Acessório adicionado com sucesso!', 'success');
-
-    } catch (err) {
-        console.error(err);
-        showAlert('Erro inesperado', 'error');
-    }
-}
+                showAlert('Acessorio adicionado com sucesso!', 'success');
                 document.getElementById('newAccessoryName').value = '';
                 document.getElementById('newAccessoryDesc').value = '';
                 document.getElementById('newAccessoryCategory').value = '';
@@ -3796,46 +3770,39 @@ async function getMelhorEnvioShipping(cep, type) {
                 showAlert('Erro ao gerar PDF', 'error');
             }
         }
-</script> <!-- 🔥 FECHAMENTO CORRETO -->
-<!-- MODAIS -->
-<div id="quoteModal" style="display:none;"></div>
-<div id="cartModal" style="display:none;"></div>
 
-<!-- SEU SCRIPT PRINCIPAL -->
-<script>
-    // Alert Function
-    function showAlert(message, type = 'info') {
-        const container = document.getElementById('alertContainer');
-        if (!container) return;
+        // Alert Function
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+            container.appendChild(alert);
 
-        const alert = document.createElement('div');
-        alert.className = `alert alert-${type} show`;
-        alert.textContent = message;
-        container.appendChild(alert);
-
-        setTimeout(() => {
-            alert.remove();
-        }, 5000);
-    }
-
-    window.onclick = function(event) {
-        const quoteModal = document.getElementById('quoteModal');
-        if (event.target === quoteModal) {
-            closeQuoteModal();
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
         }
-    };
-</script>
 
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const quoteModal = document.getElementById('quoteModal');
+            if (event.target == quoteModal) {
+                closeQuoteModal();
+            }
+        }
+</script> <!-- 🔥 FECHAR AQUI -->
 <!-- CONFIG -->
 <script src="/app-config.js"></script>
 
-<!-- SUPABASE (CORRETO) -->
+<!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
-<!-- INIT -->
+<!-- INIT GLOBAL -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
+    // TESTE
     console.log("CONFIG:", window.APP_CONFIG);
 
     const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || '';
@@ -3850,8 +3817,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     console.log("SUPABASE OK");
+
 });
 </script>
-
 </body>
 </html>
