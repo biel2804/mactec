@@ -1710,6 +1710,10 @@
                         <div class="form-group">
                             <label for="companyLogoUrl">Logo (URL opcional):</label>
                             <input type="url" id="companyLogoUrl" placeholder="https://.../logo.png">
+                            <div id="companyLogoPreviewContainer" style="margin-top: 0.75rem; display: none;">
+                                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.35rem;">Preview da logo:</p>
+                                <img id="companyLogoPreview" alt="Preview da logo da empresa" style="max-width: 180px; max-height: 80px; width: auto; height: auto; border: 1px solid var(--border-color); border-radius: 6px; background: var(--primary-dark); padding: 0.35rem;">
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="instagramUrl">Instagram:</label>
@@ -2067,9 +2071,7 @@
             closeCartModal();
             try {
                 const savedOrder = await saveCartOrder();
-                await sendCartToCompanyWhatsApp(savedOrder);Collapse commentComment on lines R2069 to R2070chatgpt-codex-connector[bot] commented on Apr 3, 2026 chatgpt-codex-connector[bot]on Apr 3, 2026More actions  Open WhatsApp before awaiting order persistence
-Because goToCheckout() awaits saveCartOrder() before sendCartToCompanyWhatsApp(), the eventual window.open call runs after an async boundary and can be blocked by popup protection as a non-user-initiated action. In that case the user never gets redirected to WhatsApp, but the checkout path can still continue and clear cart/stock state, which breaks the purchase flow. Trigger the WhatsApp window synchronously from the click event (or explicitly handle blocked popups before continuing).
-Useful? React with 👍 / 👎.ReactWrite a replyResolve comment
+                await sendCartToCompanyWhatsApp(savedOrder);
             } catch (error) {
                 showAlert('Erro ao finalizar pedido: ' + error.message, 'error');
             }
@@ -2209,9 +2211,7 @@ Useful? React with 👍 / 👎.ReactWrite a replyResolve comment
         }
 
         async function sendCartToCompanyWhatsApp(savedOrder = null) {
-            const companyPhone = '5511958085210';Collapse commentComment on line R2210chatgpt-codex-connector[bot] commented on Apr 3, 2026 chatgpt-codex-connector[bot]on Apr 3, 2026More actions  Use configured WhatsApp number for checkout
-The checkout sender ignores admin/company settings and always posts to a hardcoded phone number, so changing companyWhatsApp in settings has no effect on where orders are sent. This can route production orders to the wrong destination even when configuration is updated. Use the runtime-configured company number (with a safe fallback only when unset) before building the wa.me URL.
-Useful? React with 👍 / 👎.ReactWrite a replyResolve comment
+            const companyPhone = '5511958085210';
             const orderDate = new Date().toLocaleString('pt-BR');
             const lines = ['🧾 *Novo pedido pelo site*', `📅 Data: ${orderDate}`, '', '📦 *Itens do carrinho:*'];
             let total = 0;
@@ -2502,6 +2502,9 @@ Useful? React with 👍 / 👎.ReactWrite a replyResolve comment
                 if (button.dataset.action === 'print') {
                     printServiceOrder(id);
                 }
+            });
+            document.getElementById('companyLogoUrl')?.addEventListener('input', (event) => {
+                updateCompanyLogoPreview(event.target.value.trim());
             });
             loadCompanySettings();
 
@@ -3962,6 +3965,26 @@ async function calculateFreight() {
             document.getElementById('twitterUrl').value = settings.twitter_url || TWITTER_URL;
             document.getElementById('linkedinUrl').value = settings.linkedin_url || LINKEDIN_URL;
             document.getElementById('youtubeUrl').value = settings.youtube_url || YOUTUBE_URL;
+            updateCompanyLogoPreview(settings.logo_url || COMPANY_LOGO_URL);
+        }
+
+        function updateCompanyLogoPreview(logoUrl) {
+            const previewContainer = document.getElementById('companyLogoPreviewContainer');
+            const previewImage = document.getElementById('companyLogoPreview');
+            if (!previewContainer || !previewImage) return;
+
+            if (!logoUrl) {
+                previewContainer.style.display = 'none';
+                previewImage.removeAttribute('src');
+                return;
+            }
+
+            previewImage.src = logoUrl;
+            previewContainer.style.display = 'block';
+            previewImage.onerror = () => {
+                previewContainer.style.display = 'none';
+                previewImage.removeAttribute('src');
+            };
         }
 
         function applyCompanySettingsToRuntime(settings) {
@@ -4036,6 +4059,7 @@ async function calculateFreight() {
                 if (error) throw error;
 
                 applyCompanySettingsToRuntime(payload);
+                updateCompanyLogoPreview(payload.logo_url);
                 showAlert('Configurações da empresa salvas com sucesso!', 'success');
             } catch (error) {
                 showAlert('Erro ao salvar configurações: ' + error.message, 'error');
@@ -4582,4 +4606,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 </body>
-</html
+</html>
