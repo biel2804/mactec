@@ -119,22 +119,26 @@
 
         .nav-search {
             position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
-        .nav-search input {
+        .admin-access-btn {
             background: var(--tertiary-dark);
             border: 1px solid var(--border-color);
             color: var(--text-primary);
             padding: 0.5rem 1rem;
             border-radius: 6px;
-            width: 200px;
             transition: all 0.3s;
+            cursor: pointer;
+            font-weight: 600;
         }
 
-        .nav-search input:focus {
-            outline: none;
+        .admin-access-btn:hover {
             border-color: var(--accent-green);
-            box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+            color: var(--accent-green);
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
         }
 
         /* Hero Section */
@@ -397,18 +401,14 @@
                 grid-column: 1 / -1;
             }
 
-            .nav-search input {
-                width: 100%;
-                font-size: 16px; /* Prevents zoom on iOS */
-            }
-
             nav.mobile-open .nav-menu,
             nav.mobile-open .nav-social {
                 display: flex;
             }
 
             nav.mobile-open .nav-search {
-                display: block;
+                display: flex;
+                justify-content: center;
             }
 
             .hero {
@@ -507,11 +507,10 @@
             .nav-search {
                 width: 100%;
                 margin-top: 0.5rem;
+                justify-content: center;
             }
 
-            .nav-search input {
-                width: 100%;
-                font-size: 16px;
+            .admin-access-btn {
                 padding: 0.5rem;
             }
 
@@ -1125,7 +1124,7 @@
             </button>
         </div>
         <div class="nav-search">
-            <input type="text" id="adminSearch" placeholder="Buscar..." onkeypress="handleAdminSearch(event)">
+            <button class="admin-access-btn" onclick="handleAdminSearch()" title="Entrar no painel administrativo">Admin</button>
             <button class="cart-icon-btn" onclick="openCartModal()" title="Carrinho de Compras" style="margin-left: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; position: relative;">
                 🛒
                 <span id="cartCount" class="cart-count" style="position: absolute; top: -5px; right: -10px; background: var(--accent-green); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">0</span>
@@ -1404,7 +1403,7 @@
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <button class="btn btn-secondary" style="width: 100%;" onclick="closeCartModal()">Continuar Comprando</button>
-                <button class="btn btn-primary" style="width: 100%;" onclick="goToCheckout()">Finalizar Compra</button>
+                <button class="btn btn-primary" style="width: 100%;" onclick="goToCheckout()">Finalizar Compra via WhatsApp</button>
             </div>
         </div>
     </div>
@@ -1889,7 +1888,7 @@
                 return;
             }
             closeCartModal();
-            showPaymentCheckout();
+            sendCartToCompanyWhatsApp();
         }
 
         function showPaymentCheckout() {
@@ -1946,6 +1945,51 @@
             updateCartDisplay();
             document.querySelectorAll('.modal').forEach(m => m.remove());
             showAlert('Compra finalizada com sucesso! Obrigado!', 'success');
+        }
+
+        function formatWhatsAppNumber(phone) {
+            return (phone || '').replace(/\D/g, '');
+        }
+
+        function sendCartToCompanyWhatsApp() {
+            const companyPhone = '5511958085210';
+            const orderDate = new Date().toLocaleString('pt-BR');
+            const lines = ['🧾 *Novo pedido pelo site*', `📅 Data: ${orderDate}`, '', '📦 *Itens do carrinho:*'];
+            let total = 0;
+
+            cart.forEach((item, index) => {
+                if (item.itemType === 'quote') {
+                    const itemTotal = Number(item.totalPrice || 0);
+                    total += itemTotal;
+                    lines.push(
+                        `${index + 1}. Orçamento ${item.brand || ''} ${item.model || ''}`.trim(),
+                        `   Serviço: ${item.service || 'Não informado'}`,
+                        `   Cliente: ${item.customerName || 'Não informado'} | WhatsApp: ${item.customerWhatsApp || 'Não informado'}`,
+                        `   Endereço: ${item.customerAddress || 'Não informado'}`,
+                        `   Total: R$ ${itemTotal.toFixed(2)}`,
+                        ''
+                    );
+                } else {
+                    const itemSubtotal = Number(item.subtotal || 0);
+                    total += itemSubtotal;
+                    lines.push(
+                        `${index + 1}. ${item.quantity || 1}x ${item.name || 'Item'}`,
+                        `   Preço unitário: R$ ${Number(item.price || 0).toFixed(2)}`,
+                        `   Subtotal: R$ ${itemSubtotal.toFixed(2)}`,
+                        ''
+                    );
+                }
+            });
+
+            lines.push(`💰 *Total do pedido:* R$ ${total.toFixed(2)}`);
+            lines.push('🛠️ Pedido enviado para criação da O.S. no painel admin e impressão em PDF.');
+
+            const whatsappUrl = `https://wa.me/${formatWhatsAppNumber(companyPhone)}?text=${encodeURIComponent(lines.join('\n'))}`;
+            window.open(whatsappUrl, '_blank');
+
+            cart = [];
+            updateCartDisplay();
+            showAlert('Pedido enviado para o WhatsApp da empresa!', 'success');
         }
 
         const APP_CONFIG = window.APP_CONFIG || {};
@@ -2968,21 +3012,18 @@ async function calculateFreight() {
         }
 
         // Admin Functions
-        function handleAdminSearch(event) {
-            if (event.key === 'Enter') {
-                const searchValue = document.getElementById('adminSearch').value;
-                
-                // Admin access code: 2804
-                // Admin password: admin123
-                if (searchValue === '2804') {
-                    const password = prompt('Digite a senha:');
-                    if (password === 'admin123') {
-                        openAdminPanel();
-                        document.getElementById('adminSearch').value = '';
-                    } else {
-                        showAlert('Senha incorreta', 'error');
-                    }
-                }
+        function handleAdminSearch() {
+            const accessCode = prompt('Digite o código de acesso admin:');
+            if (accessCode !== '2804') {
+                showAlert('Código de acesso incorreto', 'error');
+                return;
+            }
+
+            const password = prompt('Digite a senha:');
+            if (password === 'admin123') {
+                openAdminPanel();
+            } else {
+                showAlert('Senha incorreta', 'error');
             }
         }
 
