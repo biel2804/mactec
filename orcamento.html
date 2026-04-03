@@ -119,22 +119,26 @@
 
         .nav-search {
             position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
-        .nav-search input {
+        .admin-access-btn {
             background: var(--tertiary-dark);
             border: 1px solid var(--border-color);
             color: var(--text-primary);
             padding: 0.5rem 1rem;
             border-radius: 6px;
-            width: 200px;
             transition: all 0.3s;
+            cursor: pointer;
+            font-weight: 600;
         }
 
-        .nav-search input:focus {
-            outline: none;
+        .admin-access-btn:hover {
             border-color: var(--accent-green);
-            box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+            color: var(--accent-green);
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
         }
 
         /* Hero Section */
@@ -397,18 +401,14 @@
                 grid-column: 1 / -1;
             }
 
-            .nav-search input {
-                width: 100%;
-                font-size: 16px; /* Prevents zoom on iOS */
-            }
-
             nav.mobile-open .nav-menu,
             nav.mobile-open .nav-social {
                 display: flex;
             }
 
             nav.mobile-open .nav-search {
-                display: block;
+                display: flex;
+                justify-content: center;
             }
 
             .hero {
@@ -507,11 +507,10 @@
             .nav-search {
                 width: 100%;
                 margin-top: 0.5rem;
+                justify-content: center;
             }
 
-            .nav-search input {
-                width: 100%;
-                font-size: 16px;
+            .admin-access-btn {
                 padding: 0.5rem;
             }
 
@@ -1125,7 +1124,7 @@
             </button>
         </div>
         <div class="nav-search">
-            <input type="text" id="adminSearch" placeholder="Buscar..." onkeypress="handleAdminSearch(event)">
+            <button class="admin-access-btn" onclick="handleAdminSearch()" title="Entrar no painel administrativo">Admin</button>
             <button class="cart-icon-btn" onclick="openCartModal()" title="Carrinho de Compras" style="margin-left: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; position: relative;">
                 🛒
                 <span id="cartCount" class="cart-count" style="position: absolute; top: -5px; right: -10px; background: var(--accent-green); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">0</span>
@@ -1404,7 +1403,7 @@
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <button class="btn btn-secondary" style="width: 100%;" onclick="closeCartModal()">Continuar Comprando</button>
-                <button class="btn btn-primary" style="width: 100%;" onclick="goToCheckout()">Finalizar Compra</button>
+                <button class="btn btn-primary" style="width: 100%;" onclick="goToCheckout()">Finalizar Compra via WhatsApp</button>
             </div>
         </div>
     </div>
@@ -1454,27 +1453,41 @@
                 
                 <div style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color);">
                     <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Adicionar Nova Peça</h3>
-                    <div class="form-group">
-                        <label>Marca:</label>
-                        <input type="text" id="newBrand" placeholder="Ex: Apple, Samsung">
-                    </div>
-                    <div class="form-group">
-                        <label>Modelo:</label>
-                        <input type="text" id="newModel" placeholder="Ex: iPhone 14, Galaxy S23">
-                    </div>
-                    <div class="form-group">
-                        <label>Qualidade:</label>
-                        <select id="newQuality">
-                            <option value="original">Original</option>
-                            <option value="compativel">Compatível</option>
-                            <option value="refurbished">Refurbished</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Preço de Custo (R$):</label>
-                        <input type="number" id="newPrice" placeholder="0.00" step="0.01">
-                    </div>
-                    <button class="btn btn-primary" onclick="addPart()">Adicionar Peça</button>
+                    <form id="partForm">
+                        <input type="hidden" id="editingPartId" value="">
+                        <div class="form-group">
+                            <label for="newBrand">Marca:</label>
+                            <input type="text" id="newBrand" placeholder="Ex: Apple, Samsung">
+                        </div>
+                        <div class="form-group">
+                            <label for="newModel">Modelo:</label>
+                            <input type="text" id="newModel" placeholder="Ex: iPhone 14, Galaxy S23">
+                        </div>
+                        <div class="form-group">
+                            <label for="newQuality">Qualidade:</label>
+                            <select id="newQuality">
+                                <option value="original">Original</option>
+                                <option value="compativel">Compatível</option>
+                                <option value="refurbished">Refurbished</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="newPrice">Preço de Custo (R$):</label>
+                            <input type="number" id="newPrice" placeholder="0.00" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="newSellPrice">Preço de Venda (R$) - opcional:</label>
+                            <input type="number" id="newSellPrice" placeholder="0.00" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="newPartStock">Estoque:</label>
+                            <input type="number" id="newPartStock" placeholder="0" step="1" min="0">
+                        </div>
+                        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                            <button type="submit" class="btn btn-primary" id="savePartBtn">Adicionar Peça</button>
+                            <button type="button" class="btn btn-secondary" id="cancelPartEditBtn" onclick="resetPartForm()" style="display:none;">Cancelar Edição</button>
+                        </div>
+                    </form>
                 </div>
 
                 <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Peças Cadastradas</h3>
@@ -1486,12 +1499,14 @@
                                 <th>Modelo</th>
                                 <th>Qualidade</th>
                                 <th>Preço de Custo</th>
+                                <th>Preço de Venda</th>
+                                <th>Estoque</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="partsTable">
                             <tr>
-                                <td colspan="5" style="text-align: center; color: var(--text-secondary);">Carregando peças...</td>
+                                <td colspan="7" style="text-align: center; color: var(--text-secondary);">Carregando peças...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1504,32 +1519,38 @@
                 
                 <div style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color);">
                     <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Adicionar Novo Acessorio</h3>
-                    <div class="form-group">
-                        <label>Nome:</label>
-                        <input type="text" id="newAccessoryName" placeholder="Ex: Carregador Rapido, Pelicula de Vidro">
-                    </div>
-                    <div class="form-group">
-                        <label>Descricao:</label>
-                        <textarea id="newAccessoryDesc" placeholder="Descricao do acessorio" style="min-height: 80px;"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Categoria:</label>
-                        <input type="text" id="newAccessoryCategory" placeholder="Ex: Carregadores, Peliculas, Capas">
-                    </div>
-                    <div class="form-group">
-                        <label>Preco (R$):</label>
-                        <input type="number" id="newAccessoryPrice" placeholder="0.00" step="0.01">
-                    </div>
-                    <div class="form-group">
-                        <label>Estoque:</label>
-                        <input type="number" id="newAccessoryStock" placeholder="0" step="1">
-                    </div>
-                    <div class="form-group">
-                        <label>Foto do Produto:</label>
-                        <input type="file" id="newAccessoryImage" accept="image/*" placeholder="Selecione uma imagem">
-                        <small style="color: var(--text-secondary);">Tamanho máximo: 2MB. Formatos: JPG, PNG</small>
-                    </div>
-                    <button class="btn btn-primary" onclick="addAccessory()">Adicionar Acessorio</button>
+                    <form id="accessoryForm">
+                        <input type="hidden" id="editingAccessoryId" value="">
+                        <div class="form-group">
+                            <label for="newAccessoryName">Nome:</label>
+                            <input type="text" id="newAccessoryName" placeholder="Ex: Carregador Rapido, Pelicula de Vidro">
+                        </div>
+                        <div class="form-group">
+                            <label for="newAccessoryDesc">Descricao:</label>
+                            <textarea id="newAccessoryDesc" placeholder="Descricao do acessorio" style="min-height: 80px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="newAccessoryCategory">Categoria:</label>
+                            <input type="text" id="newAccessoryCategory" placeholder="Ex: Carregadores, Peliculas, Capas">
+                        </div>
+                        <div class="form-group">
+                            <label for="newAccessoryPrice">Preco (R$):</label>
+                            <input type="number" id="newAccessoryPrice" placeholder="0.00" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="newAccessoryStock">Estoque:</label>
+                            <input type="number" id="newAccessoryStock" placeholder="0" step="1" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="newAccessoryImage">Foto do Produto (opcional):</label>
+                            <input type="file" id="newAccessoryImage" accept="image/*" placeholder="Selecione uma imagem">
+                            <small style="color: var(--text-secondary);">Opcional. Tamanho máximo: 2MB. Formatos: JPG, PNG, WEBP</small>
+                        </div>
+                        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                            <button type="submit" class="btn btn-primary" id="saveAccessoryBtn">Adicionar Acessorio</button>
+                            <button type="button" class="btn btn-secondary" id="cancelAccessoryEditBtn" onclick="resetAccessoryForm()" style="display:none;">Cancelar Edição</button>
+                        </div>
+                    </form>
                 </div>
 
                 <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Acessorios Cadastrados</h3>
@@ -1566,11 +1587,12 @@
                                 <th>Valor</th>
                                 <th>Status</th>
                                 <th>Data</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="ordersTable">
                             <tr>
-                                <td colspan="6" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td>
+                                <td colspan="7" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1580,7 +1602,50 @@
             <!-- Service Orders Tab -->
             <div id="service-orders" class="tab-content">
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Ordem de Serviço</h2>
-                
+
+                <div style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color);">
+                    <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Criar / Editar O.S.</h3>
+                    <form id="serviceOrderForm">
+                        <input type="hidden" id="editingServiceOrderId" value="">
+                        <div class="form-group">
+                            <label for="osClientName">Cliente:</label>
+                            <input type="text" id="osClientName" placeholder="Nome do cliente">
+                        </div>
+                        <div class="form-group">
+                            <label for="osPhone">Telefone (opcional):</label>
+                            <input type="tel" id="osPhone" placeholder="(11) 99999-9999">
+                        </div>
+                        <div class="form-group">
+                            <label for="osBrand">Marca:</label>
+                            <input type="text" id="osBrand" placeholder="Ex: Apple">
+                        </div>
+                        <div class="form-group">
+                            <label for="osModel">Modelo:</label>
+                            <input type="text" id="osModel" placeholder="Ex: iPhone 11">
+                        </div>
+                        <div class="form-group">
+                            <label for="osDefect">Defeito:</label>
+                            <textarea id="osDefect" placeholder="Descreva o defeito" style="min-height: 80px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="osStatusInline">Status:</label>
+                            <select id="osStatusInline">
+                                <option value="pendente">Pendente</option>
+                                <option value="em_andamento">Em andamento</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="osNotes">Observações (opcional):</label>
+                            <textarea id="osNotes" placeholder="Observações adicionais" style="min-height: 80px;"></textarea>
+                        </div>
+                        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                            <button type="submit" class="btn btn-primary" id="saveServiceOrderBtn">Salvar O.S.</button>
+                            <button type="button" class="btn btn-secondary" id="cancelServiceOrderEditBtn" onclick="resetServiceOrderForm()" style="display:none;">Cancelar edição</button>
+                        </div>
+                    </form>
+                </div>
+
                 <div style="margin-bottom: 2rem;">
                     <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Listar Ordens de Serviço</h3>
                     <div class="table-container">
@@ -1590,6 +1655,7 @@
                                     <th>O.S. #</th>
                                     <th>Cliente</th>
                                     <th>Dispositivo</th>
+                                    <th>Defeito</th>
                                     <th>Status</th>
                                     <th>Data</th>
                                     <th>Ações</th>
@@ -1597,39 +1663,10 @@
                             </thead>
                             <tbody id="serviceOrdersTable">
                                 <tr>
-                                    <td colspan="6" style="text-align: center; color: var(--text-secondary);">Carregando ordens de serviço...</td>
+                                    <td colspan="7" style="text-align: center; color: var(--text-secondary);">Carregando ordens de serviço...</td>
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                </div>
-
-                <!-- Edit Service Order Modal -->
-                <div id="editServiceOrderModal" style="display: none; background: rgba(0,0,0,0.7); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; align-items: center; justify-content: center;">
-                    <div style="background: var(--primary-dark); padding: 2rem; border-radius: 8px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; border: 1px solid var(--border-color);">
-                        <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Editar Ordem de Serviço</h3>
-                        
-                        <div class="form-group">
-                            <label>Status:</label>
-                            <select id="osStatus">
-                                <option value="pendente">Pendente</option>
-                                <option value="aprovado">Aprovado</option>
-                                <option value="em_andamento">Em Andamento</option>
-                                <option value="concluido">Concluído</option>
-                                <option value="cancelado">Cancelado</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Observações:</label>
-                            <textarea id="osObservations" style="width: 100%; min-height: 100px; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; background: var(--secondary-dark); color: var(--text-primary);"></textarea>
-                        </div>
-
-                        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                            <button class="btn btn-primary" onclick="saveServiceOrder()" style="flex: 1;">Salvar</button>
-                            <button class="btn btn-secondary" onclick="printServiceOrder()" style="flex: 1;">Imprimir PDF</button>
-                            <button class="btn btn-secondary" onclick="closeEditServiceOrderModal()" style="flex: 1;">Fechar</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1653,39 +1690,53 @@
 
                 <div style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
                     <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Informações da Empresa</h3>
-                    <div class="form-group">
-                        <label>Nome da Empresa:</label>
-                        <input type="text" id="companyName" value="MacTec Support">
-                    </div>
-                    <div class="form-group">
-                        <label>Endereço Base:</label>
-                        <input type="text" id="companyAddress" value="R. Serra do Pantanal, 54, SBC">
-                    </div>
-                    <div class="form-group">
-                        <label>WhatsApp:</label>
-                        <input type="tel" id="companyWhatsApp" placeholder="(11) 99999-9999">
-                    </div>
-                    <div class="form-group">
-                        <label>Instagram:</label>
-                        <input type="text" id="instagramUrl" placeholder="https://instagram.com/seu_perfil">
-                    </div>
-                    <div class="form-group">
-                        <label>Facebook:</label>
-                        <input type="text" id="facebookUrl" placeholder="https://facebook.com/seu_perfil">
-                    </div>
-                    <div class="form-group">
-                        <label>Twitter:</label>
-                        <input type="text" id="twitterUrl" placeholder="https://twitter.com/seu_perfil">
-                    </div>
-                    <div class="form-group">
-                        <label>LinkedIn:</label>
-                        <input type="text" id="linkedinUrl" placeholder="https://linkedin.com/company/seu_empresa">
-                    </div>
-                    <div class="form-group">
-                        <label>YouTube:</label>
-                        <input type="text" id="youtubeUrl" placeholder="https://youtube.com/@seu_canal">
-                    </div>
-                    <button class="btn btn-primary" onclick="saveCompanyInfo()">Salvar Informações</button>
+                    <form id="companySettingsForm">
+                        <div class="form-group">
+                            <label for="companyName">Nome da Empresa:</label>
+                            <input type="text" id="companyName" value="MacTec Support">
+                        </div>
+                        <div class="form-group">
+                            <label for="companyAddress">Endereço Base:</label>
+                            <input type="text" id="companyAddress" value="R. Serra do Pantanal, 54, SBC">
+                        </div>
+                        <div class="form-group">
+                            <label for="companyWhatsApp">Telefone/WhatsApp:</label>
+                            <input type="tel" id="companyWhatsApp" placeholder="(11) 99999-9999">
+                        </div>
+                        <div class="form-group">
+                            <label for="companyDefaultMessage">Mensagem padrão do WhatsApp:</label>
+                            <textarea id="companyDefaultMessage" style="min-height: 80px;" placeholder="Olá! Gostaria de mais informações."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="companyLogoUrl">Logo (URL opcional):</label>
+                            <input type="url" id="companyLogoUrl" placeholder="https://.../logo.png">
+                            <div id="companyLogoPreviewContainer" style="margin-top: 0.75rem; display: none;">
+                                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.35rem;">Preview da logo:</p>
+                                <img id="companyLogoPreview" alt="Preview da logo da empresa" style="max-width: 180px; max-height: 80px; width: auto; height: auto; border: 1px solid var(--border-color); border-radius: 6px; background: var(--primary-dark); padding: 0.35rem;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="instagramUrl">Instagram:</label>
+                            <input type="text" id="instagramUrl" placeholder="https://instagram.com/seu_perfil">
+                        </div>
+                        <div class="form-group">
+                            <label for="facebookUrl">Facebook:</label>
+                            <input type="text" id="facebookUrl" placeholder="https://facebook.com/seu_perfil">
+                        </div>
+                        <div class="form-group">
+                            <label for="twitterUrl">Twitter:</label>
+                            <input type="text" id="twitterUrl" placeholder="https://twitter.com/seu_perfil">
+                        </div>
+                        <div class="form-group">
+                            <label for="linkedinUrl">LinkedIn:</label>
+                            <input type="text" id="linkedinUrl" placeholder="https://linkedin.com/company/seu_empresa">
+                        </div>
+                        <div class="form-group">
+                            <label for="youtubeUrl">YouTube:</label>
+                            <input type="text" id="youtubeUrl" placeholder="https://youtube.com/@seu_canal">
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="saveCompanySettingsBtn">Salvar Informações</button>
+                    </form>
                 </div>
 
                 <div style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 1.5rem;">
@@ -1760,7 +1811,68 @@
 
     <script>
         // Shopping Cart
+        const CART_STORAGE_KEY = 'mactec_cart_v1';
         let cart = [];
+        let accessoriesStockById = {};
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function loadCartFromStorage() {
+            try {
+                const raw = localStorage.getItem(CART_STORAGE_KEY);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                console.warn('Carrinho inválido no storage, resetando.', error);
+                return [];
+            }
+        }
+
+        function saveCartToStorage() {
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+        }
+
+        function updateCartBadge() {
+            const count = cart.length;
+            const badge = document.getElementById('cartCount');
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'flex' : 'none';
+        }
+
+        function setupAccessoriesCartEvents() {
+            const container = document.getElementById('accessoriesContainer');
+            if (!container || container.dataset.cartBindingReady === 'true') return;
+
+            container.addEventListener('click', (event) => {
+                const button = event.target.closest('.js-add-accessory-to-cart');
+                if (!button) return;
+
+                const id = Number(button.dataset.id);
+                const name = button.dataset.name || 'Acessório';
+                const price = Number(button.dataset.price || 0);
+                const stock = Number(button.dataset.stock || 0);
+                const card = button.closest('.accessory-card');
+                const quantityInput = card ? card.querySelector('.js-accessory-qty') : null;
+                const quantity = Number(quantityInput?.value || 1);
+                addAccessoryToCart({ id, name, price, stock, quantity });
+            });
+
+            container.dataset.cartBindingReady = 'true';
+        }
+
+        function initializeCart() {
+            cart = loadCartFromStorage();
+            setupAccessoriesCartEvents();
+            updateCartDisplay();
+        }
         
         function addQuoteToCart() {
             const name = document.getElementById('customerName').value.trim();
@@ -1794,20 +1906,87 @@
             showAlert('Orcamento adicionado ao carrinho!', 'success');
         }
 
-        function addAccessoryToCart(id, name, price) {
-            const quantity = prompt('Quantidade:', '1');
-            if (!quantity || isNaN(quantity) || quantity <= 0) return;
+        function addAccessoryToCart({ id, name, price, stock, quantity }) {
+            const availableStock = Number(accessoriesStockById[id] ?? stock ?? 0);
+            const unitPrice = Number(price || 0);
+            const normalizedQty = Math.floor(Number(quantity || 1));
 
-            cart.push({
-                id: 'ACC-' + id,
-                itemType: 'accessory',
-                name: name,
-                price: price,
-                quantity: parseInt(quantity),
-                subtotal: price * parseInt(quantity)
-            });
+            if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+                showAlert('Preço inválido para este acessório.', 'warning');
+                return;
+            }
+
+            if (!Number.isInteger(normalizedQty) || normalizedQty <= 0) {
+                showAlert('Quantidade inválida.', 'warning');
+                return;
+            }
+
+            const alreadyInCart = cart
+                .filter(item => item.itemType === 'accessory' && Number(item.accessoryId) === Number(id))
+                .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+            const remainingStock = availableStock - alreadyInCart;
+
+            if (!Number.isFinite(availableStock) || availableStock <= 0 || remainingStock <= 0) {
+                showAlert('Acessório sem estoque disponível.', 'warning');
+                return;
+            }
+
+            if (normalizedQty > remainingStock) {
+                showAlert(`Estoque insuficiente. Disponível: ${remainingStock}.`, 'warning');
+                return;
+            }
+
+            const existingItem = cart.find(item => item.itemType === 'accessory' && Number(item.accessoryId) === Number(id));
+            if (existingItem) {
+                existingItem.quantity += normalizedQty;
+                existingItem.subtotal = Number(existingItem.price) * Number(existingItem.quantity);
+            } else {
+                cart.push({
+                    id: `ACC-${id}`,
+                    itemType: 'accessory',
+                    accessoryId: id,
+                    name,
+                    price: unitPrice,
+                    quantity: normalizedQty,
+                    subtotal: unitPrice * normalizedQty
+                });
+            }
+
             updateCartDisplay();
-            showAlert(quantity + 'x ' + name + ' adicionado ao carrinho!', 'success');
+            showAlert(`${normalizedQty}x ${name} adicionado ao carrinho!`, 'success');
+        }
+
+        async function syncAccessoryStockAfterCheckout() {
+            const client = ensureSupabaseClient(false);
+            if (!client) return;
+
+            const groupedAccessories = cart
+                .filter(item => item.itemType === 'accessory')
+                .map(item => ({ id: Number(item.accessoryId), quantity: Number(item.quantity || 0) }))
+                .filter(item => Number.isFinite(item.id) && item.quantity > 0);
+
+            for (const item of groupedAccessories) {
+                const { data: row, error: readError } = await client
+                    .from('acessorios')
+                    .select('id, estoque')
+                    .eq('id', item.id)
+                    .single();
+
+                if (readError) throw readError;
+
+                const currentStock = Number(row?.estoque || 0);
+                const newStock = currentStock - item.quantity;
+                if (newStock < 0) {
+                    throw new Error(`Estoque insuficiente no item ${item.id}.`);
+                }
+
+                const { error: updateError } = await client
+                    .from('acessorios')
+                    .update({ estoque: newStock })
+                    .eq('id', item.id);
+
+                if (updateError) throw updateError;
+            }
         }
 
         function updateCartDisplay() {
@@ -1821,6 +2000,8 @@
                 cartSubtotal.textContent = 'R$ 0,00';
                 cartFreight.textContent = 'R$ 0,00';
                 cartTotal.textContent = 'R$ 0,00';
+                updateCartBadge();
+                saveCartToStorage();
                 return;
             }
 
@@ -1836,9 +2017,9 @@
                                 <span><strong>Orcamento #${item.id}</strong></span>
                                 <button class="btn-small btn-delete" onclick="removeFromCart(${index})">Remover</button>
                             </div>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Cliente: ${item.customerName}</p>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Serviço: ${item.serviceLabel || getServiceLabel(item.service)}</p>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Aparelho: ${item.brand || 'Marca não informada'} ${item.model || ''}</p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Cliente: ${escapeHtml(item.customerName)}</p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Serviço: ${escapeHtml(item.serviceLabel || getServiceLabel(item.service))}</p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Aparelho: ${escapeHtml(item.brand || 'Marca não informada')} ${escapeHtml(item.model || '')}</p>
                             <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Valor: R$ ${item.totalPrice.toFixed(2)}</p>
                         </div>
                     `;
@@ -1848,7 +2029,7 @@
                     html += `
                         <div style="background: var(--secondary-dark); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border-color);">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span><strong>${item.name}</strong></span>
+                                <span><strong>${escapeHtml(item.name)}</strong></span>
                                 <button class="btn-small btn-delete" onclick="removeFromCart(${index})">Remover</button>
                             </div>
                             <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">${item.quantity}x R$ ${item.price.toFixed(2)} = R$ ${item.subtotal.toFixed(2)}</p>
@@ -1862,10 +2043,9 @@
             cartSubtotal.textContent = 'R$ ' + subtotal.toFixed(2);
             cartFreight.textContent = 'R$ ' + freight.toFixed(2);
             cartTotal.textContent = 'R$ ' + (subtotal + freight).toFixed(2);
-            
-            // Update cart count badge
-            document.getElementById('cartCount').textContent = cart.length;
-            document.getElementById('cartCount').style.display = cart.length > 0 ? 'flex' : 'none';
+
+            updateCartBadge();
+            saveCartToStorage();
         }
 
         function removeFromCart(index) {
@@ -1883,13 +2063,18 @@
             document.getElementById('cartModal').style.display = 'none';
         }
 
-        function goToCheckout() {
+        async function goToCheckout() {
             if (cart.length === 0) {
                 showAlert('Carrinho vazio', 'error');
                 return;
             }
             closeCartModal();
-            showPaymentCheckout();
+            try {
+                const savedOrder = await saveCartOrder();
+                await sendCartToCompanyWhatsApp(savedOrder);
+            } catch (error) {
+                showAlert('Erro ao finalizar pedido: ' + error.message, 'error');
+            }
         }
 
         function showPaymentCheckout() {
@@ -1948,6 +2133,134 @@
             showAlert('Compra finalizada com sucesso! Obrigado!', 'success');
         }
 
+        function formatWhatsAppNumber(phone) {
+            return (phone || '').replace(/\D/g, '');
+        }
+
+        function buildCartItemsSummary() {
+            return cart.map((item) => {
+                if (item.itemType === 'quote') {
+                    return {
+                        tipo: 'orcamento',
+                        marca: item.brand || null,
+                        modelo: item.model || null,
+                        servico: item.serviceLabel || getServiceLabel(item.service) || null,
+                        valor: Number(item.totalPrice || 0)
+                    };
+                }
+                return {
+                    tipo: 'acessorio',
+                    accessory_id: Number(item.accessoryId || 0) || null,
+                    nome: item.name || null,
+                    quantidade: Number(item.quantity || 0),
+                    valor_unitario: Number(item.price || 0),
+                    subtotal: Number(item.subtotal || 0)
+                };
+            });
+        }
+
+        function getCartCustomerData() {
+            const quoteItem = cart.find(item => item.itemType === 'quote' && item.customerName);
+            if (quoteItem) {
+                return {
+                    name: quoteItem.customerName,
+                    phone: quoteItem.customerWhatsApp || null,
+                    address: quoteItem.customerAddress || null
+                };
+            }
+
+            const name = prompt('Nome do cliente para registrar o pedido:');
+            if (!name || !name.trim()) {
+                throw new Error('Nome do cliente é obrigatório para finalizar o pedido.');
+            }
+            const phone = prompt('Telefone/WhatsApp do cliente (opcional):');
+            const address = prompt('Endereço do cliente (opcional):');
+            return {
+                name: name.trim(),
+                phone: phone?.trim() || null,
+                address: address?.trim() || null
+            };
+        }
+
+        async function saveCartOrder() {
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+
+            const items = buildCartItemsSummary();
+            const total = items.reduce((sum, item) => sum + Number(item.valor || item.subtotal || 0), 0);
+            const customer = getCartCustomerData();
+            const mainDevice = items.find(item => item.tipo === 'orcamento');
+
+            const payload = {
+                cliente_nome: customer.name,
+                whatsapp: customer.phone,
+                endereco: customer.address,
+                modelo_dispositivo: mainDevice ? `${mainDevice.marca || ''} ${mainDevice.modelo || ''}`.trim() : 'Pedido de acessórios',
+                servico: mainDevice?.servico || 'Pedido via carrinho',
+                valor_total: total,
+                status: ORDER_STATUS.PENDENTE,
+                observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)}`,
+                previsao_entrega: new Date().toISOString()
+            };
+
+            const { data, error } = await client.from('pedidos').insert([payload]).select().single();
+            if (error) throw error;
+
+            await loadOrdersTable();
+            return { ...data, items, total };
+        }
+
+        async function sendCartToCompanyWhatsApp(savedOrder = null) {
+            const companyPhone = '5511958085210';
+            const orderDate = new Date().toLocaleString('pt-BR');
+            const lines = ['🧾 *Novo pedido pelo site*', `📅 Data: ${orderDate}`, '', '📦 *Itens do carrinho:*'];
+            let total = 0;
+
+            cart.forEach((item, index) => {
+                if (item.itemType === 'quote') {
+                    const itemTotal = Number(item.totalPrice || 0);
+                    total += itemTotal;
+                    lines.push(
+                        `${index + 1}. Orçamento ${item.brand || ''} ${item.model || ''}`.trim(),
+                        `   Serviço: ${item.service || 'Não informado'}`,
+                        `   Cliente: ${item.customerName || 'Não informado'} | WhatsApp: ${item.customerWhatsApp || 'Não informado'}`,
+                        `   Endereço: ${item.customerAddress || 'Não informado'}`,
+                        `   Total: R$ ${itemTotal.toFixed(2)}`,
+                        ''
+                    );
+                } else {
+                    const itemSubtotal = Number(item.subtotal || 0);
+                    total += itemSubtotal;
+                    lines.push(
+                        `${index + 1}. ${item.quantity || 1}x ${item.name || 'Item'}`,
+                        `   Preço unitário: R$ ${Number(item.price || 0).toFixed(2)}`,
+                        `   Subtotal: R$ ${itemSubtotal.toFixed(2)}`,
+                        ''
+                    );
+                }
+            });
+
+            lines.push(`💰 *Total do pedido:* R$ ${total.toFixed(2)}`);
+            if (savedOrder?.id) {
+                lines.push(`🆔 Pedido salvo no sistema: #${savedOrder.id}`);
+            }
+            lines.push('🛠️ Pedido enviado para criação da O.S. no painel admin e impressão em PDF.');
+
+            const whatsappUrl = `https://wa.me/${formatWhatsAppNumber(companyPhone)}?text=${encodeURIComponent(lines.join('\n'))}`;
+            window.open(whatsappUrl, '_blank');
+
+            try {
+                await syncAccessoryStockAfterCheckout();
+                await loadAccessoriesForSale();
+            } catch (error) {
+                showAlert('Pedido enviado, mas falhou ao sincronizar estoque: ' + error.message, 'warning');
+            }
+
+            cart = [];
+            updateCartDisplay();
+            showAlert('Pedido enviado para o WhatsApp da empresa!', 'success');
+        }
+
         const APP_CONFIG = window.APP_CONFIG || {};
 
         // Supabase Configuration
@@ -1955,6 +2268,32 @@
         let SUPABASE_KEY = APP_CONFIG.SUPABASE_KEY || '';
         let supabaseClient = null;
         const SHIPPING_API_URL = APP_CONFIG.SHIPPING_API_URL || '/api/shipping';
+        const ERROR_LOG_TABLE = APP_CONFIG.ERROR_LOG_TABLE || 'logs_erros';
+        const COMPANY_SETTINGS_TABLE = APP_CONFIG.COMPANY_SETTINGS_TABLE || 'configuracoes_empresa';
+        const COMPANY_SETTINGS_ID = 1;
+
+        async function logClientError(errorPayload) {
+            try {
+                const client = ensureSupabaseClient(false);
+                if (!client) return;
+
+                const payload = {
+                    mensagem: String(errorPayload.message || 'Erro desconhecido'),
+                    stack: String(errorPayload.stack || ''),
+                    origem: String(errorPayload.origin || 'frontend'),
+                    url: window.location.href,
+                    user_agent: navigator.userAgent,
+                    criado_em: new Date().toISOString()
+                };
+
+                const { error } = await client.from(ERROR_LOG_TABLE).insert([payload]);
+                if (error) {
+                    console.error('Falha ao gravar log no Supabase:', error.message);
+                }
+            } catch (logError) {
+                console.error('Falha inesperada na telemetria:', logError);
+            }
+        }
 
         // Social Media Configuration
         let INSTAGRAM_URL = 'https://instagram.com/mactec.support';
@@ -1962,6 +2301,11 @@
         let TWITTER_URL = 'https://twitter.com/mactec.support';
         let LINKEDIN_URL = 'https://linkedin.com/company/mactec.support';
         let YOUTUBE_URL = 'https://youtube.com/@mactec.support';
+        let COMPANY_NAME = 'MacTec Support';
+        let COMPANY_ADDRESS = 'R. Serra do Pantanal, 54, SBC';
+        let COMPANY_WHATSAPP = '';
+        let COMPANY_DEFAULT_MESSAGE = 'Olá! Gostaria de mais informações.';
+        let COMPANY_LOGO_URL = '';
 
 
         const ORDER_STATUS = Object.freeze({
@@ -2118,6 +2462,67 @@
         document.addEventListener('DOMContentLoaded', () => {
             initSupabase();
             initMobileNav();
+            initializeCart();
+            document.getElementById('companySettingsForm')?.addEventListener('submit', handleCompanySettingsSubmit);
+            document.getElementById('accessoryForm')?.addEventListener('submit', handleAccessoryFormSubmit);
+            document.getElementById('partForm')?.addEventListener('submit', handlePartFormSubmit);
+            document.getElementById('accessoriesTable')?.addEventListener('click', (event) => {
+                const button = event.target.closest('.js-admin-accessory-action');
+                if (!button) return;
+                const id = Number(button.dataset.id);
+                if (!id) return;
+                if (button.dataset.action === 'edit') {
+                    editAccessory(id);
+                }
+                if (button.dataset.action === 'delete') {
+                    deleteAccessory(id);
+                }
+            });
+            document.getElementById('partsTable')?.addEventListener('click', (event) => {
+                const button = event.target.closest('.js-admin-part-action');
+                if (!button) return;
+                const id = Number(button.dataset.id);
+                if (!id) return;
+                if (button.dataset.action === 'edit') {
+                    editPart(id);
+                }
+                if (button.dataset.action === 'delete') {
+                    deletePart(id);
+                }
+            });
+            document.getElementById('serviceOrderForm')?.addEventListener('submit', handleServiceOrderFormSubmit);
+            document.getElementById('serviceOrdersTable')?.addEventListener('click', (event) => {
+                const button = event.target.closest('.js-service-order-action');
+                if (!button) return;
+                const id = String(button.dataset.id || '');
+                if (!id) return;
+                if (button.dataset.action === 'edit') {
+                    editServiceOrder(id);
+                }
+                if (button.dataset.action === 'print') {
+                    printServiceOrder(id);
+                }
+            });
+            document.getElementById('companyLogoUrl')?.addEventListener('input', (event) => {
+                updateCompanyLogoPreview(event.target.value.trim());
+            });
+            loadCompanySettings();
+
+            window.addEventListener('error', (event) => {
+                logClientError({
+                    message: event.message,
+                    stack: event.error?.stack || '',
+                    origin: 'window.onerror'
+                });
+            });
+
+            window.addEventListener('unhandledrejection', (event) => {
+                logClientError({
+                    message: event.reason?.message || String(event.reason || 'Promise rejection'),
+                    stack: event.reason?.stack || '',
+                    origin: 'window.unhandledrejection'
+                });
+            });
         });
 
         function initMobileNav() {
@@ -2968,21 +3373,18 @@ async function calculateFreight() {
         }
 
         // Admin Functions
-        function handleAdminSearch(event) {
-            if (event.key === 'Enter') {
-                const searchValue = document.getElementById('adminSearch').value;
-                
-                // Admin access code: 2804
-                // Admin password: admin123
-                if (searchValue === '2804') {
-                    const password = prompt('Digite a senha:');
-                    if (password === 'admin123') {
-                        openAdminPanel();
-                        document.getElementById('adminSearch').value = '';
-                    } else {
-                        showAlert('Senha incorreta', 'error');
-                    }
-                }
+        function handleAdminSearch() {
+            const accessCode = prompt('Digite o código de acesso admin:');
+            if (accessCode !== '2804') {
+                showAlert('Código de acesso incorreto', 'error');
+                return;
+            }
+
+            const password = prompt('Digite a senha:');
+            if (password === 'admin123') {
+                openAdminPanel();
+            } else {
+                showAlert('Senha incorreta', 'error');
             }
         }
 
@@ -3024,11 +3426,18 @@ async function calculateFreight() {
 
         async function loadAdminData() {
             try {
+                await loadCompanySettings();
+
                 // Display current Supabase config
                 document.getElementById('supabaseUrl').value = SUPABASE_URL;
                 document.getElementById('supabaseKey').value = SUPABASE_KEY;
 
                 // Display current Social Media config
+                document.getElementById('companyName').value = COMPANY_NAME;
+                document.getElementById('companyAddress').value = COMPANY_ADDRESS;
+                document.getElementById('companyWhatsApp').value = COMPANY_WHATSAPP;
+                document.getElementById('companyDefaultMessage').value = COMPANY_DEFAULT_MESSAGE;
+                document.getElementById('companyLogoUrl').value = COMPANY_LOGO_URL;
                 document.getElementById('instagramUrl').value = INSTAGRAM_URL;
                 document.getElementById('facebookUrl').value = FACEBOOK_URL;
                 document.getElementById('twitterUrl').value = TWITTER_URL;
@@ -3051,26 +3460,30 @@ async function calculateFreight() {
 
         async function loadPartsTable() {
             try {
-                const { data: parts } = await supabaseClient.from('pecas').select('*');
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { data: parts } = await client.from('pecas').select('*').order('id', { ascending: false });
                 const tbody = document.getElementById('partsTable');
                 tbody.innerHTML = '';
 
                 if (!parts || parts.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">Nenhuma peça cadastrada</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Nenhuma peça cadastrada</td></tr>';
                     return;
                 }
 
                 parts.forEach(part => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${part.marca}</td>
-                        <td>${part.modelo}</td>
-                        <td>${part.qualidade}</td>
+                        <td>${escapeHtml(part.marca)}</td>
+                        <td>${escapeHtml(part.modelo)}</td>
+                        <td>${escapeHtml(part.qualidade)}</td>
                         <td>R$ ${part.preco_custo.toFixed(2)}</td>
+                        <td>${part.preco_venda != null ? `R$ ${Number(part.preco_venda).toFixed(2)}` : '-'}</td>
+                        <td>${part.estoque ?? 0}</td>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn-small btn-edit" onclick="editPart(${part.id})">Editar</button>
-                                <button class="btn-small btn-delete" onclick="deletePart(${part.id})">Deletar</button>
+                                <button class="btn-small btn-edit js-admin-part-action" data-action="edit" data-id="${part.id}">Editar</button>
+                                <button class="btn-small btn-delete js-admin-part-action" data-action="delete" data-id="${part.id}">Deletar</button>
                             </div>
                         </td>
                     `;
@@ -3078,29 +3491,144 @@ async function calculateFreight() {
                 });
             } catch (error) {
                 console.error('Erro ao carregar peças:', error);
+                logClientError({
+                    message: error.message || 'Erro ao carregar peças',
+                    stack: error.stack || '',
+                    origin: 'loadPartsTable'
+                });
+            }
+        }
+
+        function resetPartForm() {
+            document.getElementById('partForm')?.reset();
+            document.getElementById('editingPartId').value = '';
+            document.getElementById('savePartBtn').textContent = 'Adicionar Peça';
+            document.getElementById('cancelPartEditBtn').style.display = 'none';
+        }
+
+        function getPartFormData() {
+            const brand = document.getElementById('newBrand').value.trim();
+            const model = document.getElementById('newModel').value.trim();
+            const quality = document.getElementById('newQuality').value;
+            const costPrice = Number(document.getElementById('newPrice').value);
+            const sellPriceRaw = document.getElementById('newSellPrice').value;
+            const stock = Number(document.getElementById('newPartStock').value);
+
+            if (!brand) throw new Error('Marca é obrigatória.');
+            if (!model) throw new Error('Modelo é obrigatório.');
+            if (!quality) throw new Error('Qualidade é obrigatória.');
+            if (!Number.isFinite(costPrice) || costPrice < 0) throw new Error('Preço de custo inválido.');
+            if (!Number.isInteger(stock) || stock < 0) throw new Error('Estoque inválido.');
+
+            const hasSellPrice = sellPriceRaw !== '' && sellPriceRaw !== null && sellPriceRaw !== undefined;
+            const sellPrice = hasSellPrice ? Number(sellPriceRaw) : null;
+            if (hasSellPrice && (!Number.isFinite(sellPrice) || sellPrice < 0)) {
+                throw new Error('Preço de venda inválido.');
+            }
+
+            return { brand, model, quality, costPrice, sellPrice, stock };
+        }
+
+        async function handlePartFormSubmit(event) {
+            event.preventDefault();
+            const client = ensureSupabaseClient(true);
+            if (!client) {
+                showAlert('Configure o Supabase para salvar peças.', 'warning');
+                return;
+            }
+
+            const saveBtn = document.getElementById('savePartBtn');
+            setButtonLoading(saveBtn, true, 'Salvando...');
+
+            try {
+                const editingId = document.getElementById('editingPartId').value;
+                const { brand, model, quality, costPrice, sellPrice, stock } = getPartFormData();
+                const payload = {
+                    marca: brand,
+                    modelo: model,
+                    qualidade: quality,
+                    preco_custo: costPrice,
+                    preco_venda: sellPrice,
+                    estoque: stock
+                };
+
+                if (editingId) {
+                    const { error } = await client.from('pecas').update(payload).eq('id', Number(editingId));
+                    if (error) throw error;
+                    showAlert('Peça atualizada com sucesso!', 'success');
+                } else {
+                    const { error } = await client.from('pecas').insert([payload]);
+                    if (error) throw error;
+                    showAlert('Peça adicionada com sucesso!', 'success');
+                }
+
+                resetPartForm();
+                await loadPartsTable();
+                await loadBrands();
+            } catch (error) {
+                showAlert('Erro ao salvar peça: ' + error.message, 'error');
+                logClientError({
+                    message: error.message || 'Erro ao salvar peça',
+                    stack: error.stack || '',
+                    origin: 'handlePartFormSubmit'
+                });
+            } finally {
+                setButtonLoading(saveBtn, false);
+            }
+        }
+
+        async function editPart(id) {
+            try {
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { data, error } = await client.from('pecas').select('*').eq('id', id).single();
+                if (error) throw error;
+                if (!data) {
+                    showAlert('Peça não encontrada.', 'warning');
+                    return;
+                }
+
+                document.getElementById('editingPartId').value = String(data.id);
+                document.getElementById('newBrand').value = data.marca || '';
+                document.getElementById('newModel').value = data.modelo || '';
+                document.getElementById('newQuality').value = data.qualidade || 'original';
+                document.getElementById('newPrice').value = Number(data.preco_custo || 0);
+                document.getElementById('newSellPrice').value = data.preco_venda != null ? Number(data.preco_venda) : '';
+                document.getElementById('newPartStock').value = Number(data.estoque || 0);
+                document.getElementById('savePartBtn').textContent = 'Atualizar Peça';
+                document.getElementById('cancelPartEditBtn').style.display = 'inline-flex';
+                showAlert('Peça carregada para edição.', 'info');
+            } catch (error) {
+                showAlert('Erro ao carregar peça para edição: ' + error.message, 'error');
             }
         }
 
         async function loadOrdersTable() {
             try {
-                const { data: orders } = await supabaseClient.from('pedidos').select('*').order('created_at', { ascending: false });
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
                 const tbody = document.getElementById('ordersTable');
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td></tr>';
+
+                const { data: orders, error } = await client.from('pedidos').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+
                 tbody.innerHTML = '';
 
                 if (!orders || orders.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Nenhum pedido</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Nenhum pedido</td></tr>';
                     return;
                 }
 
                 orders.forEach(order => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${order.id}</td>
-                        <td>${order.cliente_nome}</td>
-                        <td>${order.modelo_dispositivo}</td>
-                        <td>R$ ${order.valor_total.toFixed(2)}</td>
+                        <td>${escapeHtml(order.id)}</td>
+                        <td>${escapeHtml(order.cliente_nome || 'Não informado')}</td>
+                        <td>${escapeHtml(order.modelo_dispositivo || 'Não informado')}</td>
+                        <td>R$ ${Number(order.valor_total || 0).toFixed(2)}</td>
                         <td><span style="color: ${getStatusColor(order.status)}; font-weight: 600;">${formatStatus(order.status)}</span></td>
-                        <td>${new Date(order.created_at).toLocaleDateString('pt-BR')}</td>
+                        <td>${order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : '-'}</td>
                         <td>
                             <div class="action-buttons">
                                 <button class="btn-small btn-edit" onclick="editOrder(${order.id})">Editar</button>
@@ -3112,13 +3640,73 @@ async function calculateFreight() {
                 });
             } catch (error) {
                 console.error('Erro ao carregar pedidos:', error);
+                const tbody = document.getElementById('ordersTable');
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--error);">Erro ao carregar pedidos: ${escapeHtml(error.message || 'desconhecido')}</td></tr>`;
+                showAlert('Erro ao carregar pedidos no admin.', 'error');
             }
         }
 
         // Accessories Functions
+        function setButtonLoading(button, isLoading, loadingLabel) {
+            if (!button) return;
+            if (isLoading) {
+                button.dataset.originalText = button.textContent;
+                button.textContent = loadingLabel || 'Carregando...';
+                button.disabled = true;
+            } else {
+                button.textContent = button.dataset.originalText || button.textContent;
+                button.disabled = false;
+            }
+        }
+
+        function resetAccessoryForm() {
+            document.getElementById('accessoryForm')?.reset();
+            document.getElementById('editingAccessoryId').value = '';
+            document.getElementById('saveAccessoryBtn').textContent = 'Adicionar Acessorio';
+            document.getElementById('cancelAccessoryEditBtn').style.display = 'none';
+        }
+
+        async function fileToBase64(file) {
+            if (!file) return null;
+
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                throw new Error('Formato de imagem inválido. Use JPG, PNG ou WEBP.');
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                throw new Error('Imagem muito grande. Máximo permitido: 2MB.');
+            }
+
+            const reader = new FileReader();
+            return new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Falha ao processar imagem.'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function getAccessoryFormData() {
+            const name = document.getElementById('newAccessoryName').value.trim();
+            const desc = document.getElementById('newAccessoryDesc').value.trim();
+            const category = document.getElementById('newAccessoryCategory').value.trim();
+            const price = Number(document.getElementById('newAccessoryPrice').value);
+            const stock = Number(document.getElementById('newAccessoryStock').value);
+            const imageFile = document.getElementById('newAccessoryImage').files[0] || null;
+
+            if (!name) throw new Error('Nome do acessório é obrigatório.');
+            if (!desc) throw new Error('Descrição do acessório é obrigatória.');
+            if (!category) throw new Error('Categoria do acessório é obrigatória.');
+            if (!Number.isFinite(price) || price < 0) throw new Error('Preço inválido.');
+            if (!Number.isInteger(stock) || stock < 0) throw new Error('Estoque inválido.');
+
+            return { name, desc, category, price, stock, imageFile };
+        }
+
         async function loadAccessoriesTable() {
             try {
-                const { data: accessories } = await supabaseClient.from('acessorios').select('*').order('criado_em', { ascending: false });
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { data: accessories } = await client.from('acessorios').select('*').order('criado_em', { ascending: false });
                 const tbody = document.getElementById('accessoriesTable');
                 tbody.innerHTML = '';
 
@@ -3130,14 +3718,14 @@ async function calculateFreight() {
                 accessories.forEach(acc => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${acc.nome}</td>
-                        <td>${acc.categoria}</td>
+                        <td>${escapeHtml(acc.nome)}</td>
+                        <td>${escapeHtml(acc.categoria)}</td>
                         <td>R$ ${acc.preco.toFixed(2)}</td>
                         <td>${acc.estoque}</td>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn-small btn-edit" onclick="editAccessory(${acc.id})">Editar</button>
-                                <button class="btn-small btn-delete" onclick="deleteAccessory(${acc.id})">Deletar</button>
+                                <button class="btn-small btn-edit js-admin-accessory-action" data-action="edit" data-id="${acc.id}">Editar</button>
+                                <button class="btn-small btn-delete js-admin-accessory-action" data-action="delete" data-id="${acc.id}">Deletar</button>
                             </div>
                         </td>
                     `;
@@ -3145,62 +3733,91 @@ async function calculateFreight() {
                 });
             } catch (error) {
                 console.error('Erro ao carregar acessorios:', error);
+                logClientError({
+                    message: error.message || 'Erro ao carregar acessórios',
+                    stack: error.stack || '',
+                    origin: 'loadAccessoriesTable'
+                });
             }
         }
 
-        async function addAccessory() {
-            const name = document.getElementById('newAccessoryName').value.trim();
-            const desc = document.getElementById('newAccessoryDesc').value.trim();
-            const category = document.getElementById('newAccessoryCategory').value.trim();
-            const price = parseFloat(document.getElementById('newAccessoryPrice').value);
-            const stock = parseInt(document.getElementById('newAccessoryStock').value);
-            const imageFile = document.getElementById('newAccessoryImage').files[0];
-
-            if (!name || !desc || !category || !price || !stock) {
-                showAlert('Por favor, preencha todos os campos', 'error');
+        async function handleAccessoryFormSubmit(event) {
+            event.preventDefault();
+            const client = ensureSupabaseClient(true);
+            if (!client) {
+                showAlert('Configure o Supabase para salvar acessórios.', 'warning');
                 return;
             }
+            const saveBtn = document.getElementById('saveAccessoryBtn');
+            setButtonLoading(saveBtn, true, 'Salvando...');
 
             try {
-                let imageUrl = '';
-                
-                if (imageFile) {
-                    if (imageFile.size > 2 * 1024 * 1024) {
-                        showAlert('Imagem muito grande. Maximo 2MB', 'error');
-                        return;
-                    }
-                    
-                    const reader = new FileReader();
-                    imageUrl = await new Promise((resolve, reject) => {
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(imageFile);
-                    });
+                const { name, desc, category, price, stock, imageFile } = getAccessoryFormData();
+                const editingId = document.getElementById('editingAccessoryId').value;
+                const imageUrl = await fileToBase64(imageFile);
+
+                const payload = {
+                    nome: name,
+                    descricao: desc,
+                    categoria: category,
+                    preco: price,
+                    estoque: stock
+                };
+
+                if (imageUrl) {
+                    payload.foto = imageUrl;
+                } else if (!editingId) {
+                    payload.foto = null;
                 }
 
-                const { error } = await supabaseClient
-                    .from('acessorios')
-                    .insert([{
-                        nome: name,
-                        descricao: desc,
-                        categoria: category,
-                        preco: price,
-                        estoque: stock,
-                        foto: imageUrl
-                    }]);
+                if (editingId) {
+                    const { error } = await client.from('acessorios').update(payload).eq('id', Number(editingId));
+                    if (error) throw error;
+                    showAlert('Acessório atualizado com sucesso!', 'success');
+                } else {
+                    const { error } = await client.from('acessorios').insert([payload]);
+                    if (error) throw error;
+                    showAlert('Acessório adicionado com sucesso!', 'success');
+                }
 
-                if (error) throw error;
-
-                showAlert('Acessorio adicionado com sucesso!', 'success');
-                document.getElementById('newAccessoryName').value = '';
-                document.getElementById('newAccessoryDesc').value = '';
-                document.getElementById('newAccessoryCategory').value = '';
-                document.getElementById('newAccessoryPrice').value = '';
-                document.getElementById('newAccessoryStock').value = '';
-                document.getElementById('newAccessoryImage').value = '';
-                loadAccessoriesTable();
+                resetAccessoryForm();
+                await loadAccessoriesTable();
+                await loadAccessoriesForSale();
             } catch (error) {
-                showAlert('Erro ao adicionar acessorio: ' + error.message, 'error');
+                showAlert('Erro ao salvar acessório: ' + error.message, 'error');
+                logClientError({
+                    message: error.message || 'Erro ao salvar acessório',
+                    stack: error.stack || '',
+                    origin: 'handleAccessoryFormSubmit'
+                });
+            } finally {
+                setButtonLoading(saveBtn, false);
+            }
+        }
+
+        async function editAccessory(id) {
+            try {
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { data, error } = await client.from('acessorios').select('*').eq('id', id).single();
+                if (error) throw error;
+                if (!data) {
+                    showAlert('Acessório não encontrado.', 'warning');
+                    return;
+                }
+
+                document.getElementById('editingAccessoryId').value = String(data.id);
+                document.getElementById('newAccessoryName').value = data.nome || '';
+                document.getElementById('newAccessoryDesc').value = data.descricao || '';
+                document.getElementById('newAccessoryCategory').value = data.categoria || '';
+                document.getElementById('newAccessoryPrice').value = Number(data.preco || 0);
+                document.getElementById('newAccessoryStock').value = Number(data.estoque || 0);
+                document.getElementById('newAccessoryImage').value = '';
+                document.getElementById('saveAccessoryBtn').textContent = 'Atualizar Acessorio';
+                document.getElementById('cancelAccessoryEditBtn').style.display = 'inline-flex';
+                showAlert('Acessório carregado para edição.', 'info');
+            } catch (error) {
+                showAlert('Erro ao carregar acessório para edição: ' + error.message, 'error');
             }
         }
 
@@ -3208,7 +3825,9 @@ async function calculateFreight() {
             if (!confirm('Tem certeza que deseja deletar este acessorio?')) return;
 
             try {
-                const { error } = await supabaseClient
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { error } = await client
                     .from('acessorios')
                     .delete()
                     .eq('id', id);
@@ -3216,7 +3835,8 @@ async function calculateFreight() {
                 if (error) throw error;
 
                 showAlert('Acessorio deletado com sucesso!', 'success');
-                loadAccessoriesTable();
+                await loadAccessoriesTable();
+                await loadAccessoriesForSale();
             } catch (error) {
                 showAlert('Erro ao deletar acessorio: ' + error.message, 'error');
             }
@@ -3247,6 +3867,7 @@ async function calculateFreight() {
                 const { data: accessories } = await client.from('acessorios').select('*').gt('estoque', 0);
                 const container = document.getElementById('accessoriesContainer');
                 container.innerHTML = '';
+                accessoriesStockById = {};
 
                 if (!accessories || accessories.length === 0) {
                     container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Nenhum acessorio disponivel</p>';
@@ -3254,54 +3875,38 @@ async function calculateFreight() {
                 }
 
                 accessories.forEach(acc => {
+                    accessoriesStockById[acc.id] = Number(acc.estoque || 0);
                     const card = document.createElement('div');
+                    card.className = 'accessory-card';
                     card.style.cssText = 'background: var(--secondary-dark); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1rem;';
                     card.innerHTML = `
-                        <h4 style="color: var(--accent-green); margin-bottom: 0.5rem;">${acc.nome}</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">${acc.descricao}</p>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.5rem;">Categoria: ${acc.categoria}</p>
+                        <h4 style="color: var(--accent-green); margin-bottom: 0.5rem;">${escapeHtml(acc.nome)}</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">${escapeHtml(acc.descricao)}</p>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.5rem;">Categoria: ${escapeHtml(acc.categoria)}</p>
                         <p style="color: var(--accent-green); font-size: 1.1rem; font-weight: bold; margin-bottom: 0.5rem;">R$ ${acc.preco.toFixed(2)}</p>
                         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">Estoque: ${acc.estoque}</p>
-                        <button class="btn btn-primary" style="width: 100%;" onclick="addAccessoryToCart(${acc.id}, '${acc.nome}', ${acc.preco})">Adicionar ao Carrinho</button>
+                        <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.35rem;">Quantidade</label>
+                        <input class="js-accessory-qty" type="number" min="1" max="${Number(acc.estoque)}" value="1" style="width: 100%; margin-bottom: 0.75rem; background: var(--primary-dark); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.45rem 0.6rem;" />
+                        <button
+                            class="btn btn-primary js-add-accessory-to-cart"
+                            style="width: 100%;"
+                            data-id="${acc.id}"
+                            data-name="${escapeHtml(acc.nome)}"
+                            data-price="${Number(acc.preco)}"
+                            data-stock="${Number(acc.estoque)}"
+                        >
+                            Adicionar ao Carrinho
+                        </button>
                     `;
                     container.appendChild(card);
                 });
             } catch (error) {
                 console.error('Erro ao carregar acessorios:', error);
-            }
-        }
-
-        async function addPart() {
-            const brand = document.getElementById('newBrand').value.trim();
-            const model = document.getElementById('newModel').value.trim();
-            const quality = document.getElementById('newQuality').value;
-            const price = parseFloat(document.getElementById('newPrice').value);
-
-            if (!brand || !model || !price) {
-                showAlert('Por favor, preencha todos os campos', 'error');
-                return;
-            }
-
-            try {
-                const { error } = await supabaseClient
-                    .from('pecas')
-                    .insert([{
-                        marca: brand,
-                        modelo: model,
-                        qualidade: quality,
-                        preco_custo: price
-                    }]);
-
-                if (error) throw error;
-
-                showAlert('Peça adicionada com sucesso!', 'success');
-                document.getElementById('newBrand').value = '';
-                document.getElementById('newModel').value = '';
-                document.getElementById('newPrice').value = '';
-                loadPartsTable();
-                loadBrands();
-            } catch (error) {
-                showAlert('Erro ao adicionar peça: ' + error.message, 'error');
+                logClientError({
+                    message: error.message || 'Erro ao carregar acessórios',
+                    stack: error.stack || '',
+                    origin: 'loadAccessoriesForSale'
+                });
             }
         }
 
@@ -3309,7 +3914,9 @@ async function calculateFreight() {
             if (!confirm('Tem certeza que deseja deletar esta peça?')) return;
 
             try {
-                const { error } = await supabaseClient
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { error } = await client
                     .from('pecas')
                     .delete()
                     .eq('id', id);
@@ -3317,7 +3924,8 @@ async function calculateFreight() {
                 if (error) throw error;
 
                 showAlert('Peça deletada com sucesso!', 'success');
-                loadPartsTable();
+                await loadPartsTable();
+                await loadBrands();
             } catch (error) {
                 showAlert('Erro ao deletar peça: ' + error.message, 'error');
             }
@@ -3346,23 +3954,123 @@ async function calculateFreight() {
             showAlert('Configurações do Supabase atualizadas com sucesso!', 'success');
         }
 
+        function applyCompanySettingsToForm(settings) {
+            document.getElementById('companyName').value = settings.nome_empresa || COMPANY_NAME;
+            document.getElementById('companyAddress').value = settings.endereco || COMPANY_ADDRESS;
+            document.getElementById('companyWhatsApp').value = settings.telefone_whatsapp || COMPANY_WHATSAPP;
+            document.getElementById('companyDefaultMessage').value = settings.mensagem_whatsapp_padrao || COMPANY_DEFAULT_MESSAGE;
+            document.getElementById('companyLogoUrl').value = settings.logo_url || COMPANY_LOGO_URL;
+            document.getElementById('instagramUrl').value = settings.instagram_url || INSTAGRAM_URL;
+            document.getElementById('facebookUrl').value = settings.facebook_url || FACEBOOK_URL;
+            document.getElementById('twitterUrl').value = settings.twitter_url || TWITTER_URL;
+            document.getElementById('linkedinUrl').value = settings.linkedin_url || LINKEDIN_URL;
+            document.getElementById('youtubeUrl').value = settings.youtube_url || YOUTUBE_URL;
+            updateCompanyLogoPreview(settings.logo_url || COMPANY_LOGO_URL);
+        }
+
+        function updateCompanyLogoPreview(logoUrl) {
+            const previewContainer = document.getElementById('companyLogoPreviewContainer');
+            const previewImage = document.getElementById('companyLogoPreview');
+            if (!previewContainer || !previewImage) return;
+
+            if (!logoUrl) {
+                previewContainer.style.display = 'none';
+                previewImage.removeAttribute('src');
+                return;
+            }
+
+            previewImage.src = logoUrl;
+            previewContainer.style.display = 'block';
+            previewImage.onerror = () => {
+                previewContainer.style.display = 'none';
+                previewImage.removeAttribute('src');
+            };
+        }
+
+        function applyCompanySettingsToRuntime(settings) {
+            COMPANY_NAME = settings.nome_empresa || COMPANY_NAME;
+            COMPANY_ADDRESS = settings.endereco || COMPANY_ADDRESS;
+            COMPANY_WHATSAPP = settings.telefone_whatsapp || COMPANY_WHATSAPP;
+            COMPANY_DEFAULT_MESSAGE = settings.mensagem_whatsapp_padrao || COMPANY_DEFAULT_MESSAGE;
+            COMPANY_LOGO_URL = settings.logo_url || COMPANY_LOGO_URL;
+            INSTAGRAM_URL = settings.instagram_url || INSTAGRAM_URL;
+            FACEBOOK_URL = settings.facebook_url || FACEBOOK_URL;
+            TWITTER_URL = settings.twitter_url || TWITTER_URL;
+            LINKEDIN_URL = settings.linkedin_url || LINKEDIN_URL;
+            YOUTUBE_URL = settings.youtube_url || YOUTUBE_URL;
+        }
+
+        async function loadCompanySettings() {
+            const client = ensureSupabaseClient(false);
+            if (!client) return;
+
+            try {
+                const { data, error } = await client
+                    .from(COMPANY_SETTINGS_TABLE)
+                    .select('*')
+                    .eq('id', COMPANY_SETTINGS_ID)
+                    .maybeSingle();
+
+                if (error) throw error;
+                const settings = data || {};
+                applyCompanySettingsToRuntime(settings);
+                applyCompanySettingsToForm(settings);
+            } catch (error) {
+                console.error('Erro ao carregar configurações da empresa:', error);
+                showAlert('Não foi possível carregar configurações da empresa.', 'warning');
+            }
+        }
+
+        async function handleCompanySettingsSubmit(event) {
+            event.preventDefault();
+            const client = ensureSupabaseClient(true);
+            if (!client) {
+                showAlert('Configure o Supabase para salvar as configurações.', 'warning');
+                return;
+            }
+
+            const saveBtn = document.getElementById('saveCompanySettingsBtn');
+            setButtonLoading(saveBtn, true, 'Salvando...');
+
+            try {
+                const payload = {
+                    id: COMPANY_SETTINGS_ID,
+                    nome_empresa: document.getElementById('companyName').value.trim(),
+                    endereco: document.getElementById('companyAddress').value.trim(),
+                    telefone_whatsapp: document.getElementById('companyWhatsApp').value.trim() || null,
+                    mensagem_whatsapp_padrao: document.getElementById('companyDefaultMessage').value.trim() || null,
+                    logo_url: document.getElementById('companyLogoUrl').value.trim() || null,
+                    instagram_url: document.getElementById('instagramUrl').value.trim() || null,
+                    facebook_url: document.getElementById('facebookUrl').value.trim() || null,
+                    twitter_url: document.getElementById('twitterUrl').value.trim() || null,
+                    linkedin_url: document.getElementById('linkedinUrl').value.trim() || null,
+                    youtube_url: document.getElementById('youtubeUrl').value.trim() || null,
+                    atualizado_em: new Date().toISOString()
+                };
+
+                if (!payload.nome_empresa) {
+                    throw new Error('Nome da empresa é obrigatório.');
+                }
+
+                const { error } = await client
+                    .from(COMPANY_SETTINGS_TABLE)
+                    .upsert([payload], { onConflict: 'id' });
+
+                if (error) throw error;
+
+                applyCompanySettingsToRuntime(payload);
+                updateCompanyLogoPreview(payload.logo_url);
+                showAlert('Configurações da empresa salvas com sucesso!', 'success');
+            } catch (error) {
+                showAlert('Erro ao salvar configurações: ' + error.message, 'error');
+            } finally {
+                setButtonLoading(saveBtn, false);
+            }
+        }
+
+        // Compatibilidade com botão antigo
         function saveCompanyInfo() {
-            const name = document.getElementById('companyName').value;
-            const address = document.getElementById('companyAddress').value;
-            const whatsapp = document.getElementById('companyWhatsApp').value;
-            const instagram = document.getElementById('instagramUrl').value;
-            const facebook = document.getElementById('facebookUrl').value;
-            const twitter = document.getElementById('twitterUrl').value;
-            const linkedin = document.getElementById('linkedinUrl').value;
-            const youtube = document.getElementById('youtubeUrl').value;
-
-            if (instagram) INSTAGRAM_URL = instagram;
-            if (facebook) FACEBOOK_URL = facebook;
-            if (twitter) TWITTER_URL = twitter;
-            if (linkedin) LINKEDIN_URL = linkedin;
-            if (youtube) YOUTUBE_URL = youtube;
-
-            showAlert('Informações da empresa salvas com sucesso!', 'success');
+            handleCompanySettingsSubmit(new Event('submit'));
         }
 
         function openInstagram() {
@@ -3544,24 +4252,107 @@ async function getMelhorEnvioShipping(cep, type) {
 
         function goToContact() {
             closeMobileNav();
-            showAlert('Entre em contato conosco pelo WhatsApp: (11) 99999-9999', 'info');
+            const whatsapp = COMPANY_WHATSAPP || '(11) 99999-9999';
+            showAlert(`Entre em contato conosco pelo WhatsApp: ${whatsapp}`, 'info');
         }
 
         // Service Order Functions
         let currentServiceOrderId = null;
 
+        function resetServiceOrderForm() {
+            document.getElementById('serviceOrderForm')?.reset();
+            document.getElementById('editingServiceOrderId').value = '';
+            document.getElementById('saveServiceOrderBtn').textContent = 'Salvar O.S.';
+            document.getElementById('cancelServiceOrderEditBtn').style.display = 'none';
+            currentServiceOrderId = null;
+        }
+
+        function getServiceOrderFormData() {
+            const clientName = document.getElementById('osClientName').value.trim();
+            const phone = document.getElementById('osPhone').value.trim();
+            const brand = document.getElementById('osBrand').value.trim();
+            const model = document.getElementById('osModel').value.trim();
+            const defect = document.getElementById('osDefect').value.trim();
+            const status = document.getElementById('osStatusInline').value;
+            const notes = document.getElementById('osNotes').value.trim();
+
+            if (!clientName) throw new Error('Cliente é obrigatório.');
+            if (!brand) throw new Error('Marca é obrigatória.');
+            if (!model) throw new Error('Modelo é obrigatório.');
+            if (!defect) throw new Error('Defeito é obrigatório.');
+            if (!status) throw new Error('Status é obrigatório.');
+
+            return { clientName, phone, brand, model, defect, status, notes };
+        }
+
+        async function saveServiceOrderRecord(payload, serviceOrderId = null) {
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+
+            if (serviceOrderId) {
+                const { error } = await client
+                    .from('ordens_servico')
+                    .update(payload)
+                    .eq('id', serviceOrderId);
+                if (error) throw error;
+            } else {
+                const { error } = await client
+                    .from('ordens_servico')
+                    .insert([payload]);
+                if (error) throw error;
+            }
+        }
+
+        async function handleServiceOrderFormSubmit(event) {
+            event.preventDefault();
+            const saveBtn = document.getElementById('saveServiceOrderBtn');
+            setButtonLoading(saveBtn, true, 'Salvando...');
+
+            try {
+                const editingId = document.getElementById('editingServiceOrderId').value;
+                const { clientName, phone, brand, model, defect, status, notes } = getServiceOrderFormData();
+                const payload = {
+                    cliente_nome: clientName,
+                    cliente_telefone: phone || null,
+                    marca: brand,
+                    modelo: model,
+                    servico: defect,
+                    status,
+                    observacoes: notes || null
+                };
+
+                if (!editingId) {
+                    payload.numero_os = 'OS-' + Date.now();
+                    payload.data_criacao = new Date().toISOString();
+                }
+
+                await saveServiceOrderRecord(payload, editingId || null);
+                showAlert(editingId ? 'O.S. atualizada com sucesso!' : 'O.S. criada com sucesso!', 'success');
+                resetServiceOrderForm();
+                await loadServiceOrdersTable();
+            } catch (error) {
+                showAlert('Erro ao salvar O.S.: ' + error.message, 'error');
+                logClientError({
+                    message: error.message || 'Erro ao salvar ordem de serviço',
+                    stack: error.stack || '',
+                    origin: 'handleServiceOrderFormSubmit'
+                });
+            } finally {
+                setButtonLoading(saveBtn, false);
+            }
+        }
+
         async function createServiceOrder(quote, orderRecord = null, orderCode = null) {
             try {
-                const osNumber = 'OS-' + Date.now();
                 const payload = {
-                    numero_os: osNumber,
+                    numero_os: 'OS-' + Date.now(),
                     cliente_nome: quote.customerName,
-                    cliente_telefone: quote.customerWhatsApp,
+                    cliente_telefone: quote.customerWhatsApp || null,
                     cliente_endereco: quote.customerAddress,
-                    marca: quote.brand,
-                    modelo: quote.model,
+                    marca: quote.brand || '',
+                    modelo: quote.model || '',
                     servico: quote.serviceLabel || getServiceLabel(quote.service),
-                    peca: quote.part?.qualidade || 'N/A',
+                    peca: quote.part?.qualidade || null,
                     valor_total: quote.totalPrice,
                     status: ORDER_STATUS.PENDENTE,
                     observacoes: [
@@ -3576,12 +4367,7 @@ async function getMelhorEnvioShipping(cep, type) {
                     payload.pedido_id = orderRecord.id;
                 }
 
-                const { error } = await supabaseClient
-                    .from('ordens_servico')
-                    .insert([payload]);
-
-                if (error) throw error;
-                console.log('O.S. criada:', osNumber);
+                await saveServiceOrderRecord(payload);
             } catch (error) {
                 console.error('Erro ao criar O.S.:', error);
             }
@@ -3590,7 +4376,9 @@ async function getMelhorEnvioShipping(cep, type) {
         async function loadServiceOrdersTable() {
 
             try {
-                const { data, error } = await supabaseClient
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { data, error } = await client
                     .from('ordens_servico')
                     .select('*')
                     .order('data_criacao', { ascending: false });
@@ -3601,20 +4389,25 @@ async function getMelhorEnvioShipping(cep, type) {
                 tbody.innerHTML = '';
 
                 if (!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Nenhuma ordem de serviço encontrada</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Nenhuma ordem de serviço encontrada</td></tr>';
                     return;
                 }
 
                 data.forEach(os => {
+                    const brand = (os.marca || '').trim();
+                    const model = (os.modelo || '').trim();
+                    const deviceLabel = [brand, model].filter(Boolean).join(' ') || 'Não informado';
                     const row = tbody.insertRow();
                     row.innerHTML = `
-                        <td>${os.numero_os}</td>
-                        <td>${os.cliente_nome}</td>
-                        <td>${os.marca} ${os.modelo}</td>
+                        <td>${escapeHtml(os.numero_os || '-')}</td>
+                        <td>${escapeHtml(os.cliente_nome || 'Não informado')}</td>
+                        <td>${escapeHtml(deviceLabel)}</td>
+                        <td>${escapeHtml(os.servico || 'Não informado')}</td>
                         <td><span style="background: ${getStatusColor(os.status)}; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem;">${formatStatus(os.status)}</span></td>
-                        <td>${new Date(os.data_criacao).toLocaleDateString('pt-BR')}</td>
+                        <td>${os.data_criacao ? new Date(os.data_criacao).toLocaleDateString('pt-BR') : '-'}</td>
                         <td>
-                            <button class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;" onclick="editServiceOrder('${os.id}')">Editar</button>
+                            <button class="btn btn-primary js-service-order-action" data-action="edit" data-id="${os.id}" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">Editar</button>
+                            <button class="btn btn-secondary js-service-order-action" data-action="print" data-id="${os.id}" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">PDF</button>
                         </td>
                     `;
                 });
@@ -3637,7 +4430,9 @@ async function getMelhorEnvioShipping(cep, type) {
 
         async function editServiceOrder(osId) {
             try {
-                const { data, error } = await supabaseClient
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { data, error } = await client
                     .from('ordens_servico')
                     .select('*')
                     .eq('id', osId)
@@ -3646,52 +4441,42 @@ async function getMelhorEnvioShipping(cep, type) {
                 if (error) throw error;
 
                 currentServiceOrderId = osId;
-                document.getElementById('osStatus').value = data.status;
-                document.getElementById('osObservations').value = data.observacoes || '';
-                document.getElementById('editServiceOrderModal').style.display = 'flex';
+                document.getElementById('editingServiceOrderId').value = String(data.id);
+                document.getElementById('osClientName').value = data.cliente_nome || '';
+                document.getElementById('osPhone').value = data.cliente_telefone || '';
+                document.getElementById('osBrand').value = data.marca || '';
+                document.getElementById('osModel').value = data.modelo || '';
+                document.getElementById('osDefect').value = data.servico || '';
+                document.getElementById('osStatusInline').value = data.status || ORDER_STATUS.PENDENTE;
+                document.getElementById('osNotes').value = data.observacoes || '';
+                document.getElementById('saveServiceOrderBtn').textContent = 'Atualizar O.S.';
+                document.getElementById('cancelServiceOrderEditBtn').style.display = 'inline-flex';
+                showAlert('O.S. carregada para edição.', 'info');
             } catch (error) {
                 showAlert('Erro ao carregar ordem de serviço', 'error');
             }
         }
 
         async function saveServiceOrder() {
-            if (!currentServiceOrderId) return;
-
-            try {
-                const status = document.getElementById('osStatus').value;
-                const observations = document.getElementById('osObservations').value;
-
-                const { error } = await supabaseClient
-                    .from('ordens_servico')
-                    .update({
-                        status: status,
-                        observacoes: observations
-                    })
-                    .eq('id', currentServiceOrderId);
-
-                if (error) throw error;
-
-                showAlert('Ordem de serviço atualizada com sucesso!', 'success');
-                closeEditServiceOrderModal();
-                loadServiceOrdersTable();
-            } catch (error) {
-                showAlert('Erro ao salvar ordem de serviço', 'error');
-            }
+            // Mantido por compatibilidade. Fluxo principal usa o formulário serviceOrderForm.
+            showAlert('Use o formulário da aba O.S. para salvar alterações.', 'info');
         }
 
         function closeEditServiceOrderModal() {
-            document.getElementById('editServiceOrderModal').style.display = 'none';
-            currentServiceOrderId = null;
+            resetServiceOrderForm();
         }
 
-        async function printServiceOrder() {
-            if (!currentServiceOrderId) return;
+        async function printServiceOrder(serviceOrderId = null) {
+            const targetId = serviceOrderId || currentServiceOrderId;
+            if (!targetId) return;
 
             try {
-                const { data, error } = await supabaseClient
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { data, error } = await client
                     .from('ordens_servico')
                     .select('*')
-                    .eq('id', currentServiceOrderId)
+                    .eq('id', targetId)
                     .single();
 
                 if (error) throw error;
@@ -3718,29 +4503,29 @@ async function getMelhorEnvioShipping(cep, type) {
                         <div class="header">
                             <h1>MacTec Support</h1>
                             <h2>Ordem de Serviço</h2>
-                            <p style="margin: 5px 0;">O.S. #${data.numero_os}</p>
+                            <p style="margin: 5px 0;">O.S. #${data.numero_os || '-'}</p>
                         </div>
 
                         <div class="section">
                             <h3>Informações do Cliente</h3>
                             <div class="row">
-                                <div><span class="label">Nome:</span> ${data.cliente_nome}</div>
-                                <div><span class="label">Telefone:</span> ${data.cliente_telefone}</div>
+                                <div><span class="label">Nome:</span> ${data.cliente_nome || 'Não informado'}</div>
+                                <div><span class="label">Telefone:</span> ${data.cliente_telefone || '-'}</div>
                             </div>
                             <div class="row">
-                                <div><span class="label">Endereço:</span> ${data.cliente_endereco}</div>
+                                <div><span class="label">Endereço:</span> ${data.cliente_endereco || '-'}</div>
                             </div>
                         </div>
 
                         <div class="section">
                             <h3>Informações do Dispositivo</h3>
                             <div class="row">
-                                <div><span class="label">Marca:</span> ${data.marca}</div>
-                                <div><span class="label">Modelo:</span> ${data.modelo}</div>
+                                <div><span class="label">Marca:</span> ${data.marca || '-'}</div>
+                                <div><span class="label">Modelo:</span> ${data.modelo || '-'}</div>
                             </div>
                             <div class="row">
-                                <div><span class="label">Serviço:</span> ${data.servico}</div>
-                                <div><span class="label">Peça:</span> ${data.peca}</div>
+                                <div><span class="label">Serviço:</span> ${data.servico || '-'}</div>
+                                <div><span class="label">Peça:</span> ${data.peca || '-'}</div>
                             </div>
                         </div>
 
@@ -3748,10 +4533,10 @@ async function getMelhorEnvioShipping(cep, type) {
                             <h3>Detalhes do Serviço</h3>
                             <div class="row">
                                 <div><span class="label">Status:</span> <span class="status" style="background: ${getStatusColor(data.status)}">${formatStatus(data.status)}</span></div>
-                                <div><span class="label">Valor Total:</span> R$ ${data.valor_total.toFixed(2)}</div>
+                                <div><span class="label">Valor Total:</span> R$ ${Number(data.valor_total || 0).toFixed(2)}</div>
                             </div>
                             <div class="row">
-                                <div><span class="label">Data:</span> ${new Date(data.data_criacao).toLocaleDateString('pt-BR')}</div>
+                                <div><span class="label">Data:</span> ${data.data_criacao ? new Date(data.data_criacao).toLocaleDateString('pt-BR') : '-'}</div>
                             </div>
                             ${data.observacoes ? `<div class="row"><div><span class="label">Observações:</span> ${data.observacoes}</div></div>` : ''}
                         </div>
