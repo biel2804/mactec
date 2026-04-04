@@ -1401,6 +1401,38 @@
                     <span id="cartTotal">R$ 0,00</span>
                 </div>
             </div>
+            <div id="cartPaymentPanel" style="background: var(--secondary-dark); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+                <h3 style="color: var(--accent-green); margin-bottom: 0.75rem;">Pagamento</h3>
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label for="paymentMethodSelect">Forma de pagamento:</label>
+                    <select id="paymentMethodSelect" onchange="atualizarTotal()">
+                        <option value="">-- Selecione --</option>
+                        <option value="dinheiro">Dinheiro (5% OFF)</option>
+                        <option value="pix">Pix (5% OFF)</option>
+                        <option value="debito">Débito</option>
+                        <option value="credito">Crédito</option>
+                    </select>
+                </div>
+                <div class="form-group" id="installmentsGroup" style="display: none; margin-bottom: 0.75rem;">
+                    <label for="installmentsSelect">Parcelamento no crédito:</label>
+                    <select id="installmentsSelect">
+                        <option value="1">1x sem juros</option>
+                        <option value="2">2x sem juros</option>
+                        <option value="3">3x sem juros</option>
+                    </select>
+                </div>
+                <p id="installmentsHint" style="display: none; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;"></p>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                    <span>Desconto:</span>
+                    <span id="cartDiscount">R$ 0,00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                    <span>Valor final:</span>
+                    <span id="cartFinalTotal" style="font-weight: bold; color: var(--accent-green);">R$ 0,00</span>
+                </div>
+                <p id="cartSavings" style="display: none; color: var(--success); font-weight: 600;">Você economizou R$ 0,00</p>
+                <p id="cartCheckoutError" style="display: none; color: var(--error); margin-top: 0.5rem; font-size: 0.9rem;"></p>
+            </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <button class="btn btn-secondary" style="width: 100%;" onclick="closeCartModal()">Continuar Comprando</button>
                 <button class="btn btn-primary" style="width: 100%;" onclick="goToCheckout()">Finalizar Compra via WhatsApp</button>
@@ -2048,6 +2080,84 @@
             }
         }
 
+        function getCartTotals() {
+            let subtotal = 0;
+            let freight = 0;
+
+            cart.forEach((item) => {
+                if (item.itemType === 'quote') {
+                    subtotal += Number(item.totalPrice || 0);
+                    freight += Number(item.freightCost || 0);
+                } else if (item.itemType === 'accessory') {
+                    subtotal += Number(item.subtotal || 0);
+                }
+            });
+
+            const totalOriginal = subtotal + freight;
+            return { subtotal, freight, totalOriginal };
+        }
+
+        function atualizarTotal() {
+            const paymentMethodSelect = document.getElementById('paymentMethodSelect');
+            const installmentsGroup = document.getElementById('installmentsGroup');
+            const installmentsSelect = document.getElementById('installmentsSelect');
+            const installmentsHint = document.getElementById('installmentsHint');
+            const discountNode = document.getElementById('cartDiscount');
+            const finalNode = document.getElementById('cartFinalTotal');
+            const savingsNode = document.getElementById('cartSavings');
+            const paymentPanel = document.getElementById('cartPaymentPanel');
+            const errorNode = document.getElementById('cartCheckoutError');
+
+            if (!paymentMethodSelect) return { desconto: 0, valorFinal: 0, metodo: '', parcelas: 1, totalOriginal: 0 };
+
+            const { totalOriginal } = getCartTotals();
+            const method = paymentMethodSelect.value;
+            let desconto = 0;
+
+            if (method === 'dinheiro' || method === 'pix') {
+                desconto = totalOriginal * 0.05;
+            }
+
+            const valorFinal = totalOriginal - desconto;
+            const canInstall = method === 'credito' && totalOriginal >= 200;
+            installmentsGroup.style.display = canInstall ? 'block' : 'none';
+
+            if (method === 'credito' && totalOriginal < 200) {
+                installmentsHint.style.display = 'block';
+                installmentsHint.textContent = 'Parcelamento disponível apenas para pedidos a partir de R$ 200,00.';
+                installmentsSelect.value = '1';
+            } else {
+                installmentsHint.style.display = 'none';
+                installmentsHint.textContent = '';
+            }
+
+            discountNode.textContent = `R$ ${desconto.toFixed(2)}`;
+            finalNode.textContent = `R$ ${valorFinal.toFixed(2)}`;
+
+            if (desconto > 0) {
+                savingsNode.style.display = 'block';
+                savingsNode.textContent = `Você economizou R$ ${desconto.toFixed(2)}`;
+            } else {
+                savingsNode.style.display = 'none';
+                savingsNode.textContent = 'Você economizou R$ 0,00';
+            }
+
+            if (method) {
+                paymentPanel.style.borderColor = 'var(--accent-green)';
+                if (errorNode) errorNode.style.display = 'none';
+            } else {
+                paymentPanel.style.borderColor = 'var(--border-color)';
+            }
+
+            return {
+                totalOriginal,
+                desconto,
+                valorFinal,
+                metodo: method,
+                parcelas: canInstall ? Number(installmentsSelect.value || 1) : 1
+            };
+        }
+
         function updateCartDisplay() {
             const cartItems = document.getElementById('cartItems');
             const cartSubtotal = document.getElementById('cartSubtotal');
@@ -2059,6 +2169,18 @@
                 cartSubtotal.textContent = 'R$ 0,00';
                 cartFreight.textContent = 'R$ 0,00';
                 cartTotal.textContent = 'R$ 0,00';
+                const discountNode = document.getElementById('cartDiscount');
+                const finalNode = document.getElementById('cartFinalTotal');
+                const savingsNode = document.getElementById('cartSavings');
+                const installmentsGroup = document.getElementById('installmentsGroup');
+                const installmentsHint = document.getElementById('installmentsHint');
+                const paymentPanel = document.getElementById('cartPaymentPanel');
+                if (discountNode) discountNode.textContent = 'R$ 0,00';
+                if (finalNode) finalNode.textContent = 'R$ 0,00';
+                if (savingsNode) savingsNode.style.display = 'none';
+                if (installmentsGroup) installmentsGroup.style.display = 'none';
+                if (installmentsHint) installmentsHint.style.display = 'none';
+                if (paymentPanel) paymentPanel.style.borderColor = 'var(--border-color)';
                 updateCartBadge();
                 saveCartToStorage();
                 return;
@@ -2105,6 +2227,7 @@
 
             updateCartBadge();
             saveCartToStorage();
+            atualizarTotal();
         }
 
         function removeFromCart(index) {
@@ -2127,69 +2250,24 @@
                 showAlert('Carrinho vazio', 'error');
                 return;
             }
-            closeCartModal();
+
+            const paymentMethodSelect = document.getElementById('paymentMethodSelect');
+            const paymentErrorNode = document.getElementById('cartCheckoutError');
+            if (!paymentMethodSelect?.value) {
+                paymentErrorNode.style.display = 'block';
+                paymentErrorNode.textContent = 'Selecione uma forma de pagamento para finalizar.';
+                showAlert('Selecione uma forma de pagamento para finalizar.', 'warning');
+                return;
+            }
+
+            const checkoutData = atualizarTotal();
             try {
-                const savedOrder = await saveCartOrder();
-                await sendCartToCompanyWhatsApp(savedOrder);
+                const savedOrder = await saveCartOrder(checkoutData);
+                await sendCartToCompanyWhatsApp(savedOrder, checkoutData);
+                closeCartModal();
             } catch (error) {
                 showAlert('Erro ao finalizar pedido: ' + error.message, 'error');
             }
-        }
-
-        function showPaymentCheckout() {
-            const checkoutModal = document.createElement('div');
-            checkoutModal.className = 'modal';
-            checkoutModal.style.display = 'block';
-            checkoutModal.id = 'checkoutModal';
-
-            let total = 0;
-            cart.forEach(item => {
-                if (item.itemType === 'quote') {
-                    total += item.totalPrice;
-                } else {
-                    total += item.subtotal;
-                }
-            });
-
-            checkoutModal.innerHTML = `
-                <div class="modal-content">
-                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                    <h2 style="color: var(--accent-green); margin-bottom: 1.5rem;">Escolha a Forma de Pagamento</h2>
-                    <div style="background: var(--secondary-dark); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
-                        <p style="margin: 0; color: var(--text-secondary);">Total a pagar:</p>
-                        <p style="margin: 0.5rem 0 0 0; font-size: 1.5rem; color: var(--accent-green); font-weight: bold;">R$ ${total.toFixed(2)}</p>
-                    </div>
-                    <div style="display: grid; gap: 1rem;">
-                        <button class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;" onclick="processCheckoutPayment('Dinheiro', ${total.toFixed(2)})">
-                            💵 Dinheiro
-                        </button>
-                        <button class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;" onclick="processCheckoutPayment('PIX', ${total.toFixed(2)})">
-                            📱 PIX
-                        </button>
-                        <button class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;" onclick="processCheckoutPayment('Cartão de Débito', ${total.toFixed(2)})">
-                            💳 Cartão de Débito
-                        </button>
-                        <button class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;" onclick="processCheckoutPayment('Cartão de Crédito', ${total.toFixed(2)})">
-                            💳 Cartão de Crédito
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(checkoutModal);
-        }
-
-        function processCheckoutPayment(methodLabel, total) {
-            showAlert(`Pagamento ${methodLabel} selecionado para R$ ${total.toFixed(2)}.`, 'success');
-            setTimeout(() => {
-                completeCheckout();
-            }, 1200);
-        }
-
-        function completeCheckout() {
-            cart = [];
-            updateCartDisplay();
-            document.querySelectorAll('.modal').forEach(m => m.remove());
-            showAlert('Compra finalizada com sucesso! Obrigado!', 'success');
         }
 
         function formatWhatsAppNumber(phone) {
@@ -2241,14 +2319,34 @@
             };
         }
 
-        async function saveCartOrder() {
+        async function saveCartOrder(checkoutData) {
             const client = ensureSupabaseClient(true);
             if (!client) throw new Error('Supabase não configurado.');
 
             const items = buildCartItemsSummary();
-            const total = items.reduce((sum, item) => sum + Number(item.valor || item.subtotal || 0), 0);
+            const total = Number(checkoutData?.totalOriginal || 0);
+            const desconto = Number(checkoutData?.desconto || 0);
+            const valorFinal = Number(checkoutData?.valorFinal || total);
+            const parcelas = Number(checkoutData?.parcelas || 1);
             const customer = getCartCustomerData();
             const mainDevice = items.find(item => item.tipo === 'orcamento');
+            const paymentMethodLabels = {
+                dinheiro: 'Dinheiro',
+                pix: 'Pix',
+                debito: 'Débito',
+                credito: 'Crédito'
+            };
+            const formaPagamento = checkoutData?.metodo || '';
+            const pedido = {
+                cliente: customer.name,
+                itens: items,
+                valor_total: total,
+                desconto,
+                valor_final: valorFinal,
+                forma_pagamento: paymentMethodLabels[formaPagamento] || formaPagamento || null,
+                parcelas,
+                data: new Date().toISOString()
+            };
 
             const payload = {
                 cliente_nome: customer.name,
@@ -2257,19 +2355,31 @@
                 modelo_dispositivo: mainDevice ? `${mainDevice.marca || ''} ${mainDevice.modelo || ''}`.trim() : 'Pedido de acessórios',
                 servico: mainDevice?.servico || 'Pedido via carrinho',
                 valor_total: total,
+                desconto,
+                valor_total_final: valorFinal,
+                forma_pagamento: pedido.forma_pagamento,
+                parcelas,
                 status: ORDER_STATUS.PENDENTE,
-                observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)}`,
-                previsao_entrega: new Date().toISOString()
+                observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)} | pagamento: ${JSON.stringify(pedido)}`,
+                previsao_entrega: pedido.data
             };
 
             const { data, error } = await client.from('pedidos').insert([payload]).select().single();
             if (error) throw error;
 
             await loadOrdersTable();
-            return { ...data, items, total };
+            return {
+                ...data,
+                items,
+                total,
+                desconto,
+                valorFinal,
+                formaPagamento: paymentMethodLabels[formaPagamento] || formaPagamento || 'Não informado',
+                parcelas
+            };
         }
 
-        async function sendCartToCompanyWhatsApp(savedOrder = null) {
+        async function sendCartToCompanyWhatsApp(savedOrder = null, checkoutData = null) {
             const companyPhone = '5511958085210';
             const orderDate = new Date().toLocaleString('pt-BR');
             const lines = ['🧾 *Novo pedido pelo site*', `📅 Data: ${orderDate}`, '', '📦 *Itens do carrinho:*'];
@@ -2298,8 +2408,19 @@
                     );
                 }
             });
+            const desconto = Number(checkoutData?.desconto || 0);
+            const valorFinal = Number(checkoutData?.valorFinal || total);
+            const paymentLabels = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito' };
+            const formaPagamento = paymentLabels[checkoutData?.metodo] || savedOrder?.formaPagamento || 'Não informado';
+            const parcelas = Number(checkoutData?.parcelas || 1);
 
             lines.push(`💰 *Total do pedido:* R$ ${total.toFixed(2)}`);
+            lines.push(`🏷️ *Desconto aplicado:* R$ ${desconto.toFixed(2)}`);
+            lines.push(`✅ *Valor final:* R$ ${valorFinal.toFixed(2)}`);
+            lines.push(`💳 *Forma de pagamento:* ${formaPagamento}`);
+            if (checkoutData?.metodo === 'credito') {
+                lines.push(`📆 *Parcelas:* ${parcelas}x sem juros`);
+            }
             if (savedOrder?.id) {
                 lines.push(`🆔 Pedido salvo no sistema: #${savedOrder.id}`);
             }
