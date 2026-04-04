@@ -1452,7 +1452,7 @@
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Gerenciar Peças</h2>
 
                 <div style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color);">
-                    <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Adicionar Nova Peça</h3>
+                    <h3 id="partFormTitle" style="color: var(--accent-green); margin-bottom: 1rem;">Adicionar Nova Peça</h3>
                     <form id="partForm">
                         <input type="hidden" id="editingPartId" value="">
                         <div class="form-group">
@@ -1487,6 +1487,7 @@
                             <button type="submit" class="btn btn-primary" id="savePartBtn">Adicionar Peça</button>
                             <button type="button" class="btn btn-secondary" id="cancelPartEditBtn" onclick="resetPartForm()" style="display:none;">Cancelar Edição</button>
                         </div>
+                        <p id="partFormStatus" style="margin-top:0.75rem; color:var(--text-secondary);"></p>
                     </form>
                 </div>
 
@@ -1518,7 +1519,7 @@
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Gerenciar Acessorios</h2>
 
                 <div style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color);">
-                    <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Adicionar Novo Acessorio</h3>
+                    <h3 id="accessoryFormTitle" style="color: var(--accent-green); margin-bottom: 1rem;">Adicionar Novo Acessorio</h3>
                     <form id="accessoryForm">
                         <input type="hidden" id="editingAccessoryId" value="">
                         <div class="form-group">
@@ -1550,6 +1551,7 @@
                             <button type="submit" class="btn btn-primary" id="saveAccessoryBtn">Adicionar Acessorio</button>
                             <button type="button" class="btn btn-secondary" id="cancelAccessoryEditBtn" onclick="resetAccessoryForm()" style="display:none;">Cancelar Edição</button>
                         </div>
+                        <p id="accessoryFormStatus" style="margin-top:0.75rem; color:var(--text-secondary);"></p>
                     </form>
                 </div>
 
@@ -1632,7 +1634,9 @@
                             <select id="osStatusInline">
                                 <option value="pendente">Pendente</option>
                                 <option value="em_andamento">Em andamento</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluído</option>Collapse commentComment on lines R1634 to R1637chatgpt-codex-connector[bot] commented on Apr 3, 2026 chatgpt-codex-connector[bot]on Apr 3, 2026More actions  Include all persisted O.S. statuses in status dropdown
+The inline O.S. form now omits aprovado and cancelado, but existing records/constants still use those statuses, and editServiceOrder assigns persisted values back into this select. For records already in those states, the select has no matching option and submit flow treats status as invalid/empty, which blocks straightforward edits or forces unintended status changes.
+Useful? React with 👍 / 👎.ReactWrite a replyResolve comment
                             </select>
                         </div>
                         <div class="form-group">
@@ -2211,7 +2215,9 @@
         }
 
         async function sendCartToCompanyWhatsApp(savedOrder = null) {
-            const companyPhone = '5511958085210';
+            const companyPhone = '5511958085210';Collapse commentComment on line R2216chatgpt-codex-connector[bot] commented on Apr 3, 2026 chatgpt-codex-connector[bot]on Apr 3, 2026More actions  Use configured company WhatsApp in cart checkout
+sendCartToCompanyWhatsApp always sends checkout messages to a hardcoded number, so any store that updates companyWhatsApp in settings will still route all new orders to the wrong recipient. This breaks the new company-settings flow for checkout and can silently misdirect production orders; use the runtime setting (with a fallback) instead of a fixed literal.
+Useful? React with 👍 / 👎.ReactWrite a replyResolve comment
             const orderDate = new Date().toLocaleString('pt-BR');
             const lines = ['🧾 *Novo pedido pelo site*', `📅 Data: ${orderDate}`, '', '📦 *Itens do carrinho:*'];
             let total = 0;
@@ -2458,6 +2464,38 @@
         const BASE_LAT = -23.7081;
         const BASE_LON = -46.5453;
 
+        function getActionItemId(button) {
+            if (!button) return '';
+            const rawId = String(button.dataset.id || '').trim();
+            return rawId;
+        }
+
+        function setPartFormMode(mode) {
+            const title = document.getElementById('partFormTitle');
+            const saveBtn = document.getElementById('savePartBtn');
+            const cancelBtn = document.getElementById('cancelPartEditBtn');
+            const status = document.getElementById('partFormStatus');
+            const isEditMode = mode === 'edit';
+
+            if (title) title.textContent = isEditMode ? 'Editar Peça' : 'Adicionar Nova Peça';
+            if (saveBtn) saveBtn.textContent = isEditMode ? 'Atualizar Peça' : 'Adicionar Peça';
+            if (cancelBtn) cancelBtn.style.display = isEditMode ? 'inline-flex' : 'none';
+            if (status) status.textContent = isEditMode ? 'Modo edição ativo. Ajuste os campos e clique em Atualizar Peça.' : '';
+        }
+
+        function setAccessoryFormMode(mode) {
+            const title = document.getElementById('accessoryFormTitle');
+            const saveBtn = document.getElementById('saveAccessoryBtn');
+            const cancelBtn = document.getElementById('cancelAccessoryEditBtn');
+            const status = document.getElementById('accessoryFormStatus');
+            const isEditMode = mode === 'edit';
+
+            if (title) title.textContent = isEditMode ? 'Editar Acessorio' : 'Adicionar Novo Acessorio';
+            if (saveBtn) saveBtn.textContent = isEditMode ? 'Atualizar Acessorio' : 'Adicionar Acessorio';
+            if (cancelBtn) cancelBtn.style.display = isEditMode ? 'inline-flex' : 'none';
+            if (status) status.textContent = isEditMode ? 'Modo edição ativo. Ajuste os campos e clique em Atualizar Acessorio.' : '';
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             initSupabase();
@@ -2469,7 +2507,7 @@
             document.getElementById('accessoriesTable')?.addEventListener('click', (event) => {
                 const button = event.target.closest('.js-admin-accessory-action');
                 if (!button) return;
-                const id = Number(button.dataset.id);
+                const id = getActionItemId(button);
                 if (!id) return;
                 if (button.dataset.action === 'edit') {
                     editAccessory(id);
@@ -2481,7 +2519,7 @@
             document.getElementById('partsTable')?.addEventListener('click', (event) => {
                 const button = event.target.closest('.js-admin-part-action');
                 if (!button) return;
-                const id = Number(button.dataset.id);
+                const id = getActionItemId(button);
                 if (!id) return;
                 if (button.dataset.action === 'edit') {
                     editPart(id);
@@ -2506,6 +2544,8 @@
             document.getElementById('companyLogoUrl')?.addEventListener('input', (event) => {
                 updateCompanyLogoPreview(event.target.value.trim());
             });
+            setPartFormMode('create');
+            setAccessoryFormMode('create');
             loadCompanySettings();
 
             window.addEventListener('error', (event) => {
@@ -3477,7 +3517,7 @@ async function calculateFreight() {
                         <td>${escapeHtml(part.marca)}</td>
                         <td>${escapeHtml(part.modelo)}</td>
                         <td>${escapeHtml(part.qualidade)}</td>
-                        <td>R$ ${part.preco_custo.toFixed(2)}</td>
+                        <td>R$ ${Number(part.preco_custo || 0).toFixed(2)}</td>
                         <td>${part.preco_venda != null ? `R$ ${Number(part.preco_venda).toFixed(2)}` : '-'}</td>
                         <td>${part.estoque ?? 0}</td>
                         <td>
@@ -3502,8 +3542,7 @@ async function calculateFreight() {
         function resetPartForm() {
             document.getElementById('partForm')?.reset();
             document.getElementById('editingPartId').value = '';
-            document.getElementById('savePartBtn').textContent = 'Adicionar Peça';
-            document.getElementById('cancelPartEditBtn').style.display = 'none';
+            setPartFormMode('create');
         }
 
         function getPartFormData() {
@@ -3541,7 +3580,7 @@ async function calculateFreight() {
             setButtonLoading(saveBtn, true, 'Salvando...');
 
             try {
-                const editingId = document.getElementById('editingPartId').value;
+                const editingId = String(document.getElementById('editingPartId').value || '').trim();
                 const { brand, model, quality, costPrice, sellPrice, stock } = getPartFormData();
                 const payload = {
                     marca: brand,
@@ -3553,7 +3592,7 @@ async function calculateFreight() {
                 };
 
                 if (editingId) {
-                    const { error } = await client.from('pecas').update(payload).eq('id', Number(editingId));
+                    const { error } = await client.from('pecas').update(payload).eq('id', editingId);
                     if (error) throw error;
                     showAlert('Peça atualizada com sucesso!', 'success');
                 } else {
@@ -3595,8 +3634,8 @@ async function calculateFreight() {
                 document.getElementById('newPrice').value = Number(data.preco_custo || 0);
                 document.getElementById('newSellPrice').value = data.preco_venda != null ? Number(data.preco_venda) : '';
                 document.getElementById('newPartStock').value = Number(data.estoque || 0);
-                document.getElementById('savePartBtn').textContent = 'Atualizar Peça';
-                document.getElementById('cancelPartEditBtn').style.display = 'inline-flex';
+                setPartFormMode('edit');
+                document.getElementById('partForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 showAlert('Peça carregada para edição.', 'info');
             } catch (error) {
                 showAlert('Erro ao carregar peça para edição: ' + error.message, 'error');
@@ -3662,8 +3701,7 @@ async function calculateFreight() {
         function resetAccessoryForm() {
             document.getElementById('accessoryForm')?.reset();
             document.getElementById('editingAccessoryId').value = '';
-            document.getElementById('saveAccessoryBtn').textContent = 'Adicionar Acessorio';
-            document.getElementById('cancelAccessoryEditBtn').style.display = 'none';
+            setAccessoryFormMode('create');
         }
 
         async function fileToBase64(file) {
@@ -3720,7 +3758,7 @@ async function calculateFreight() {
                     row.innerHTML = `
                         <td>${escapeHtml(acc.nome)}</td>
                         <td>${escapeHtml(acc.categoria)}</td>
-                        <td>R$ ${acc.preco.toFixed(2)}</td>
+                        <td>R$ ${Number(acc.preco || 0).toFixed(2)}</td>
                         <td>${acc.estoque}</td>
                         <td>
                             <div class="action-buttons">
@@ -3753,7 +3791,7 @@ async function calculateFreight() {
 
             try {
                 const { name, desc, category, price, stock, imageFile } = getAccessoryFormData();
-                const editingId = document.getElementById('editingAccessoryId').value;
+                const editingId = String(document.getElementById('editingAccessoryId').value || '').trim();
                 const imageUrl = await fileToBase64(imageFile);
 
                 const payload = {
@@ -3771,7 +3809,7 @@ async function calculateFreight() {
                 }
 
                 if (editingId) {
-                    const { error } = await client.from('acessorios').update(payload).eq('id', Number(editingId));
+                    const { error } = await client.from('acessorios').update(payload).eq('id', editingId);
                     if (error) throw error;
                     showAlert('Acessório atualizado com sucesso!', 'success');
                 } else {
@@ -3813,8 +3851,8 @@ async function calculateFreight() {
                 document.getElementById('newAccessoryPrice').value = Number(data.preco || 0);
                 document.getElementById('newAccessoryStock').value = Number(data.estoque || 0);
                 document.getElementById('newAccessoryImage').value = '';
-                document.getElementById('saveAccessoryBtn').textContent = 'Atualizar Acessorio';
-                document.getElementById('cancelAccessoryEditBtn').style.display = 'inline-flex';
+                setAccessoryFormMode('edit');
+                document.getElementById('accessoryForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 showAlert('Acessório carregado para edição.', 'info');
             } catch (error) {
                 showAlert('Erro ao carregar acessório para edição: ' + error.message, 'error');
