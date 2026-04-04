@@ -1601,6 +1601,63 @@
                 </div>
             </div>
 
+            <div id="orderModal" class="modal">
+                <div class="modal-content" style="max-width: 760px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3 id="orderModalTitle" style="color: var(--accent-green);">Detalhes do Pedido</h3>
+                        <button type="button" class="btn btn-secondary" onclick="closeOrderModal()">Fechar</button>
+                    </div>
+
+                    <form id="orderForm">
+                        <input type="hidden" id="editingOrderId" value="">
+                        <div class="form-group">
+                            <label for="orderCustomerName">Cliente:</label>
+                            <input type="text" id="orderCustomerName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderWhatsApp">Telefone:</label>
+                            <input type="text" id="orderWhatsApp">
+                        </div>
+                        <div class="form-group">
+                            <label for="orderModel">Dispositivo:</label>
+                            <input type="text" id="orderModel">
+                        </div>
+                        <div class="form-group">
+                            <label for="orderTotal">Valor Total (R$):</label>
+                            <input type="number" id="orderTotal" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="orderStatus">Status:</label>
+                            <select id="orderStatus">
+                                <option value="pendente">Pendente</option>
+                                <option value="aprovado">Aprovado</option>
+                                <option value="em_andamento">Em andamento</option>
+                                <option value="concluido">Concluído</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderCreatedAt">Data:</label>
+                            <input type="text" id="orderCreatedAt" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderItems">Itens:</label>
+                            <textarea id="orderItems" rows="4" readonly></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderNotes">Observações:</label>
+                            <textarea id="orderNotes" rows="3"></textarea>
+                        </div>
+
+                        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                            <button type="submit" class="btn btn-primary" id="saveOrderBtn">Salvar Alterações</button>
+                            <button type="button" class="btn btn-secondary" onclick="closeOrderModal()">Cancelar</button>
+                        </div>
+                        <p id="orderModalStatus" style="margin-top:0.75rem; color:var(--text-secondary);"></p>
+                    </form>
+                </div>
+            </div>
+
             <!-- Service Orders Tab -->
             <div id="service-orders" class="tab-content">
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Ordem de Serviço</h2>
@@ -2560,6 +2617,26 @@
                         deletePart(id);
                     }
                 });
+            });
+            safeRun('bind ordersTable click', () => {
+                document.getElementById('ordersTable')?.addEventListener('click', (event) => {
+                    const button = event.target.closest('.js-admin-order-action');
+                    if (!button) return;
+                    const id = getActionItemId(button);
+                    if (!id) return;
+                    if (button.dataset.action === 'view') {
+                        viewOrder(id);
+                    }
+                    if (button.dataset.action === 'edit') {
+                        editOrder(id);
+                    }
+                    if (button.dataset.action === 'delete') {
+                        deleteOrder(id);
+                    }
+                });
+            });
+            safeRun('bind orderForm submit', () => {
+                document.getElementById('orderForm')?.addEventListener('submit', saveOrderFromAdmin);
             });
             safeRun('bind serviceOrderForm', () => {
                 document.getElementById('serviceOrderForm')?.addEventListener('submit', handleServiceOrderFormSubmit);
@@ -3711,8 +3788,9 @@ async function calculateFreight() {
                         <td>${order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : '-'}</td>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn-small btn-edit" onclick="editOrder(${order.id})">Editar</button>
-                                <button class="btn-small btn-delete" onclick="deleteOrder(${order.id})">Deletar</button>
+                                <button class="btn-small btn-secondary js-admin-order-action" data-action="view" data-id="${order.id}">Ver</button>
+                                <button class="btn-small btn-edit js-admin-order-action" data-action="edit" data-id="${order.id}">Editar</button>
+                                <button class="btn-small btn-delete js-admin-order-action" data-action="delete" data-id="${order.id}">Deletar</button>
                             </div>
                         </td>
                     `;
@@ -4193,40 +4271,140 @@ async function calculateFreight() {
         }
 
         // Order Management Functions
-        async function editOrder(orderId) {
+        let editingOrderId = '';
+
+        function closeOrderModal() {
+            const modal = document.getElementById('orderModal');
+            if (modal) modal.style.display = 'none';
+            editingOrderId = '';
+            document.getElementById('editingOrderId').value = '';
+            document.getElementById('orderModalStatus').textContent = '';
+        }
+
+        function setOrderModalMode(mode) {
+            const isEditMode = mode === 'edit';
+            const title = document.getElementById('orderModalTitle');
+            const status = document.getElementById('orderModalStatus');
+            const saveBtn = document.getElementById('saveOrderBtn');
+
+            if (title) title.textContent = isEditMode ? 'Editar Pedido' : 'Visualizar Pedido';
+            if (status) status.textContent = isEditMode ? 'Edite os campos e salve para atualizar o pedido.' : 'Modo visualização.';
+            if (saveBtn) saveBtn.style.display = isEditMode ? 'inline-flex' : 'none';
+
+            ['orderCustomerName', 'orderWhatsApp', 'orderModel', 'orderTotal', 'orderStatus', 'orderNotes'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = !isEditMode;
+            });
+        }
+
+        function formatOrderItems(itemsJson) {
+            if (!itemsJson) return 'Sem itens registrados.';
+            if (Array.isArray(itemsJson)) {
+                return itemsJson.map((item) => {
+                    const name = item.nome || item.name || 'Item';
+                    const qty = Number(item.quantidade || item.quantity || 1);
+                    const price = Number(item.preco || item.price || 0);
+                    return `• ${name} — ${qty}x (R$ ${price.toFixed(2)})`;
+                }).join('\n');
+            }
+            if (typeof itemsJson === 'object') {
+                return JSON.stringify(itemsJson, null, 2);
+            }
+            return String(itemsJson);
+        }
+
+        async function fetchOrderById(orderId) {
+            const client = ensureSupabaseClient(true);
+            if (!client) return null;
+            const { data, error } = await client
+                .from('pedidos')
+                .select('*')
+                .eq('id', orderId)
+                .single();
+            if (error) throw error;
+            return data;
+        }
+
+        function fillOrderForm(order) {
+            document.getElementById('editingOrderId').value = String(order.id || '');
+            document.getElementById('orderCustomerName').value = order.cliente_nome || '';
+            document.getElementById('orderWhatsApp').value = order.whatsapp || '';
+            document.getElementById('orderModel').value = order.modelo_dispositivo || '';
+            document.getElementById('orderTotal').value = Number(order.valor_total || 0);
+            document.getElementById('orderStatus').value = order.status || ORDER_STATUS.PENDENTE;
+            document.getElementById('orderCreatedAt').value = order.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : '';
+            document.getElementById('orderItems').value = formatOrderItems(order.itens_json);
+            document.getElementById('orderNotes').value = order.observacoes || '';
+        }
+
+        async function viewOrder(orderId) {
+            const modal = document.getElementById('orderModal');
+            modal.style.display = 'block';
+            setOrderModalMode('view');
+            document.getElementById('orderModalStatus').textContent = 'Carregando pedido...';
             try {
-                const { data: order } = await supabaseClient
+                const order = await fetchOrderById(orderId);
+                if (!order) throw new Error('Pedido não encontrado.');
+                fillOrderForm(order);
+                showAlert('Pedido carregado.', 'info');
+            } catch (error) {
+                document.getElementById('orderModalStatus').textContent = '';
+                showAlert('Erro ao visualizar pedido: ' + error.message, 'error');
+            }
+        }
+
+        async function editOrder(orderId) {
+            const modal = document.getElementById('orderModal');
+            modal.style.display = 'block';
+            setOrderModalMode('edit');
+            document.getElementById('orderModalStatus').textContent = 'Carregando pedido para edição...';
+            try {
+                const order = await fetchOrderById(orderId);
+                if (!order) throw new Error('Pedido não encontrado.');
+                editingOrderId = String(order.id);
+                fillOrderForm(order);
+                showAlert('Pedido carregado para edição.', 'info');
+            } catch (error) {
+                document.getElementById('orderModalStatus').textContent = '';
+                showAlert('Erro ao editar pedido: ' + error.message, 'error');
+            }
+        }
+
+        async function saveOrderFromAdmin(event) {
+            event.preventDefault();
+            const client = ensureSupabaseClient(true);
+            if (!client) return;
+            const orderId = editingOrderId || String(document.getElementById('editingOrderId').value || '').trim();
+            if (!orderId) {
+                showAlert('Nenhum pedido em edição.', 'warning');
+                return;
+            }
+
+            const saveBtn = document.getElementById('saveOrderBtn');
+            setButtonLoading(saveBtn, true, 'Salvando...');
+            try {
+                const payload = {
+                    cliente_nome: document.getElementById('orderCustomerName').value.trim(),
+                    whatsapp: document.getElementById('orderWhatsApp').value.trim(),
+                    modelo_dispositivo: document.getElementById('orderModel').value.trim(),
+                    valor_total: Number(document.getElementById('orderTotal').value || 0),
+                    status: document.getElementById('orderStatus').value,
+                    observacoes: document.getElementById('orderNotes').value.trim()
+                };
+
+                const { error } = await client
                     .from('pedidos')
-                    .select('*')
-                    .eq('id', orderId)
-                    .single();
-
-                if (!order) {
-                    showAlert('Pedido não encontrado', 'error');
-                    return;
-                }
-
-                const validStatusList = Object.values(ORDER_STATUS).join(', ');
-                const newStatus = prompt(`Novo status (${validStatusList}):`, order.status);
-                if (!newStatus) return;
-
-                const normalizedStatus = newStatus.trim().toLowerCase();
-                if (!Object.values(ORDER_STATUS).includes(normalizedStatus)) {
-                    showAlert('Status inválido. Use: ' + validStatusList, 'error');
-                    return;
-                }
-
-                const { error } = await supabaseClient
-                    .from('pedidos')
-                    .update({ status: normalizedStatus })
+                    .update(payload)
                     .eq('id', orderId);
-
                 if (error) throw error;
 
                 showAlert('Pedido atualizado com sucesso!', 'success');
-                loadOrdersTable();
+                closeOrderModal();
+                await loadOrdersTable();
             } catch (error) {
-                showAlert('Erro ao editar pedido: ' + error.message, 'error');
+                showAlert('Erro ao salvar pedido: ' + error.message, 'error');
+            } finally {
+                setButtonLoading(saveBtn, false);
             }
         }
 
@@ -4234,7 +4412,9 @@ async function calculateFreight() {
             if (!confirm('Tem certeza que deseja deletar este pedido?')) return;
 
             try {
-                const { error } = await supabaseClient
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { error } = await client
                     .from('pedidos')
                     .delete()
                     .eq('id', orderId);
@@ -4651,8 +4831,12 @@ async function getMelhorEnvioShipping(cep, type) {
         // Close modal when clicking outside
         window.onclick = function(event) {
             const quoteModal = document.getElementById('quoteModal');
+            const orderModal = document.getElementById('orderModal');
             if (event.target == quoteModal) {
                 closeQuoteModal();
+            }
+            if (event.target == orderModal) {
+                closeOrderModal();
             }
         }
 </script> <!-- 🔥 FECHAR AQUI -->
