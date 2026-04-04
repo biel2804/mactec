@@ -15,5 +15,8 @@ window.APP_CONFIG = {
     SHIPPING: {
         PACKAGING_FEE: 5.00,
         LOCAL_DELIVERY_RADIUS_KM: 5
-    }
+    },
+
+    // URL da Edge Function de frete (API key de geocoding fica só no backend)
+    FREIGHT_FUNCTION_URL: "https://dvkcxpwhbpiltqovveue.supabase.co/functions/v1/calcular-frete"
 };
