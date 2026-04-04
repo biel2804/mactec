@@ -1310,7 +1310,7 @@
                 </div>
 
                 <div class="quote-section">
-                    <h3>5. Informações de Entrega</h3>
+                    <h3>5. Informações de Retirada e Entrega</h3>
                     <div class="form-group">
                         <label for="cepInput">CEP:</label>
                         <input type="text" id="cepInput" placeholder="00000-000" onchange="calculateFreight()">
@@ -1356,8 +1356,37 @@
                         <input type="tel" id="customerWhatsApp" placeholder="(11) 99999-9999">
                     </div>
                     <div class="form-group">
-                        <label for="customerAddress">Endereço:</label>
-                        <input type="text" id="customerAddress" placeholder="Rua, número, bairro">
+                        <label for="customerCep">CEP:</label>
+                        <input type="text" id="customerCep" placeholder="Ex: 01001-000" maxlength="9" onblur="buscarCep()">
+                        <small id="customerCepStatus" style="display:block; margin-top:0.35rem; color: var(--text-secondary);"></small>
+                    </div>
+                    <div class="form-group">
+                        <label for="customerStreet">Rua:</label>
+                        <input type="text" id="customerStreet" placeholder="Ex: Rua das Flores">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="customerNumber">Número:</label>
+                            <input type="text" id="customerNumber" placeholder="Ex: 123">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="customerDistrict">Bairro:</label>
+                            <input type="text" id="customerDistrict" placeholder="Ex: Centro">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="customerCity">Cidade:</label>
+                            <input type="text" id="customerCity" placeholder="Ex: São Paulo">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="customerState">Estado:</label>
+                            <input type="text" id="customerState" placeholder="Ex: SP" maxlength="2">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="customerEmail">E-mail (opcional):</label>
+                        <input type="email" id="customerEmail" placeholder="Ex: cliente@email.com">
                     </div>
                 </div>
 
@@ -1400,6 +1429,38 @@
                     <span>Total:</span>
                     <span id="cartTotal">R$ 0,00</span>
                 </div>
+            </div>
+            <div id="cartPaymentPanel" style="background: var(--secondary-dark); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+                <h3 style="color: var(--accent-green); margin-bottom: 0.75rem;">Pagamento</h3>
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label for="paymentMethodSelect">Forma de pagamento:</label>
+                    <select id="paymentMethodSelect" onchange="atualizarTotal()">
+                        <option value="">-- Selecione --</option>
+                        <option value="dinheiro">Dinheiro (5% OFF)</option>
+                        <option value="pix">Pix (5% OFF)</option>
+                        <option value="debito">Débito</option>
+                        <option value="credito">Crédito</option>
+                    </select>
+                </div>
+                <div class="form-group" id="installmentsGroup" style="display: none; margin-bottom: 0.75rem;">
+                    <label for="installmentsSelect">Parcelamento no crédito:</label>
+                    <select id="installmentsSelect">
+                        <option value="1">1x sem juros</option>
+                        <option value="2">2x sem juros</option>
+                        <option value="3">3x sem juros</option>
+                    </select>
+                </div>
+                <p id="installmentsHint" style="display: none; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;"></p>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                    <span>Desconto:</span>
+                    <span id="cartDiscount">R$ 0,00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                    <span>Valor final:</span>
+                    <span id="cartFinalTotal" style="font-weight: bold; color: var(--accent-green);">R$ 0,00</span>
+                </div>
+                <p id="cartSavings" style="display: none; color: var(--success); font-weight: 600;">Você economizou R$ 0,00</p>
+                <p id="cartCheckoutError" style="display: none; color: var(--error); margin-top: 0.5rem; font-size: 0.9rem;"></p>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <button class="btn btn-secondary" style="width: 100%;" onclick="closeCartModal()">Continuar Comprando</button>
@@ -1588,13 +1649,14 @@
                                 <th>Dispositivo</th>
                                 <th>Valor</th>
                                 <th>Status</th>
+                                <th>Pgto</th>
                                 <th>Data</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="ordersTable">
                             <tr>
-                                <td colspan="7" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td>
+                                <td colspan="8" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1637,6 +1699,14 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="orderPaymentStatus">Status do Pagamento:</label>
+                            <select id="orderPaymentStatus">
+                                <option value="pendente">Pendente</option>
+                                <option value="pago">Pago</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="orderCreatedAt">Data:</label>
                             <input type="text" id="orderCreatedAt" readonly>
                         </div>
@@ -1666,6 +1736,15 @@
                     <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Criar / Editar O.S.</h3>
                     <form id="serviceOrderForm">
                         <input type="hidden" id="editingServiceOrderId" value="">
+                        <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
+                            <div class="form-group">
+                                <label for="osOrderId">Número do Pedido (ID):</label>
+                                <input type="text" id="osOrderId" placeholder="Ex: 123">
+                            </div>
+                            <div class="form-group" style="align-self: end;">
+                                <button type="button" class="btn btn-secondary" style="width:100%;" onclick="buscarPedidoPorId()">Carregar Pedido</button>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label for="osClientName">Cliente:</label>
                             <input type="text" id="osClientName" placeholder="Nome do cliente">
@@ -1673,6 +1752,20 @@
                         <div class="form-group">
                             <label for="osPhone">Telefone (opcional):</label>
                             <input type="tel" id="osPhone" placeholder="(11) 99999-9999">
+                        </div>
+                        <div class="form-group">
+                            <label for="osAddress">Endereço do Cliente:</label>
+                            <input type="text" id="osAddress" placeholder="Rua, número - bairro">
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="osTotalValue">Valor Total (R$):</label>
+                                <input type="number" id="osTotalValue" placeholder="0,00" step="0.01" min="0">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="osPartUsed">Peça utilizada:</label>
+                                <input type="text" id="osPartUsed" placeholder="Ex: Tela OLED iPhone 11">
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="osBrand">Marca:</label>
@@ -1933,12 +2026,113 @@
             updateCartDisplay();
         }
 
-        function addQuoteToCart() {
-            const name = document.getElementById('customerName').value.trim();
-            const whatsapp = document.getElementById('customerWhatsApp').value.trim();
-            const address = document.getElementById('customerAddress').value.trim();
+        function buildFormattedCustomerAddress(address = {}) {
+            const cep = String(address.cep || '').trim();
+            const rua = String(address.rua || '').trim();
+            const numero = String(address.numero || '').trim();
+            const bairro = String(address.bairro || '').trim();
+            const cidade = String(address.cidade || '').trim();
+            const estado = String(address.estado || '').trim();
+            const firstLine = [rua, numero ? `Nº ${numero}` : ''].filter(Boolean).join(', ');
+            const secondLine = bairro ? `Bairro ${bairro}` : '';
+            const thirdLine = [cidade, estado].filter(Boolean).join(' - ');
+            const fourthLine = cep ? `CEP ${cep}` : '';
+            return [firstLine, secondLine, thirdLine, fourthLine].filter(Boolean).join('\n');
+        }
 
-            if (!name || !whatsapp || !address) {
+        function setAddressFieldsLoading(isLoading) {
+            ['customerStreet', 'customerDistrict', 'customerCity', 'customerState'].forEach((id) => {
+                const field = document.getElementById(id);
+                if (field) field.disabled = isLoading;
+            });
+        }
+
+        async function buscarCep() {
+            const cepInput = document.getElementById('customerCep');
+            const cepStatus = document.getElementById('customerCepStatus');
+            if (!cepInput || !cepStatus) return;
+
+            const cepDigits = cepInput.value.replace(/\D/g, '');
+            if (!cepDigits) {
+                cepStatus.textContent = '';
+                return;
+            }
+
+            if (cepDigits.length !== 8) {
+                cepStatus.textContent = 'CEP inválido. Digite 8 números.';
+                cepStatus.style.color = 'var(--error)';
+                return;
+            }
+
+            cepInput.value = cepDigits.replace(/(\d{5})(\d{3})/, '$1-$2');
+            cepStatus.textContent = 'Buscando endereço...';
+            cepStatus.style.color = 'var(--text-secondary)';
+            setAddressFieldsLoading(true);
+
+            try {
+                const response = await fetch(`https://viacep.com.br/ws/${cepDigits}/json/`);
+                if (!response.ok) throw new Error('Falha ao consultar ViaCEP');
+                const data = await response.json();
+                if (data.erro) {
+                    throw new Error('CEP não encontrado');
+                }
+
+                document.getElementById('customerStreet').value = data.logradouro || '';
+                document.getElementById('customerDistrict').value = data.bairro || '';
+                document.getElementById('customerCity').value = data.localidade || '';
+                document.getElementById('customerState').value = data.uf || '';
+                cepStatus.textContent = 'Endereço preenchido automaticamente. Você pode editar se necessário.';
+                cepStatus.style.color = 'var(--success)';
+            } catch (error) {
+                cepStatus.textContent = 'CEP não encontrado';
+                cepStatus.style.color = 'var(--error)';
+            } finally {
+                setAddressFieldsLoading(false);
+            }
+        }
+
+        function getCustomerFormData() {
+            const nome = document.getElementById('customerName')?.value.trim() || '';
+            const telefone = document.getElementById('customerWhatsApp')?.value.trim() || '';
+            const cep = document.getElementById('customerCep')?.value.trim() || '';
+            const rua = document.getElementById('customerStreet')?.value.trim() || '';
+            const numero = document.getElementById('customerNumber')?.value.trim() || '';
+            const bairro = document.getElementById('customerDistrict')?.value.trim() || '';
+            const cidade = document.getElementById('customerCity')?.value.trim() || '';
+            const estado = document.getElementById('customerState')?.value.trim() || '';
+            const email = document.getElementById('customerEmail')?.value.trim() || '';
+
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                throw new Error('Informe um e-mail válido ou deixe o campo em branco.');
+            }
+
+            const cepDigits = cep.replace(/\D/g, '');
+            if (!cepDigits || cepDigits.length !== 8) {
+                throw new Error('Informe um CEP válido para continuar.');
+            }
+            if (!numero) {
+                throw new Error('Informe o número do endereço.');
+            }
+
+            return {
+                nome,
+                telefone,
+                endereco: { cep: cepDigits.replace(/(\d{5})(\d{3})/, '$1-$2'), rua, numero, bairro, cidade, estado },
+                enderecoFormatado: buildFormattedCustomerAddress({ cep: cepDigits.replace(/(\d{5})(\d{3})/, '$1-$2'), rua, numero, bairro, cidade, estado }),
+                email: email || null
+            };
+        }
+
+        function addQuoteToCart() {
+            let cliente;
+            try {
+                cliente = getCustomerFormData();
+            } catch (error) {
+                showAlert(error.message, 'error');
+                return;
+            }
+
+            if (!cliente.nome || !cliente.telefone || !cliente.endereco.cep || !cliente.endereco.rua || !cliente.endereco.numero || !cliente.endereco.bairro || !cliente.endereco.cidade || !cliente.endereco.estado) {
                 showAlert('Por favor, preencha todos os dados', 'error');
                 return;
             }
@@ -1953,9 +2147,11 @@
                 return;
             }
 
-            currentQuote.customerName = name;
-            currentQuote.customerWhatsApp = whatsapp;
-            currentQuote.customerAddress = address;
+            currentQuote.customerName = cliente.nome;
+            currentQuote.customerWhatsApp = cliente.telefone;
+            currentQuote.customerAddress = cliente.enderecoFormatado;
+            currentQuote.customerAddressData = cliente.endereco;
+            currentQuote.customerEmail = cliente.email;
             currentQuote.itemType = 'quote';
             currentQuote.id = 'QUOTE-' + Date.now();
 
@@ -2048,6 +2244,84 @@
             }
         }
 
+        function getCartTotals() {
+            let subtotal = 0;
+            let freight = 0;
+
+            cart.forEach((item) => {
+                if (item.itemType === 'quote') {
+                    subtotal += Number(item.totalPrice || 0);
+                    freight += Number(item.freightCost || 0);
+                } else if (item.itemType === 'accessory') {
+                    subtotal += Number(item.subtotal || 0);
+                }
+            });
+
+            const totalOriginal = subtotal + freight;
+            return { subtotal, freight, totalOriginal };
+        }
+
+        function atualizarTotal() {
+            const paymentMethodSelect = document.getElementById('paymentMethodSelect');
+            const installmentsGroup = document.getElementById('installmentsGroup');
+            const installmentsSelect = document.getElementById('installmentsSelect');
+            const installmentsHint = document.getElementById('installmentsHint');
+            const discountNode = document.getElementById('cartDiscount');
+            const finalNode = document.getElementById('cartFinalTotal');
+            const savingsNode = document.getElementById('cartSavings');
+            const paymentPanel = document.getElementById('cartPaymentPanel');
+            const errorNode = document.getElementById('cartCheckoutError');
+
+            if (!paymentMethodSelect) return { desconto: 0, valorFinal: 0, metodo: '', parcelas: 1, totalOriginal: 0 };
+
+            const { totalOriginal } = getCartTotals();
+            const method = paymentMethodSelect.value;
+            let desconto = 0;
+
+            if (method === 'dinheiro' || method === 'pix') {
+                desconto = totalOriginal * 0.05;
+            }
+
+            const valorFinal = totalOriginal - desconto;
+            const canInstall = method === 'credito' && totalOriginal >= 200;
+            installmentsGroup.style.display = canInstall ? 'block' : 'none';
+
+            if (method === 'credito' && totalOriginal < 200) {
+                installmentsHint.style.display = 'block';
+                installmentsHint.textContent = 'Parcelamento disponível apenas para pedidos a partir de R$ 200,00.';
+                installmentsSelect.value = '1';
+            } else {
+                installmentsHint.style.display = 'none';
+                installmentsHint.textContent = '';
+            }
+
+            discountNode.textContent = `R$ ${desconto.toFixed(2)}`;
+            finalNode.textContent = `R$ ${valorFinal.toFixed(2)}`;
+
+            if (desconto > 0) {
+                savingsNode.style.display = 'block';
+                savingsNode.textContent = `Você economizou R$ ${desconto.toFixed(2)}`;
+            } else {
+                savingsNode.style.display = 'none';
+                savingsNode.textContent = 'Você economizou R$ 0,00';
+            }
+
+            if (method) {
+                paymentPanel.style.borderColor = 'var(--accent-green)';
+                if (errorNode) errorNode.style.display = 'none';
+            } else {
+                paymentPanel.style.borderColor = 'var(--border-color)';
+            }
+
+            return {
+                totalOriginal,
+                desconto,
+                valorFinal,
+                metodo: method,
+                parcelas: canInstall ? Number(installmentsSelect.value || 1) : 1
+            };
+        }
+
         function updateCartDisplay() {
             const cartItems = document.getElementById('cartItems');
             const cartSubtotal = document.getElementById('cartSubtotal');
@@ -2059,6 +2333,18 @@
                 cartSubtotal.textContent = 'R$ 0,00';
                 cartFreight.textContent = 'R$ 0,00';
                 cartTotal.textContent = 'R$ 0,00';
+                const discountNode = document.getElementById('cartDiscount');
+                const finalNode = document.getElementById('cartFinalTotal');
+                const savingsNode = document.getElementById('cartSavings');
+                const installmentsGroup = document.getElementById('installmentsGroup');
+                const installmentsHint = document.getElementById('installmentsHint');
+                const paymentPanel = document.getElementById('cartPaymentPanel');
+                if (discountNode) discountNode.textContent = 'R$ 0,00';
+                if (finalNode) finalNode.textContent = 'R$ 0,00';
+                if (savingsNode) savingsNode.style.display = 'none';
+                if (installmentsGroup) installmentsGroup.style.display = 'none';
+                if (installmentsHint) installmentsHint.style.display = 'none';
+                if (paymentPanel) paymentPanel.style.borderColor = 'var(--border-color)';
                 updateCartBadge();
                 saveCartToStorage();
                 return;
@@ -2105,6 +2391,7 @@
 
             updateCartBadge();
             saveCartToStorage();
+            atualizarTotal();
         }
 
         function removeFromCart(index) {
@@ -2127,69 +2414,24 @@
                 showAlert('Carrinho vazio', 'error');
                 return;
             }
-            closeCartModal();
+
+            const paymentMethodSelect = document.getElementById('paymentMethodSelect');
+            const paymentErrorNode = document.getElementById('cartCheckoutError');
+            if (!paymentMethodSelect?.value) {
+                paymentErrorNode.style.display = 'block';
+                paymentErrorNode.textContent = 'Selecione uma forma de pagamento para finalizar.';
+                showAlert('Selecione uma forma de pagamento para finalizar.', 'warning');
+                return;
+            }
+
+            const checkoutData = atualizarTotal();
             try {
-                const savedOrder = await saveCartOrder();
-                await sendCartToCompanyWhatsApp(savedOrder);
+                const savedOrder = await saveCartOrder(checkoutData);
+                await sendCartToCompanyWhatsApp(savedOrder, checkoutData);
+                closeCartModal();
             } catch (error) {
                 showAlert('Erro ao finalizar pedido: ' + error.message, 'error');
             }
-        }
-
-        function showPaymentCheckout() {
-            const checkoutModal = document.createElement('div');
-            checkoutModal.className = 'modal';
-            checkoutModal.style.display = 'block';
-            checkoutModal.id = 'checkoutModal';
-
-            let total = 0;
-            cart.forEach(item => {
-                if (item.itemType === 'quote') {
-                    total += item.totalPrice;
-                } else {
-                    total += item.subtotal;
-                }
-            });
-
-            checkoutModal.innerHTML = `
-                <div class="modal-content">
-                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                    <h2 style="color: var(--accent-green); margin-bottom: 1.5rem;">Escolha a Forma de Pagamento</h2>
-                    <div style="background: var(--secondary-dark); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
-                        <p style="margin: 0; color: var(--text-secondary);">Total a pagar:</p>
-                        <p style="margin: 0.5rem 0 0 0; font-size: 1.5rem; color: var(--accent-green); font-weight: bold;">R$ ${total.toFixed(2)}</p>
-                    </div>
-                    <div style="display: grid; gap: 1rem;">
-                        <button class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;" onclick="processCheckoutPayment('Dinheiro', ${total.toFixed(2)})">
-                            💵 Dinheiro
-                        </button>
-                        <button class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;" onclick="processCheckoutPayment('PIX', ${total.toFixed(2)})">
-                            📱 PIX
-                        </button>
-                        <button class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;" onclick="processCheckoutPayment('Cartão de Débito', ${total.toFixed(2)})">
-                            💳 Cartão de Débito
-                        </button>
-                        <button class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;" onclick="processCheckoutPayment('Cartão de Crédito', ${total.toFixed(2)})">
-                            💳 Cartão de Crédito
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(checkoutModal);
-        }
-
-        function processCheckoutPayment(methodLabel, total) {
-            showAlert(`Pagamento ${methodLabel} selecionado para R$ ${total.toFixed(2)}.`, 'success');
-            setTimeout(() => {
-                completeCheckout();
-            }, 1200);
-        }
-
-        function completeCheckout() {
-            cart = [];
-            updateCartDisplay();
-            document.querySelectorAll('.modal').forEach(m => m.remove());
-            showAlert('Compra finalizada com sucesso! Obrigado!', 'success');
         }
 
         function formatWhatsAppNumber(phone) {
@@ -2221,10 +2463,20 @@
         function getCartCustomerData() {
             const quoteItem = cart.find(item => item.itemType === 'quote' && item.customerName);
             if (quoteItem) {
+                const rawAddress = quoteItem.customerAddressData || {};
                 return {
                     name: quoteItem.customerName,
                     phone: quoteItem.customerWhatsApp || null,
-                    address: quoteItem.customerAddress || null
+                    email: quoteItem.customerEmail || null,
+                    address: {
+                        cep: rawAddress.cep || '',
+                        rua: rawAddress.rua || '',
+                        numero: rawAddress.numero || '',
+                        bairro: rawAddress.bairro || '',
+                        cidade: rawAddress.cidade || '',
+                        estado: rawAddress.estado || '',
+                        formatted: quoteItem.customerAddress || buildFormattedCustomerAddress(rawAddress) || null
+                    }
                 };
             }
 
@@ -2237,39 +2489,81 @@
             return {
                 name: name.trim(),
                 phone: phone?.trim() || null,
-                address: address?.trim() || null
+                email: null,
+                address: {
+                    cep: '',
+                    rua: '',
+                    numero: '',
+                    bairro: '',
+                    cidade: '',
+                    estado: '',
+                    formatted: address?.trim() || null
+                }
             };
         }
 
-        async function saveCartOrder() {
+        async function saveCartOrder(checkoutData) {
             const client = ensureSupabaseClient(true);
             if (!client) throw new Error('Supabase não configurado.');
 
             const items = buildCartItemsSummary();
-            const total = items.reduce((sum, item) => sum + Number(item.valor || item.subtotal || 0), 0);
+            const total = Number(checkoutData?.totalOriginal || 0);
+            const desconto = Number(checkoutData?.desconto || 0);
+            const valorFinal = Number(checkoutData?.valorFinal || total);
+            const parcelas = Number(checkoutData?.parcelas || 1);
             const customer = getCartCustomerData();
             const mainDevice = items.find(item => item.tipo === 'orcamento');
+            const paymentMethodLabels = {
+                dinheiro: 'Dinheiro',
+                pix: 'Pix',
+                debito: 'Débito',
+                credito: 'Crédito'
+            };
+            const formaPagamento = checkoutData?.metodo || '';
+            const pedido = {
+                cliente: customer.name,
+                itens: items,
+                valor_total: total,
+                desconto,
+                valor_final: valorFinal,
+                forma_pagamento: paymentMethodLabels[formaPagamento] || formaPagamento || null,
+                parcelas,
+                data: new Date().toISOString()
+            };
 
             const payload = {
                 cliente_nome: customer.name,
                 whatsapp: customer.phone,
-                endereco: customer.address,
+                endereco: customer.address.formatted,
                 modelo_dispositivo: mainDevice ? `${mainDevice.marca || ''} ${mainDevice.modelo || ''}`.trim() : 'Pedido de acessórios',
                 servico: mainDevice?.servico || 'Pedido via carrinho',
                 valor_total: total,
+                desconto,
+                valor_total_final: valorFinal,
+                forma_pagamento: pedido.forma_pagamento,
+                parcelas,
+                status_pagamento: 'pendente',
                 status: ORDER_STATUS.PENDENTE,
-                observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)}`,
-                previsao_entrega: new Date().toISOString()
+                observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)} | cliente: ${JSON.stringify({ email: customer.email, endereco: customer.address })} | pagamento: ${JSON.stringify(pedido)}`,
+                previsao_entrega: pedido.data
             };
 
             const { data, error } = await client.from('pedidos').insert([payload]).select().single();
             if (error) throw error;
 
             await loadOrdersTable();
-            return { ...data, items, total };
+            return {
+                ...data,
+                items,
+                total,
+                desconto,
+                valorFinal,
+                formaPagamento: paymentMethodLabels[formaPagamento] || formaPagamento || 'Não informado',
+                parcelas
+            };
         }
 
-        async function sendCartToCompanyWhatsApp(savedOrder = null) {
+        async function sendCartToCompanyWhatsApp(savedOrder = null, checkoutData = null) {
             const companyPhone = '5511958085210';
             const orderDate = new Date().toLocaleString('pt-BR');
             const lines = ['🧾 *Novo pedido pelo site*', `📅 Data: ${orderDate}`, '', '📦 *Itens do carrinho:*'];
@@ -2284,6 +2578,7 @@
                         `   Serviço: ${item.service || 'Não informado'}`,
                         `   Cliente: ${item.customerName || 'Não informado'} | WhatsApp: ${item.customerWhatsApp || 'Não informado'}`,
                         `   Endereço: ${item.customerAddress || 'Não informado'}`,
+                        item.customerEmail ? `   E-mail: ${item.customerEmail}` : '',
                         `   Total: R$ ${itemTotal.toFixed(2)}`,
                         ''
                     );
@@ -2298,12 +2593,23 @@
                     );
                 }
             });
+            const desconto = Number(checkoutData?.desconto || 0);
+            const valorFinal = Number(checkoutData?.valorFinal || total);
+            const paymentLabels = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito' };
+            const formaPagamento = paymentLabels[checkoutData?.metodo] || savedOrder?.formaPagamento || 'Não informado';
+            const parcelas = Number(checkoutData?.parcelas || 1);
 
             lines.push(`💰 *Total do pedido:* R$ ${total.toFixed(2)}`);
+            lines.push(`🏷️ *Desconto aplicado:* R$ ${desconto.toFixed(2)}`);
+            lines.push(`✅ *Valor final:* R$ ${valorFinal.toFixed(2)}`);
+            lines.push(`💳 *Forma de pagamento:* ${formaPagamento}`);
+            if (checkoutData?.metodo === 'credito') {
+                lines.push(`📆 *Parcelas:* ${parcelas}x sem juros`);
+            }
             if (savedOrder?.id) {
                 lines.push(`🆔 Pedido salvo no sistema: #${savedOrder.id}`);
             }
-            lines.push('🛠️ Pedido enviado para criação da O.S. no painel admin e impressão em PDF.');
+            lines.push('🛠️ Pedido enviado.');
 
             const whatsappUrl = `https://wa.me/${formatWhatsAppNumber(companyPhone)}?text=${encodeURIComponent(lines.join('\n'))}`;
             window.open(whatsappUrl, '_blank');
@@ -2327,6 +2633,7 @@
         let SUPABASE_KEY = APP_CONFIG.SUPABASE_KEY || '';
         let supabaseClient = null;
         const SHIPPING_API_URL = APP_CONFIG.SHIPPING_API_URL || '/api/shipping';
+        const FREIGHT_FUNCTION_URL = APP_CONFIG.FREIGHT_FUNCTION_URL || (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/calcular-frete` : '/functions/v1/calcular-frete');
         const ERROR_LOG_TABLE = APP_CONFIG.ERROR_LOG_TABLE || 'logs_erros';
         const COMPANY_SETTINGS_TABLE = APP_CONFIG.COMPANY_SETTINGS_TABLE || 'configuracoes_empresa';
         const COMPANY_SETTINGS_ID = 1;
@@ -2390,8 +2697,18 @@
             outros: 'Outros'
         });
 
+        const PAYMENT_STATUS_LABELS = Object.freeze({
+            pendente: 'Pendente',
+            pago: 'Pago',
+            cancelado: 'Cancelado'
+        });
+
         function formatStatus(status) {
             return STATUS_LABELS[status] || status || 'Não informado';
+        }
+
+        function formatPaymentStatus(statusPagamento) {
+            return PAYMENT_STATUS_LABELS[statusPagamento] || statusPagamento || 'Pendente';
         }
 
         function getServiceLabel(service) {
@@ -2517,6 +2834,8 @@
             customerName: '',
             customerWhatsApp: '',
             customerAddress: '',
+            customerAddressData: { cep: '', rua: '', numero: '', bairro: '', cidade: '', estado: '' },
+            customerEmail: '',
             cep: '',
             distance: 0,
             savedOrderId: null,
@@ -2928,67 +3247,6 @@ function formatCurrencyBRL(value) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
 }
 
-async function fetchAddressByCep(cep) {
-    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-    const data = await response.json();
-
-    if (data.erro) {
-        throw new Error('CEP não encontrado.');
-    }
-
-    return data;
-}
-
-async function geocodeAddress(query) {
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
-    const data = await response.json();
-
-    if (!Array.isArray(data) || data.length === 0) {
-        throw new Error('Não foi possível localizar o endereço no mapa.');
-    }
-
-    return {
-        lat: parseFloat(data[0].lat),
-        lon: parseFloat(data[0].lon)
-    };
-}
-
-function haversineDistanceKm(lat1, lon1, lat2, lon2) {
-    const toRad = (value) => (value * Math.PI) / 180;
-    const earthRadiusKm = 6371;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return earthRadiusKm * c;
-}
-
-async function getRoadDistanceKm(origin, destination) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    try {
-        const url = `https://router.project-osrm.org/route/v1/driving/${origin.lon},${origin.lat};${destination.lon},${destination.lat}?overview=false`;
-        const response = await fetch(url, { signal: controller.signal });
-        if (!response.ok) {
-            throw new Error(`Falha no roteamento (status ${response.status})`);
-        }
-
-        const payload = await response.json();
-        const meters = payload?.routes?.[0]?.distance;
-        if (!Number.isFinite(meters) || meters <= 0) {
-            throw new Error('Resposta de rota inválida');
-        }
-
-        return meters / 1000;
-    } finally {
-        clearTimeout(timeout);
-    }
-}
-
 function addBusinessDays(startDate, businessDays) {
     const date = new Date(startDate);
     let added = 0;
@@ -3018,33 +3276,33 @@ function calculateMotoboyCost(distanceKm) {
 }
 
 async function getShippingContext(cep) {
-    const address = await fetchAddressByCep(cep);
-    const geocoded = await geocodeAddress(`${address.logradouro || ''}, ${address.bairro || ''}, ${address.localidade}, ${address.uf}, ${cep}, Brasil`);
-    const straightDistanceKm = haversineDistanceKm(LOCAL_ORIGIN.lat, LOCAL_ORIGIN.lon, geocoded.lat, geocoded.lon);
-    const fallbackDistanceKm = straightDistanceKm * 1.65;
-    let distanceKm = fallbackDistanceKm;
-    let distanceSource = 'estimativa';
+    const response = await fetch(FREIGHT_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify({ cep })
+    });
 
-    try {
-        const roadDistanceKm = await getRoadDistanceKm(
-            { lat: LOCAL_ORIGIN.lat, lon: LOCAL_ORIGIN.lon },
-            { lat: geocoded.lat, lon: geocoded.lon }
-        );
-        distanceKm = roadDistanceKm;
-        distanceSource = 'rota';
-    } catch (error) {
-        console.warn('Roteamento indisponível, usando estimativa ampliada:', error?.message || error);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(payload?.error || 'Falha ao calcular frete.');
     }
 
+    const address = payload?.address || {};
+    const distanceKm = Number(payload?.distancia || 0);
     const isSBC = (address.localidade || '').trim().toLowerCase() === LOCAL_ORIGIN.city.toLowerCase();
 
     return {
         address,
-        geocoded,
+        geocoded: payload?.destino || null,
         distanceKm,
-        straightDistanceKm,
-        distanceSource,
-        isSBC
+        straightDistanceKm: distanceKm,
+        distanceSource: 'haversine',
+        isSBC,
+        freteCalculado: Number(payload?.frete || 0)
     };
 }
 
@@ -3171,10 +3429,10 @@ async function calculateFreight() {
 
     const container = document.getElementById('shippingOptions');
     container.className = 'shipping-options shipping-options-empty';
-    container.innerHTML = '<p><span class="loading"></span> Calculando opções de entrega...</p>';
+    container.innerHTML = '<p><span class="loading"></span> Calculando frete...</p>';
 
     try {
-        const context = await getShippingContext(cep);
+        const context = await calcularFrete(cep);
         const motoboyOption = buildShippingOption({
             id: 'motoboy',
             badgeClass: 'local',
@@ -3184,7 +3442,7 @@ async function calculateFreight() {
             description: context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM
                 ? 'Prioridade para entrega local em São Bernardo do Campo.'
                 : 'Entrega via motoboy com alinhamento final no atendimento.',
-            price: calculateMotoboyCost(context.distanceKm),
+            price: Number(context.freteCalculado || calculateMotoboyCost(context.distanceKm)),
             deliveryDays: context.distanceKm < LOCAL_DELIVERY_RADIUS_KM ? 1 : 2,
             note: context.distanceKm < LOCAL_DELIVERY_RADIUS_KM ? 'Atendimento local com priorização de rota.' : 'Entrega sujeita à disponibilidade da rota.',
             distanceKm: context.distanceKm,
@@ -3262,6 +3520,14 @@ async function calculateFreight() {
     }
 }
 
+async function calcularFrete(cep) {
+    const sanitizedCep = String(cep || '').replace(/\D/g, '');
+    if (sanitizedCep.length !== 8) {
+        throw new Error('CEP inválido');
+    }
+    return getShippingContext(sanitizedCep);
+}
+
 // Update Price Display
 
         function updatePriceDisplay() {
@@ -3282,11 +3548,15 @@ async function calculateFreight() {
         // Process Payment
         async function processPayment() {
             // Validate form
-            const name = document.getElementById('customerName').value.trim();
-            const whatsapp = document.getElementById('customerWhatsApp').value.trim();
-            const address = document.getElementById('customerAddress').value.trim();
+            let cliente;
+            try {
+                cliente = getCustomerFormData();
+            } catch (error) {
+                showAlert(error.message, 'error');
+                return;
+            }
 
-            if (!name || !whatsapp || !address) {
+            if (!cliente.nome || !cliente.telefone || !cliente.endereco.cep || !cliente.endereco.rua || !cliente.endereco.numero || !cliente.endereco.bairro || !cliente.endereco.cidade || !cliente.endereco.estado) {
                 showAlert('Por favor, preencha todos os dados', 'error');
                 return;
             }
@@ -3301,9 +3571,11 @@ async function calculateFreight() {
                 return;
             }
 
-            currentQuote.customerName = name;
-            currentQuote.customerWhatsApp = whatsapp;
-            currentQuote.customerAddress = address;
+            currentQuote.customerName = cliente.nome;
+            currentQuote.customerWhatsApp = cliente.telefone;
+            currentQuote.customerAddress = cliente.enderecoFormatado;
+            currentQuote.customerAddressData = cliente.endereco;
+            currentQuote.customerEmail = cliente.email;
 
             const client = ensureSupabaseClient(true);
             if (!client) {
@@ -3316,14 +3588,14 @@ async function calculateFreight() {
                 const { data: customerData, error: customerError } = await client
                     .from('clientes')
                     .insert([{
-                        nome_completo: name,
-                        whatsapp: whatsapp,
-                        cep: currentQuote.cep,
-                        logradouro: address,
-                        numero: '',
-                        bairro: '',
-                        cidade: 'São Bernardo do Campo',
-                        estado: 'SP'
+                        nome_completo: cliente.nome,
+                        whatsapp: cliente.telefone,
+                        cep: cliente.endereco.cep,
+                        logradouro: cliente.endereco.rua,
+                        numero: cliente.endereco.numero,
+                        bairro: cliente.endereco.bairro,
+                        cidade: cliente.endereco.cidade,
+                        estado: cliente.endereco.estado
                     }])
                     .select();
 
@@ -3404,11 +3676,14 @@ async function calculateFreight() {
                     distancia_km: quote.distance,
                     valor_frete: quote.freightCost,
                     tipo_envio: quote.shippingType || null,
+                    status_pagamento: 'pendente',
                     observacoes: [
                         quote.shippingLabel ? `Frete escolhido: ${quote.shippingLabel}` : '',
                         quote.shippingEtaText || '',
                         quote.shippingCarrier ? `Transportadora: ${quote.shippingCarrier}` : '',
-                        quote.paymentLabel ? `Forma de pagamento: ${quote.paymentLabel}` : ''
+                        quote.paymentLabel ? `Forma de pagamento: ${quote.paymentLabel}` : '',
+                        quote.customerEmail ? `E-mail: ${quote.customerEmail}` : '',
+                        quote.customerAddressData ? `Endereço detalhado: ${JSON.stringify(quote.customerAddressData)}` : ''
                     ].filter(Boolean).join(' | '),
                     previsao_entrega: getDeliveryDate()
                 };
@@ -3765,7 +4040,7 @@ async function calculateFreight() {
                 const client = ensureSupabaseClient(true);
                 if (!client) return;
                 const tbody = document.getElementById('ordersTable');
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td></tr>';
 
                 const { data: orders, error } = await client.from('pedidos').select('*').order('created_at', { ascending: false });
                 if (error) throw error;
@@ -3773,7 +4048,7 @@ async function calculateFreight() {
                 tbody.innerHTML = '';
 
                 if (!orders || orders.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Nenhum pedido</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Nenhum pedido</td></tr>';
                     return;
                 }
 
@@ -3785,6 +4060,7 @@ async function calculateFreight() {
                         <td>${escapeHtml(order.modelo_dispositivo || 'Não informado')}</td>
                         <td>R$ ${Number(order.valor_total || 0).toFixed(2)}</td>
                         <td><span style="color: ${getStatusColor(order.status)}; font-weight: 600;">${formatStatus(order.status)}</span></td>
+                        <td>${escapeHtml(formatPaymentStatus(order.status_pagamento))}</td>
                         <td>${order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : '-'}</td>
                         <td>
                             <div class="action-buttons">
@@ -3799,7 +4075,7 @@ async function calculateFreight() {
             } catch (error) {
                 console.error('Erro ao carregar pedidos:', error);
                 const tbody = document.getElementById('ordersTable');
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--error);">Erro ao carregar pedidos: ${escapeHtml(error.message || 'desconhecido')}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--error);">Erro ao carregar pedidos: ${escapeHtml(error.message || 'desconhecido')}</td></tr>`;
                 showAlert('Erro ao carregar pedidos no admin.', 'error');
             }
         }
@@ -4291,7 +4567,7 @@ async function calculateFreight() {
             if (status) status.textContent = isEditMode ? 'Edite os campos e salve para atualizar o pedido.' : 'Modo visualização.';
             if (saveBtn) saveBtn.style.display = isEditMode ? 'inline-flex' : 'none';
 
-            ['orderCustomerName', 'orderWhatsApp', 'orderModel', 'orderTotal', 'orderStatus', 'orderNotes'].forEach((id) => {
+            ['orderCustomerName', 'orderWhatsApp', 'orderModel', 'orderTotal', 'orderStatus', 'orderPaymentStatus', 'orderNotes'].forEach((id) => {
                 const el = document.getElementById(id);
                 if (el) el.disabled = !isEditMode;
             });
@@ -4332,6 +4608,7 @@ async function calculateFreight() {
             document.getElementById('orderModel').value = order.modelo_dispositivo || '';
             document.getElementById('orderTotal').value = Number(order.valor_total || 0);
             document.getElementById('orderStatus').value = order.status || ORDER_STATUS.PENDENTE;
+            document.getElementById('orderPaymentStatus').value = order.status_pagamento || 'pendente';
             document.getElementById('orderCreatedAt').value = order.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : '';
             document.getElementById('orderItems').value = formatOrderItems(order.itens_json);
             document.getElementById('orderNotes').value = order.observacoes || '';
@@ -4383,12 +4660,14 @@ async function calculateFreight() {
             const saveBtn = document.getElementById('saveOrderBtn');
             setButtonLoading(saveBtn, true, 'Salvando...');
             try {
+                const paymentStatus = document.getElementById('orderPaymentStatus').value;
                 const payload = {
                     cliente_nome: document.getElementById('orderCustomerName').value.trim(),
                     whatsapp: document.getElementById('orderWhatsApp').value.trim(),
                     modelo_dispositivo: document.getElementById('orderModel').value.trim(),
                     valor_total: Number(document.getElementById('orderTotal').value || 0),
                     status: document.getElementById('orderStatus').value,
+                    status_pagamento: paymentStatus,
                     observacoes: document.getElementById('orderNotes').value.trim()
                 };
 
@@ -4397,6 +4676,7 @@ async function calculateFreight() {
                     .update(payload)
                     .eq('id', orderId);
                 if (error) throw error;
+                await atualizarStatusPagamento(orderId, paymentStatus, client);
 
                 showAlert('Pedido atualizado com sucesso!', 'success');
                 closeOrderModal();
@@ -4406,6 +4686,16 @@ async function calculateFreight() {
             } finally {
                 setButtonLoading(saveBtn, false);
             }
+        }
+
+        async function atualizarStatusPagamento(orderId, novoStatus, clientRef = null) {
+            const client = clientRef || ensureSupabaseClient(true);
+            if (!client) return;
+            const { error } = await client
+                .from('pedidos')
+                .update({ status_pagamento: novoStatus })
+                .eq('id', orderId);
+            if (error) throw error;
         }
 
         async function deleteOrder(orderId) {
@@ -4463,6 +4753,17 @@ async function getMelhorEnvioShipping(cep, type) {
             document.getElementById('serviceSelect').value = '';
             document.getElementById('partSelect').innerHTML = '<option value="">-- Selecione a peça --</option>';
             document.getElementById('serviceMessage').style.display = 'none';
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerWhatsApp').value = '';
+            document.getElementById('customerCep').value = '';
+            document.getElementById('customerStreet').value = '';
+            document.getElementById('customerNumber').value = '';
+            document.getElementById('customerDistrict').value = '';
+            document.getElementById('customerCity').value = '';
+            document.getElementById('customerState').value = '';
+            document.getElementById('customerEmail').value = '';
+            const cepStatus = document.getElementById('customerCepStatus');
+            if (cepStatus) cepStatus.textContent = '';
             currentQuote = {
                 brand: '',
                 model: '',
@@ -4476,6 +4777,8 @@ async function getMelhorEnvioShipping(cep, type) {
                 customerName: '',
                 customerWhatsApp: '',
                 customerAddress: '',
+                customerAddressData: { cep: '', rua: '', numero: '', bairro: '', cidade: '', estado: '' },
+                customerEmail: '',
                 cep: '',
                 distance: 0,
                 savedOrderId: null,
@@ -4527,8 +4830,12 @@ async function getMelhorEnvioShipping(cep, type) {
         }
 
         function getServiceOrderFormData() {
+            const orderId = document.getElementById('osOrderId').value.trim();
             const clientName = document.getElementById('osClientName').value.trim();
             const phone = document.getElementById('osPhone').value.trim();
+            const address = document.getElementById('osAddress').value.trim();
+            const totalValue = Number(document.getElementById('osTotalValue').value || 0);
+            const partUsed = document.getElementById('osPartUsed').value.trim();
             const brand = document.getElementById('osBrand').value.trim();
             const model = document.getElementById('osModel').value.trim();
             const defect = document.getElementById('osDefect').value.trim();
@@ -4540,8 +4847,44 @@ async function getMelhorEnvioShipping(cep, type) {
             if (!model) throw new Error('Modelo é obrigatório.');
             if (!defect) throw new Error('Defeito é obrigatório.');
             if (!status) throw new Error('Status é obrigatório.');
+            if (!Number.isFinite(totalValue) || totalValue < 0) throw new Error('Valor total inválido.');
 
-            return { clientName, phone, brand, model, defect, status, notes };
+            return { orderId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes };
+        }
+
+        function extractPartFromOrder(order) {
+            const rawNotes = String(order?.observacoes || '');
+            const match = rawNotes.match(/\"servico\":\"([^\"]+)\"/i);
+            if (match?.[1]) return match[1];
+            return order?.servico || '';
+        }
+
+        async function buscarPedidoPorId() {
+            const pedidoId = document.getElementById('osOrderId').value.trim();
+            if (!pedidoId) {
+                showAlert('Informe o número do pedido para carregar.', 'warning');
+                return;
+            }
+
+            try {
+                const pedido = await fetchOrderById(pedidoId);
+                if (!pedido) throw new Error('Pedido não encontrado');
+
+                document.getElementById('osClientName').value = pedido.cliente_nome || '';
+                document.getElementById('osPhone').value = pedido.whatsapp || '';
+                document.getElementById('osAddress').value = pedido.endereco || '';
+                document.getElementById('osTotalValue').value = Number(pedido.valor_total || 0);
+
+                const modelText = String(pedido.modelo_dispositivo || '');
+                const [firstWord, ...rest] = modelText.split(' ').filter(Boolean);
+                document.getElementById('osBrand').value = firstWord || '';
+                document.getElementById('osModel').value = rest.join(' ') || modelText || '';
+                document.getElementById('osDefect').value = pedido.servico || '';
+                document.getElementById('osPartUsed').value = extractPartFromOrder(pedido);
+                showAlert('Pedido carregado com sucesso', 'success');
+            } catch (error) {
+                showAlert('Pedido não encontrado', 'error');
+            }
         }
 
         async function saveServiceOrderRecord(payload, serviceOrderId = null) {
@@ -4564,18 +4907,26 @@ async function getMelhorEnvioShipping(cep, type) {
 
         async function handleServiceOrderFormSubmit(event) {
             event.preventDefault();
+            await salvarOS(event);
+        }
+
+        async function salvarOS(event = null) {
+            if (event?.preventDefault) event.preventDefault();
             const saveBtn = document.getElementById('saveServiceOrderBtn');
             setButtonLoading(saveBtn, true, 'Salvando...');
-
             try {
                 const editingId = document.getElementById('editingServiceOrderId').value;
-                const { clientName, phone, brand, model, defect, status, notes } = getServiceOrderFormData();
+                const { orderId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes } = getServiceOrderFormData();
                 const payload = {
+                    pedido_id: orderId || null,
                     cliente_nome: clientName,
                     cliente_telefone: phone || null,
+                    cliente_endereco: address || null,
                     marca: brand,
                     modelo: model,
                     servico: defect,
+                    peca: partUsed || null,
+                    valor_total: totalValue,
                     status,
                     observacoes: notes || null
                 };
@@ -4594,7 +4945,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 logClientError({
                     message: error.message || 'Erro ao salvar ordem de serviço',
                     stack: error.stack || '',
-                    origin: 'handleServiceOrderFormSubmit'
+                    origin: 'salvarOS'
                 });
             } finally {
                 setButtonLoading(saveBtn, false);
@@ -4617,7 +4968,8 @@ async function getMelhorEnvioShipping(cep, type) {
                     observacoes: [
                         orderCode ? `Pedido ${orderCode} criado pelo site.` : '',
                         quote.shippingLabel ? `Envio: ${quote.shippingLabel}` : '',
-                        quote.shippingEtaText || ''
+                        quote.shippingEtaText || '',
+                        quote.customerEmail ? `E-mail: ${quote.customerEmail}` : ''
                     ].filter(Boolean).join(' | '),
                     data_criacao: new Date().toISOString()
                 };
@@ -4701,8 +5053,12 @@ async function getMelhorEnvioShipping(cep, type) {
 
                 currentServiceOrderId = osId;
                 document.getElementById('editingServiceOrderId').value = String(data.id);
+                document.getElementById('osOrderId').value = data.pedido_id || '';
                 document.getElementById('osClientName').value = data.cliente_nome || '';
                 document.getElementById('osPhone').value = data.cliente_telefone || '';
+                document.getElementById('osAddress').value = data.cliente_endereco || '';
+                document.getElementById('osTotalValue').value = Number(data.valor_total || 0);
+                document.getElementById('osPartUsed').value = data.peca || '';
                 document.getElementById('osBrand').value = data.marca || '';
                 document.getElementById('osModel').value = data.modelo || '';
                 document.getElementById('osDefect').value = data.servico || '';
@@ -4717,8 +5073,7 @@ async function getMelhorEnvioShipping(cep, type) {
         }
 
         async function saveServiceOrder() {
-            // Mantido por compatibilidade. Fluxo principal usa o formulário serviceOrderForm.
-            showAlert('Use o formulário da aba O.S. para salvar alterações.', 'info');
+            await salvarOS();
         }
 
         function closeEditServiceOrderModal() {
