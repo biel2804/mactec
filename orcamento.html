@@ -1634,13 +1634,14 @@
                                 <th>Dispositivo</th>
                                 <th>Valor</th>
                                 <th>Status</th>
+                                <th>Pgto</th>
                                 <th>Data</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="ordersTable">
                             <tr>
-                                <td colspan="7" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td>
+                                <td colspan="8" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1683,6 +1684,14 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="orderPaymentStatus">Status do Pagamento:</label>
+                            <select id="orderPaymentStatus">
+                                <option value="pendente">Pendente</option>
+                                <option value="pago">Pago</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="orderCreatedAt">Data:</label>
                             <input type="text" id="orderCreatedAt" readonly>
                         </div>
@@ -1712,6 +1721,15 @@
                     <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Criar / Editar O.S.</h3>
                     <form id="serviceOrderForm">
                         <input type="hidden" id="editingServiceOrderId" value="">
+                        <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
+                            <div class="form-group">
+                                <label for="osOrderId">Número do Pedido (ID):</label>
+                                <input type="text" id="osOrderId" placeholder="Ex: 123">
+                            </div>
+                            <div class="form-group" style="align-self: end;">
+                                <button type="button" class="btn btn-secondary" style="width:100%;" onclick="buscarPedidoPorId()">Carregar Pedido</button>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label for="osClientName">Cliente:</label>
                             <input type="text" id="osClientName" placeholder="Nome do cliente">
@@ -1719,6 +1737,20 @@
                         <div class="form-group">
                             <label for="osPhone">Telefone (opcional):</label>
                             <input type="tel" id="osPhone" placeholder="(11) 99999-9999">
+                        </div>
+                        <div class="form-group">
+                            <label for="osAddress">Endereço do Cliente:</label>
+                            <input type="text" id="osAddress" placeholder="Rua, número - bairro">
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="osTotalValue">Valor Total (R$):</label>
+                                <input type="number" id="osTotalValue" placeholder="0,00" step="0.01" min="0">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="osPartUsed">Peça utilizada:</label>
+                                <input type="text" id="osPartUsed" placeholder="Ex: Tela OLED iPhone 11">
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="osBrand">Marca:</label>
@@ -2422,6 +2454,7 @@
                 valor_total_final: valorFinal,
                 forma_pagamento: pedido.forma_pagamento,
                 parcelas,
+                status_pagamento: 'pendente',
                 status: ORDER_STATUS.PENDENTE,
                 observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)} | cliente: ${JSON.stringify({ email: customer.email, endereco: customer.address })} | pagamento: ${JSON.stringify(pedido)}`,
                 previsao_entrega: pedido.data
@@ -2488,7 +2521,7 @@
             if (savedOrder?.id) {
                 lines.push(`🆔 Pedido salvo no sistema: #${savedOrder.id}`);
             }
-            lines.push('🛠️ Pedido enviado para criação da O.S. no painel admin e impressão em PDF.');
+            lines.push('🛠️ Pedido enviado.');
 
             const whatsappUrl = `https://wa.me/${formatWhatsAppNumber(companyPhone)}?text=${encodeURIComponent(lines.join('\n'))}`;
             window.open(whatsappUrl, '_blank');
@@ -2575,8 +2608,18 @@
             outros: 'Outros'
         });
 
+        const PAYMENT_STATUS_LABELS = Object.freeze({
+            pendente: 'Pendente',
+            pago: 'Pago',
+            cancelado: 'Cancelado'
+        });
+
         function formatStatus(status) {
             return STATUS_LABELS[status] || status || 'Não informado';
+        }
+
+        function formatPaymentStatus(statusPagamento) {
+            return PAYMENT_STATUS_LABELS[statusPagamento] || statusPagamento || 'Pendente';
         }
 
         function getServiceLabel(service) {
@@ -3597,6 +3640,7 @@ async function calculateFreight() {
                     distancia_km: quote.distance,
                     valor_frete: quote.freightCost,
                     tipo_envio: quote.shippingType || null,
+                    status_pagamento: 'pendente',
                     observacoes: [
                         quote.shippingLabel ? `Frete escolhido: ${quote.shippingLabel}` : '',
                         quote.shippingEtaText || '',
@@ -3960,7 +4004,7 @@ async function calculateFreight() {
                 const client = ensureSupabaseClient(true);
                 if (!client) return;
                 const tbody = document.getElementById('ordersTable');
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td></tr>';
 
                 const { data: orders, error } = await client.from('pedidos').select('*').order('created_at', { ascending: false });
                 if (error) throw error;
@@ -3968,7 +4012,7 @@ async function calculateFreight() {
                 tbody.innerHTML = '';
 
                 if (!orders || orders.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Nenhum pedido</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Nenhum pedido</td></tr>';
                     return;
                 }
 
@@ -3980,6 +4024,7 @@ async function calculateFreight() {
                         <td>${escapeHtml(order.modelo_dispositivo || 'Não informado')}</td>
                         <td>R$ ${Number(order.valor_total || 0).toFixed(2)}</td>
                         <td><span style="color: ${getStatusColor(order.status)}; font-weight: 600;">${formatStatus(order.status)}</span></td>
+                        <td>${escapeHtml(formatPaymentStatus(order.status_pagamento))}</td>
                         <td>${order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : '-'}</td>
                         <td>
                             <div class="action-buttons">
@@ -3994,7 +4039,7 @@ async function calculateFreight() {
             } catch (error) {
                 console.error('Erro ao carregar pedidos:', error);
                 const tbody = document.getElementById('ordersTable');
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--error);">Erro ao carregar pedidos: ${escapeHtml(error.message || 'desconhecido')}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--error);">Erro ao carregar pedidos: ${escapeHtml(error.message || 'desconhecido')}</td></tr>`;
                 showAlert('Erro ao carregar pedidos no admin.', 'error');
             }
         }
@@ -4486,7 +4531,7 @@ async function calculateFreight() {
             if (status) status.textContent = isEditMode ? 'Edite os campos e salve para atualizar o pedido.' : 'Modo visualização.';
             if (saveBtn) saveBtn.style.display = isEditMode ? 'inline-flex' : 'none';
 
-            ['orderCustomerName', 'orderWhatsApp', 'orderModel', 'orderTotal', 'orderStatus', 'orderNotes'].forEach((id) => {
+            ['orderCustomerName', 'orderWhatsApp', 'orderModel', 'orderTotal', 'orderStatus', 'orderPaymentStatus', 'orderNotes'].forEach((id) => {
                 const el = document.getElementById(id);
                 if (el) el.disabled = !isEditMode;
             });
@@ -4527,6 +4572,7 @@ async function calculateFreight() {
             document.getElementById('orderModel').value = order.modelo_dispositivo || '';
             document.getElementById('orderTotal').value = Number(order.valor_total || 0);
             document.getElementById('orderStatus').value = order.status || ORDER_STATUS.PENDENTE;
+            document.getElementById('orderPaymentStatus').value = order.status_pagamento || 'pendente';
             document.getElementById('orderCreatedAt').value = order.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : '';
             document.getElementById('orderItems').value = formatOrderItems(order.itens_json);
             document.getElementById('orderNotes').value = order.observacoes || '';
@@ -4578,12 +4624,14 @@ async function calculateFreight() {
             const saveBtn = document.getElementById('saveOrderBtn');
             setButtonLoading(saveBtn, true, 'Salvando...');
             try {
+                const paymentStatus = document.getElementById('orderPaymentStatus').value;
                 const payload = {
                     cliente_nome: document.getElementById('orderCustomerName').value.trim(),
                     whatsapp: document.getElementById('orderWhatsApp').value.trim(),
                     modelo_dispositivo: document.getElementById('orderModel').value.trim(),
                     valor_total: Number(document.getElementById('orderTotal').value || 0),
                     status: document.getElementById('orderStatus').value,
+                    status_pagamento: paymentStatus,
                     observacoes: document.getElementById('orderNotes').value.trim()
                 };
 
@@ -4592,6 +4640,7 @@ async function calculateFreight() {
                     .update(payload)
                     .eq('id', orderId);
                 if (error) throw error;
+                await atualizarStatusPagamento(orderId, paymentStatus, client);
 
                 showAlert('Pedido atualizado com sucesso!', 'success');
                 closeOrderModal();
@@ -4601,6 +4650,16 @@ async function calculateFreight() {
             } finally {
                 setButtonLoading(saveBtn, false);
             }
+        }
+
+        async function atualizarStatusPagamento(orderId, novoStatus, clientRef = null) {
+            const client = clientRef || ensureSupabaseClient(true);
+            if (!client) return;
+            const { error } = await client
+                .from('pedidos')
+                .update({ status_pagamento: novoStatus })
+                .eq('id', orderId);
+            if (error) throw error;
         }
 
         async function deleteOrder(orderId) {
@@ -4730,8 +4789,12 @@ async function getMelhorEnvioShipping(cep, type) {
         }
 
         function getServiceOrderFormData() {
+            const orderId = document.getElementById('osOrderId').value.trim();
             const clientName = document.getElementById('osClientName').value.trim();
             const phone = document.getElementById('osPhone').value.trim();
+            const address = document.getElementById('osAddress').value.trim();
+            const totalValue = Number(document.getElementById('osTotalValue').value || 0);
+            const partUsed = document.getElementById('osPartUsed').value.trim();
             const brand = document.getElementById('osBrand').value.trim();
             const model = document.getElementById('osModel').value.trim();
             const defect = document.getElementById('osDefect').value.trim();
@@ -4743,8 +4806,44 @@ async function getMelhorEnvioShipping(cep, type) {
             if (!model) throw new Error('Modelo é obrigatório.');
             if (!defect) throw new Error('Defeito é obrigatório.');
             if (!status) throw new Error('Status é obrigatório.');
+            if (!Number.isFinite(totalValue) || totalValue < 0) throw new Error('Valor total inválido.');
 
-            return { clientName, phone, brand, model, defect, status, notes };
+            return { orderId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes };
+        }
+
+        function extractPartFromOrder(order) {
+            const rawNotes = String(order?.observacoes || '');
+            const match = rawNotes.match(/\"servico\":\"([^\"]+)\"/i);
+            if (match?.[1]) return match[1];
+            return order?.servico || '';
+        }
+
+        async function buscarPedidoPorId() {
+            const pedidoId = document.getElementById('osOrderId').value.trim();
+            if (!pedidoId) {
+                showAlert('Informe o número do pedido para carregar.', 'warning');
+                return;
+            }
+
+            try {
+                const pedido = await fetchOrderById(pedidoId);
+                if (!pedido) throw new Error('Pedido não encontrado');
+
+                document.getElementById('osClientName').value = pedido.cliente_nome || '';
+                document.getElementById('osPhone').value = pedido.whatsapp || '';
+                document.getElementById('osAddress').value = pedido.endereco || '';
+                document.getElementById('osTotalValue').value = Number(pedido.valor_total || 0);
+
+                const modelText = String(pedido.modelo_dispositivo || '');
+                const [firstWord, ...rest] = modelText.split(' ').filter(Boolean);
+                document.getElementById('osBrand').value = firstWord || '';
+                document.getElementById('osModel').value = rest.join(' ') || modelText || '';
+                document.getElementById('osDefect').value = pedido.servico || '';
+                document.getElementById('osPartUsed').value = extractPartFromOrder(pedido);
+                showAlert('Pedido carregado com sucesso', 'success');
+            } catch (error) {
+                showAlert('Pedido não encontrado', 'error');
+            }
         }
 
         async function saveServiceOrderRecord(payload, serviceOrderId = null) {
@@ -4767,18 +4866,26 @@ async function getMelhorEnvioShipping(cep, type) {
 
         async function handleServiceOrderFormSubmit(event) {
             event.preventDefault();
+            await salvarOS(event);
+        }
+
+        async function salvarOS(event = null) {
+            if (event?.preventDefault) event.preventDefault();
             const saveBtn = document.getElementById('saveServiceOrderBtn');
             setButtonLoading(saveBtn, true, 'Salvando...');
-
             try {
                 const editingId = document.getElementById('editingServiceOrderId').value;
-                const { clientName, phone, brand, model, defect, status, notes } = getServiceOrderFormData();
+                const { orderId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes } = getServiceOrderFormData();
                 const payload = {
+                    pedido_id: orderId || null,
                     cliente_nome: clientName,
                     cliente_telefone: phone || null,
+                    cliente_endereco: address || null,
                     marca: brand,
                     modelo: model,
                     servico: defect,
+                    peca: partUsed || null,
+                    valor_total: totalValue,
                     status,
                     observacoes: notes || null
                 };
@@ -4797,7 +4904,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 logClientError({
                     message: error.message || 'Erro ao salvar ordem de serviço',
                     stack: error.stack || '',
-                    origin: 'handleServiceOrderFormSubmit'
+                    origin: 'salvarOS'
                 });
             } finally {
                 setButtonLoading(saveBtn, false);
@@ -4905,8 +5012,12 @@ async function getMelhorEnvioShipping(cep, type) {
 
                 currentServiceOrderId = osId;
                 document.getElementById('editingServiceOrderId').value = String(data.id);
+                document.getElementById('osOrderId').value = data.pedido_id || '';
                 document.getElementById('osClientName').value = data.cliente_nome || '';
                 document.getElementById('osPhone').value = data.cliente_telefone || '';
+                document.getElementById('osAddress').value = data.cliente_endereco || '';
+                document.getElementById('osTotalValue').value = Number(data.valor_total || 0);
+                document.getElementById('osPartUsed').value = data.peca || '';
                 document.getElementById('osBrand').value = data.marca || '';
                 document.getElementById('osModel').value = data.modelo || '';
                 document.getElementById('osDefect').value = data.servico || '';
@@ -4921,8 +5032,7 @@ async function getMelhorEnvioShipping(cep, type) {
         }
 
         async function saveServiceOrder() {
-            // Mantido por compatibilidade. Fluxo principal usa o formulário serviceOrderForm.
-            showAlert('Use o formulário da aba O.S. para salvar alterações.', 'info');
+            await salvarOS();
         }
 
         function closeEditServiceOrderModal() {
