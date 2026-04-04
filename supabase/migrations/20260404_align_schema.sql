@@ -128,7 +128,7 @@ create table if not exists public.ordens_servico (
   status text not null default 'pendente',
   observacoes text,
   data_criacao timestamptz not null default now(),
-  pedido_id bigint references public.pedidos(id) on delete set null,
+  pedido_id text,
   updated_at timestamptz not null default now()
 );
 
@@ -144,19 +144,87 @@ alter table public.ordens_servico add column if not exists valor_total numeric(1
 alter table public.ordens_servico add column if not exists status text;
 alter table public.ordens_servico add column if not exists observacoes text;
 alter table public.ordens_servico add column if not exists data_criacao timestamptz;
-alter table public.ordens_servico add column if not exists pedido_id bigint;
+alter table public.ordens_servico add column if not exists pedido_id text;
 alter table public.ordens_servico add column if not exists updated_at timestamptz;
 
 do $$
+declare
+  v_pedidos_id_type text;
+  v_pedido_id_type text;
 begin
-  if not exists (
-    select 1
-    from pg_constraint
-    where conname = 'ordens_servico_pedido_id_fkey'
-  ) then
-    alter table public.ordens_servico
-      add constraint ordens_servico_pedido_id_fkey
-      foreign key (pedido_id) references public.pedidos(id) on delete set null;
+  select format_type(a.atttypid, a.atttypmod)
+    into v_pedidos_id_type
+  from pg_attribute a
+  join pg_class c on c.oid = a.attrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public'
+    and c.relname = 'pedidos'
+    and a.attname = 'id'
+    and a.attnum > 0
+    and not a.attisdropped;
+
+  if v_pedidos_id_type is not null then
+    select format_type(a.atttypid, a.atttypmod)
+      into v_pedido_id_type
+    from pg_attribute a
+    join pg_class c on c.oid = a.attrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and c.relname = 'ordens_servico'
+      and a.attname = 'pedido_id'
+      and a.attnum > 0
+      and not a.attisdropped;
+
+    if v_pedido_id_type is null then
+      execute format('alter table public.ordens_servico add column pedido_id %s', v_pedidos_id_type);
+      v_pedido_id_type := v_pedidos_id_type;
+    elsif v_pedido_id_type <> v_pedidos_id_type then
+      execute 'alter table public.ordens_servico drop constraint if exists ordens_servico_pedido_id_fkey';
+
+      if v_pedidos_id_type = 'uuid' then
+        execute '
+          alter table public.ordens_servico
+          alter column pedido_id type uuid
+          using (
+            case
+              when pedido_id::text ~* ''^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$''
+                then pedido_id::text::uuid
+              else null
+            end
+          )';
+      elsif v_pedidos_id_type in ('bigint', 'integer', 'smallint') then
+        execute format(
+          'alter table public.ordens_servico
+           alter column pedido_id type %s
+           using (
+             case
+               when pedido_id::text ~ ''^-?[0-9]+$'' then pedido_id::text::%s
+               else null
+             end
+           )',
+          v_pedidos_id_type,
+          v_pedidos_id_type
+        );
+      else
+        execute format(
+          'alter table public.ordens_servico
+           alter column pedido_id type %s
+           using null',
+          v_pedidos_id_type
+        );
+      end if;
+    end if;
+
+    if not exists (
+      select 1
+      from pg_constraint
+      where conname = 'ordens_servico_pedido_id_fkey'
+    ) then
+      execute '
+        alter table public.ordens_servico
+        add constraint ordens_servico_pedido_id_fkey
+        foreign key (pedido_id) references public.pedidos(id) on delete set null';
+    end if;
   end if;
 end $$;
 
