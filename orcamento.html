@@ -2538,9 +2538,14 @@
                 modelo_dispositivo: mainDevice ? `${mainDevice.marca || ''} ${mainDevice.modelo || ''}`.trim() : 'Pedido de acessórios',
                 servico: mainDevice?.servico || 'Pedido via carrinho',
                 valor_total: total,
+                desconto,
+                valor_total_final: valorFinal,
+                forma_pagamento: pedido.forma_pagamento,
+                parcelas,
+                status_pagamento: 'pendente',
                 status: ORDER_STATUS.PENDENTE,
-                observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)}`,
-                previsao_entrega: new Date().toISOString()
+                observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)} | cliente: ${JSON.stringify({ email: customer.email, endereco: customer.address })} | pagamento: ${JSON.stringify(pedido)}`,
+                previsao_entrega: pedido.data
             };
 
             const { data, error } = await client.from('pedidos').insert([payload]).select().single();
