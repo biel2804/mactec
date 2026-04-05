@@ -14,7 +14,11 @@ const ORIGEM = {
 const VALOR_POR_KM = Number(Deno.env.get("FRETE_VALOR_POR_KM") ?? 2.5);
 const FRETE_MINIMO = Number(Deno.env.get("FRETE_MINIMO") ?? 15);
 const GEOCODING_API_KEY = Deno.env.get("GEOCODING_API_KEY") ?? "";
-const GEOCODING_API_URL = Deno.env.get("GEOCODING_API_URL") ?? "https://api.opencagedata.com/geocode/v1/json";
+const GEOCODING_PROVIDER = (Deno.env.get("GEOCODING_PROVIDER") ?? "opencage").toLowerCase();
+const GEOCODING_API_URL = Deno.env.get("GEOCODING_API_URL")
+  ?? (GEOCODING_PROVIDER === "google"
+    ? "https://maps.googleapis.com/maps/api/geocode/json"
+    : "https://api.opencagedata.com/geocode/v1/json");
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -100,21 +104,28 @@ async function geocodeWithPrimaryProvider(enderecoTexto: string) {
     throw new Error("GEOCODING_API_KEY não configurada no backend.");
   }
 
-  const geocodingUrl = `${GEOCODING_API_URL}?q=${encodeURIComponent(enderecoTexto)}&key=${encodeURIComponent(GEOCODING_API_KEY)}&limit=1&language=pt-BR`;
+  const geocodingUrl = GEOCODING_PROVIDER === "google"
+    ? `${GEOCODING_API_URL}?address=${encodeURIComponent(enderecoTexto)}&key=${encodeURIComponent(GEOCODING_API_KEY)}&language=pt-BR`
+    : `${GEOCODING_API_URL}?q=${encodeURIComponent(enderecoTexto)}&key=${encodeURIComponent(GEOCODING_API_KEY)}&limit=1&language=pt-BR`;
   const geocodingResponse = await fetch(geocodingUrl);
   if (!geocodingResponse.ok) {
     throw new Error(`Geocoding primário indisponível (status ${geocodingResponse.status}).`);
   }
 
   const geocodingPayload = await geocodingResponse.json();
-  const destination = geocodingPayload?.results?.[0]?.geometry;
+  const destination = GEOCODING_PROVIDER === "google"
+    ? geocodingPayload?.results?.[0]?.geometry?.location
+    : geocodingPayload?.results?.[0]?.geometry;
   const lat = Number(destination?.lat);
   const lon = Number(destination?.lng);
+  if (GEOCODING_PROVIDER === "google" && geocodingPayload?.status && geocodingPayload.status !== "OK") {
+    throw new Error(`Geocoding Google retornou status ${geocodingPayload.status}.`);
+  }
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
     throw new Error("Geocoding primário não retornou coordenadas válidas.");
   }
 
-  return { lat, lon, provider: "primary" };
+  return { lat, lon, provider: `primary_${GEOCODING_PROVIDER}` };
 }
 
 async function geocodeWithFallback(enderecoTexto: string) {
