@@ -1074,6 +1074,33 @@
             transform: scale(1.05);
         }
 
+        .whatsapp-float {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: #25D366;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: transform 0.2s ease;
+            text-decoration: none;
+        }
+
+        .whatsapp-float:hover {
+            transform: scale(1.08);
+        }
+
+        .whatsapp-float img {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -1963,6 +1990,20 @@
     <!-- Alert Container -->
     <div id="alertContainer" style="position: fixed; top: 20px; right: 20px; z-index: 3000; max-width: 400px;"></div>
 
+    <a
+        class="whatsapp-float"
+        href="https://wa.me/5511945462973"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Conversar no WhatsApp"
+        onclick="abrirWhatsApp(); return false;"
+    >
+        <img
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M17.6 6.32A7.93 7.93 0 0 0 12 4a8 8 0 0 0-6.93 12l-1.07 4 4.1-1.08A8 8 0 1 0 17.6 6.32Zm-5.6 14.35a6.37 6.37 0 0 1-3.25-.9l-.24-.14-2.43.64.65-2.36-.16-.24a6.39 6.39 0 1 1 5.43 2.99Zm3.5-4.77c-.2-.1-1.18-.58-1.36-.64-.18-.07-.31-.1-.44.1-.13.2-.5.63-.62.76-.11.13-.22.15-.42.05-.2-.1-.83-.31-1.58-.99-.59-.52-.99-1.17-1.1-1.36-.12-.2-.01-.3.08-.4.09-.1.2-.22.3-.33.1-.11.13-.2.2-.33.07-.13.03-.25-.02-.35-.05-.1-.45-1.09-.62-1.5-.16-.39-.33-.34-.44-.35h-.38c-.13 0-.35.05-.53.25-.18.2-.69.68-.69 1.66 0 .97.71 1.91.81 2.05.1.13 1.4 2.14 3.39 3 .47.2.84.32 1.13.41.47.15.9.13 1.24.08.38-.06 1.18-.48 1.35-.95.17-.47.17-.87.12-.95-.05-.08-.18-.13-.38-.23Z'/%3E%3C/svg%3E"
+            alt="WhatsApp"
+        />
+    </a>
+
     <script>
         // Shopping Cart
         const CART_STORAGE_KEY = 'mactec_cart_v1';
@@ -2575,7 +2616,6 @@
         }
 
         async function sendCartToCompanyWhatsApp(savedOrder = null, checkoutData = null) {
-            const companyPhone = '5511958085210';
             const orderDate = new Date().toLocaleString('pt-BR');
             const lines = ['🧾 *Novo pedido pelo site*', `📅 Data: ${orderDate}`, '', '📦 *Itens do carrinho:*'];
             let total = 0;
@@ -2626,8 +2666,12 @@
             }
             lines.push('🛠️ Pedido enviado.');
 
-            const whatsappUrl = `https://wa.me/${formatWhatsAppNumber(companyPhone)}?text=${encodeURIComponent(lines.join('\n'))}`;
-            window.open(whatsappUrl, '_blank');
+            const mensagemPedido = gerarMensagemPedido({
+                lines,
+                savedOrder,
+                checkoutData
+            });
+            abrirWhatsApp(mensagemPedido);
 
             try {
                 await syncAccessoryStockAfterCheckout();
@@ -2677,6 +2721,23 @@
         }
 
         // Social Media Configuration
+        const LOJA_WHATSAPP = '5511945462973';
+
+        function abrirWhatsApp(mensagem = '') {
+            const baseUrl = `https://wa.me/${LOJA_WHATSAPP}`;
+            const text = String(mensagem || '').trim();
+            const url = text ? `${baseUrl}?text=${encodeURIComponent(text)}` : baseUrl;
+            window.open(url, '_blank');
+        }
+
+        function gerarMensagemPedido(pedido = {}) {
+            if (Array.isArray(pedido?.lines) && pedido.lines.length) {
+                return pedido.lines.join('\n');
+            }
+
+            return String(COMPANY_DEFAULT_MESSAGE || 'Olá! Gostaria de mais informações.');
+        }
+
         let INSTAGRAM_URL = 'https://instagram.com/mactec.support';
         let FACEBOOK_URL = 'https://facebook.com/mactec.support';
         let TWITTER_URL = 'https://twitter.com/mactec.support';
@@ -2684,7 +2745,7 @@
         let YOUTUBE_URL = 'https://youtube.com/@mactec.support';
         let COMPANY_NAME = 'MacTec Support';
         let COMPANY_ADDRESS = 'R. Serra do Pantanal, 54, SBC';
-        let COMPANY_WHATSAPP = '';
+        let COMPANY_WHATSAPP = LOJA_WHATSAPP;
         let COMPANY_DEFAULT_MESSAGE = 'Olá! Gostaria de mais informações.';
         let COMPANY_LOGO_URL = '';
 
@@ -3082,9 +3143,7 @@
                 message += ' para ' + brand + ' ' + model;
             }
 
-            const whatsappPhone = '5511999999999';
-            const whatsappUrl = 'https://wa.me/' + whatsappPhone + '?text=' + encodeURIComponent(message);
-            window.open(whatsappUrl, '_blank');
+            abrirWhatsApp(message);
         }
 
         // Load Brands from Supabase
@@ -4877,8 +4936,7 @@ async function getMelhorEnvioShipping(cep, type) {
 
         function goToContact() {
             closeMobileNav();
-            const whatsapp = COMPANY_WHATSAPP || '(11) 99999-9999';
-            showAlert(`Entre em contato conosco pelo WhatsApp: ${whatsapp}`, 'info');
+            abrirWhatsApp();
         }
 
         // Service Order Functions
