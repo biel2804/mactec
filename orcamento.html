@@ -1074,6 +1074,33 @@
             transform: scale(1.05);
         }
 
+        .whatsapp-float {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: #25D366;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: transform 0.2s ease;
+            text-decoration: none;
+        }
+
+        .whatsapp-float:hover {
+            transform: scale(1.08);
+        }
+
+        .whatsapp-float img {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -1313,7 +1340,8 @@
                     <h3>5. Informações de Retirada e Entrega</h3>
                     <div class="form-group">
                         <label for="cepInput">CEP:</label>
-                        <input type="text" id="cepInput" placeholder="00000-000" onchange="calculateFreight()">
+                        <input type="text" id="cepInput" placeholder="00000000" inputmode="numeric" maxlength="8" onchange="calculateFreight()">
+                        <small style="display:block; margin-top:0.35rem; color: var(--text-secondary);">Digite apenas números (sem traços ou pontos)</small>
                     </div>
                     <div id="shippingOptions" class="shipping-options shipping-options-empty">
                         <p>Digite o CEP para ver as opções de envio via Motoboy, SEDEX e PAC.</p>
@@ -1357,7 +1385,8 @@
                     </div>
                     <div class="form-group">
                         <label for="customerCep">CEP:</label>
-                        <input type="text" id="customerCep" placeholder="Ex: 01001-000" maxlength="9" onblur="buscarCep()">
+                        <input type="text" id="customerCep" placeholder="Ex: 01001000" inputmode="numeric" maxlength="8" onblur="buscarCep()">
+                        <small style="display:block; margin-top:0.35rem; color: var(--text-secondary);">Digite apenas números (sem traços ou pontos)</small>
                         <small id="customerCepStatus" style="display:block; margin-top:0.35rem; color: var(--text-secondary);"></small>
                     </div>
                     <div class="form-group">
@@ -1961,6 +1990,20 @@
     <!-- Alert Container -->
     <div id="alertContainer" style="position: fixed; top: 20px; right: 20px; z-index: 3000; max-width: 400px;"></div>
 
+    <a
+        class="whatsapp-float"
+        href="https://wa.me/5511945462973"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Conversar no WhatsApp"
+        onclick="abrirWhatsApp(); return false;"
+    >
+        <img
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M17.6 6.32A7.93 7.93 0 0 0 12 4a8 8 0 0 0-6.93 12l-1.07 4 4.1-1.08A8 8 0 1 0 17.6 6.32Zm-5.6 14.35a6.37 6.37 0 0 1-3.25-.9l-.24-.14-2.43.64.65-2.36-.16-.24a6.39 6.39 0 1 1 5.43 2.99Zm3.5-4.77c-.2-.1-1.18-.58-1.36-.64-.18-.07-.31-.1-.44.1-.13.2-.5.63-.62.76-.11.13-.22.15-.42.05-.2-.1-.83-.31-1.58-.99-.59-.52-.99-1.17-1.1-1.36-.12-.2-.01-.3.08-.4.09-.1.2-.22.3-.33.1-.11.13-.2.2-.33.07-.13.03-.25-.02-.35-.05-.1-.45-1.09-.62-1.5-.16-.39-.33-.34-.44-.35h-.38c-.13 0-.35.05-.53.25-.18.2-.69.68-.69 1.66 0 .97.71 1.91.81 2.05.1.13 1.4 2.14 3.39 3 .47.2.84.32 1.13.41.47.15.9.13 1.24.08.38-.06 1.18-.48 1.35-.95.17-.47.17-.87.12-.95-.05-.08-.18-.13-.38-.23Z'/%3E%3C/svg%3E"
+            alt="WhatsApp"
+        />
+    </a>
+
     <script>
         // Shopping Cart
         const CART_STORAGE_KEY = 'mactec_cart_v1';
@@ -2052,7 +2095,7 @@
             const cepStatus = document.getElementById('customerCepStatus');
             if (!cepInput || !cepStatus) return;
 
-            const cepDigits = cepInput.value.replace(/\D/g, '');
+            const cepDigits = sanitizeCepInputValue(cepInput.value);
             if (!cepDigits) {
                 cepStatus.textContent = '';
                 return;
@@ -2064,7 +2107,7 @@
                 return;
             }
 
-            cepInput.value = cepDigits.replace(/(\d{5})(\d{3})/, '$1-$2');
+            cepInput.value = cepDigits;
             cepStatus.textContent = 'Buscando endereço...';
             cepStatus.style.color = 'var(--text-secondary)';
             setAddressFieldsLoading(true);
@@ -2094,7 +2137,7 @@
         function getCustomerFormData() {
             const nome = document.getElementById('customerName')?.value.trim() || '';
             const telefone = document.getElementById('customerWhatsApp')?.value.trim() || '';
-            const cep = document.getElementById('customerCep')?.value.trim() || '';
+            const cep = sanitizeCepInputValue(document.getElementById('customerCep')?.value || '');
             const rua = document.getElementById('customerStreet')?.value.trim() || '';
             const numero = document.getElementById('customerNumber')?.value.trim() || '';
             const bairro = document.getElementById('customerDistrict')?.value.trim() || '';
@@ -2106,8 +2149,8 @@
                 throw new Error('Informe um e-mail válido ou deixe o campo em branco.');
             }
 
-            const cepDigits = cep.replace(/\D/g, '');
-            if (!cepDigits || cepDigits.length !== 8) {
+            const cepDigits = sanitizeCepInputValue(cep);
+            if (cepDigits.length !== 8) {
                 throw new Error('Informe um CEP válido para continuar.');
             }
             if (!numero) {
@@ -2117,8 +2160,8 @@
             return {
                 nome,
                 telefone,
-                endereco: { cep: cepDigits.replace(/(\d{5})(\d{3})/, '$1-$2'), rua, numero, bairro, cidade, estado },
-                enderecoFormatado: buildFormattedCustomerAddress({ cep: cepDigits.replace(/(\d{5})(\d{3})/, '$1-$2'), rua, numero, bairro, cidade, estado }),
+                endereco: { cep: cepDigits, rua, numero, bairro, cidade, estado },
+                enderecoFormatado: buildFormattedCustomerAddress({ cep: cepDigits, rua, numero, bairro, cidade, estado }),
                 email: email || null
             };
         }
@@ -2137,7 +2180,7 @@
                 return;
             }
 
-            if (currentQuote.totalPrice <= 0) {
+            if (Number(currentQuote.baseCost || 0) <= 0) {
                 showAlert('Por favor, selecione uma peca e calcule o frete', 'error');
                 return;
             }
@@ -2154,6 +2197,9 @@
             currentQuote.customerEmail = cliente.email;
             currentQuote.itemType = 'quote';
             currentQuote.id = 'QUOTE-' + Date.now();
+            currentQuote.mao_de_obra = currentQuote.laborCost;
+            currentQuote.mao_de_obra_label = formatMoney(currentQuote.laborCost);
+            currentQuote.total_label = formatMoney(currentQuote.totalPrice);
 
             cart.push({...currentQuote});
             updateCartDisplay();
@@ -2365,10 +2411,12 @@
                             <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Cliente: ${escapeHtml(item.customerName)}</p>
                             <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Serviço: ${escapeHtml(item.serviceLabel || getServiceLabel(item.service))}</p>
                             <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Aparelho: ${escapeHtml(item.brand || 'Marca não informada')} ${escapeHtml(item.model || '')}</p>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Valor: R$ ${item.totalPrice.toFixed(2)}</p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Valor da peça: ${formatMoney(item.baseCost)}</p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Mão de obra: ${formatMoney(item.mao_de_obra ?? item.laborCost)}</p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Total: ${formatMoney(item.totalPrice)}</p>
                         </div>
                     `;
-                    subtotal += item.totalPrice;
+                    subtotal += Number(item.totalPrice || 0);
                     freight += item.freightCost || 0;
                 } else if (item.itemType === 'accessory') {
                     html += `
@@ -2446,7 +2494,11 @@
                         marca: item.brand || null,
                         modelo: item.model || null,
                         servico: item.serviceLabel || getServiceLabel(item.service) || null,
-                        valor: Number(item.totalPrice || 0)
+                        valor_peca: Number(item.baseCost || 0),
+                        mao_de_obra: item.mao_de_obra === null ? null : Number(item.mao_de_obra ?? item.laborCost ?? 0),
+                        valor_frete: Number(item.freightCost || 0),
+                        valor_total: item.totalPrice === null ? null : Number(item.totalPrice || 0),
+                        valor: item.totalPrice === null ? null : Number(item.totalPrice || 0)
                     };
                 }
                 return {
@@ -2564,22 +2616,25 @@
         }
 
         async function sendCartToCompanyWhatsApp(savedOrder = null, checkoutData = null) {
-            const companyPhone = '5511958085210';
             const orderDate = new Date().toLocaleString('pt-BR');
             const lines = ['🧾 *Novo pedido pelo site*', `📅 Data: ${orderDate}`, '', '📦 *Itens do carrinho:*'];
             let total = 0;
 
             cart.forEach((item, index) => {
                 if (item.itemType === 'quote') {
-                    const itemTotal = Number(item.totalPrice || 0);
-                    total += itemTotal;
+                    const itemTotal = item.totalPrice === null ? null : Number(item.totalPrice || 0);
+                    total += Number(itemTotal || 0);
                     lines.push(
                         `${index + 1}. Orçamento ${item.brand || ''} ${item.model || ''}`.trim(),
                         `   Serviço: ${item.service || 'Não informado'}`,
                         `   Cliente: ${item.customerName || 'Não informado'} | WhatsApp: ${item.customerWhatsApp || 'Não informado'}`,
                         `   Endereço: ${item.customerAddress || 'Não informado'}`,
                         item.customerEmail ? `   E-mail: ${item.customerEmail}` : '',
-                        `   Total: R$ ${itemTotal.toFixed(2)}`,
+                        `   Valor da peça: ${formatMoney(item.baseCost)}`,
+                        `   Mão de obra: ${formatMoney(item.mao_de_obra ?? item.laborCost)}`,
+                        `   Frete: ${formatMoney(item.freightCost)}`,
+                        `   Total: ${formatMoney(itemTotal)}`,
+                        '   Retirada e entrega a combinar',
                         ''
                     );
                 } else {
@@ -2611,8 +2666,12 @@
             }
             lines.push('🛠️ Pedido enviado.');
 
-            const whatsappUrl = `https://wa.me/${formatWhatsAppNumber(companyPhone)}?text=${encodeURIComponent(lines.join('\n'))}`;
-            window.open(whatsappUrl, '_blank');
+            const mensagemPedido = gerarMensagemPedido({
+                lines,
+                savedOrder,
+                checkoutData
+            });
+            abrirWhatsApp(mensagemPedido);
 
             try {
                 await syncAccessoryStockAfterCheckout();
@@ -2662,6 +2721,23 @@
         }
 
         // Social Media Configuration
+        const LOJA_WHATSAPP = '5511945462973';
+
+        function abrirWhatsApp(mensagem = '') {
+            const baseUrl = `https://wa.me/${LOJA_WHATSAPP}`;
+            const text = String(mensagem || '').trim();
+            const url = text ? `${baseUrl}?text=${encodeURIComponent(text)}` : baseUrl;
+            window.open(url, '_blank');
+        }
+
+        function gerarMensagemPedido(pedido = {}) {
+            if (Array.isArray(pedido?.lines) && pedido.lines.length) {
+                return pedido.lines.join('\n');
+            }
+
+            return String(COMPANY_DEFAULT_MESSAGE || 'Olá! Gostaria de mais informações.');
+        }
+
         let INSTAGRAM_URL = 'https://instagram.com/mactec.support';
         let FACEBOOK_URL = 'https://facebook.com/mactec.support';
         let TWITTER_URL = 'https://twitter.com/mactec.support';
@@ -2669,7 +2745,7 @@
         let YOUTUBE_URL = 'https://youtube.com/@mactec.support';
         let COMPANY_NAME = 'MacTec Support';
         let COMPANY_ADDRESS = 'R. Serra do Pantanal, 54, SBC';
-        let COMPANY_WHATSAPP = '';
+        let COMPANY_WHATSAPP = LOJA_WHATSAPP;
         let COMPANY_DEFAULT_MESSAGE = 'Olá! Gostaria de mais informações.';
         let COMPANY_LOGO_URL = '';
 
@@ -2829,8 +2905,11 @@
             part: '',
             baseCost: 0,
             laborCost: 0,
+            mao_de_obra: 0,
+            mao_de_obra_label: formatMoney(0),
             freightCost: 0,
             totalPrice: 0,
+            total_label: formatMoney(0),
             customerName: '',
             customerWhatsApp: '',
             customerAddress: '',
@@ -2979,6 +3058,10 @@
                     updateCompanyLogoPreview(event.target.value.trim());
                 });
             });
+            safeRun('bind CEP fields sanitization', () => {
+                bindCepField('cepInput');
+                bindCepField('customerCep');
+            });
             safeRun('set initial form modes', () => {
                 setPartFormMode('create');
                 setAccessoryFormMode('create');
@@ -3060,9 +3143,7 @@
                 message += ' para ' + brand + ' ' + model;
             }
 
-            const whatsappPhone = '5511999999999';
-            const whatsappUrl = 'https://wa.me/' + whatsappPhone + '?text=' + encodeURIComponent(message);
-            window.open(whatsappUrl, '_blank');
+            abrirWhatsApp(message);
         }
 
         // Load Brands from Supabase
@@ -3222,21 +3303,14 @@
             const part = JSON.parse(selectedOption);
             currentQuote.part = part;
 
-            // CR = cost + R$20 (distributor freight - hidden)
-            const CR = part.preco_custo + 20;
+            // Custo base = custo da peça + frete do distribuidor (oculto)
+            const costBase = Number(part.preco_custo || 0) + 20;
+            const laborCost = calculateLabor(costBase);
 
-            // MO (Labor): If CR > R$200 → 75% of CR | If CR ≤ R$200 → iPhone: R$120, Others: R$100
-            let MO = 0;
-            if (CR > 200) {
-                MO = CR * 0.75;
-            } else {
-                // Check if it's iPhone
-                const model = document.getElementById('modelSelect').value;
-                MO = model.toLowerCase().includes('iphone') ? 120 : 100;
-            }
-
-            currentQuote.baseCost = CR;
-            currentQuote.laborCost = MO;
+            currentQuote.baseCost = costBase;
+            currentQuote.laborCost = laborCost;
+            currentQuote.mao_de_obra = laborCost;
+            currentQuote.mao_de_obra_label = formatMoney(laborCost);
 
             updatePriceDisplay();
         }
@@ -3245,6 +3319,44 @@
 // Calculate Freight
 function formatCurrencyBRL(value) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
+}
+
+function formatMoney(value) {
+    if (value === null || value === undefined) return 'A combinar';
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return 'A combinar';
+    return `R$ ${numericValue.toFixed(2)}`;
+}
+
+function calculateLabor(costBase) {
+    const normalizedCost = Number(costBase);
+    if (!Number.isFinite(normalizedCost) || normalizedCost <= 0) return null;
+    if (normalizedCost <= 350) return 65;
+    if (normalizedCost <= 550) return 130;
+    return null;
+}
+
+function sanitizeCepInputValue(value) {
+    return String(value || '').replace(/\D/g, '').slice(0, 8);
+}
+
+function bindCepField(inputId, options = {}) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const runSanitization = () => {
+        const sanitized = sanitizeCepInputValue(input.value);
+        if (input.value !== sanitized) {
+            input.value = sanitized;
+        }
+    };
+
+    runSanitization();
+    input.addEventListener('input', runSanitization);
+
+    if (typeof options.onBlur === 'function') {
+        input.addEventListener('blur', options.onBlur);
+    }
 }
 
 function addBusinessDays(startDate, businessDays) {
@@ -3438,7 +3550,7 @@ async function calculateFreight() {
             badgeClass: 'local',
             badgeLabel: 'Local',
             icon: '🚚',
-            title: context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM ? 'Entrega Local (Motoboy)' : 'Motoboy - entrega a combinar',
+            title: context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM ? 'Entrega Local (Motoboy)' : 'Motoboy - retirada e entrega a combinar',
             description: context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM
                 ? 'Prioridade para entrega local em São Bernardo do Campo.'
                 : 'Entrega via motoboy com alinhamento final no atendimento.',
@@ -3531,16 +3643,23 @@ async function calcularFrete(cep) {
 // Update Price Display
 
         function updatePriceDisplay() {
-            currentQuote.totalPrice = currentQuote.baseCost + currentQuote.laborCost + currentQuote.freightCost;
+            const baseCost = Number(currentQuote.baseCost || 0);
+            const freightCost = Number(currentQuote.freightCost || 0);
+            const laborCost = currentQuote.laborCost === null ? null : Number(currentQuote.laborCost || 0);
 
-            document.getElementById('baseCost').textContent = formatCurrencyBRL(currentQuote.baseCost);
-            document.getElementById('laborCost').textContent = formatCurrencyBRL(currentQuote.laborCost);
-            document.getElementById('freightCost').textContent = formatCurrencyBRL(currentQuote.freightCost);
-            document.getElementById('totalPrice').textContent = formatCurrencyBRL(currentQuote.totalPrice);
+            currentQuote.mao_de_obra = laborCost;
+            currentQuote.mao_de_obra_label = formatMoney(laborCost);
+            currentQuote.totalPrice = laborCost === null ? null : (baseCost + laborCost + freightCost);
+            currentQuote.total_label = formatMoney(currentQuote.totalPrice);
+
+            document.getElementById('baseCost').textContent = formatCurrencyBRL(baseCost);
+            document.getElementById('laborCost').textContent = currentQuote.mao_de_obra_label;
+            document.getElementById('freightCost').textContent = formatCurrencyBRL(freightCost);
+            document.getElementById('totalPrice').textContent = currentQuote.total_label;
             const shippingLabel = document.getElementById('freightChoiceLabel');
             if (shippingLabel) {
                 shippingLabel.textContent = currentQuote.shippingLabel
-                    ? `${currentQuote.shippingLabel} • ${currentQuote.shippingEtaText || 'Entrega a combinar'}`
+                    ? `${currentQuote.shippingLabel} • ${currentQuote.shippingEtaText || 'Retirada e entrega a combinar'}`
                     : 'Selecione uma opção de frete.';
             }
         }
@@ -3561,7 +3680,7 @@ async function calcularFrete(cep) {
                 return;
             }
 
-            if (currentQuote.totalPrice <= 0) {
+            if (Number(currentQuote.baseCost || 0) <= 0) {
                 showAlert('Por favor, selecione uma peça e calcule o frete', 'error');
                 return;
             }
@@ -3800,7 +3919,7 @@ async function calcularFrete(cep) {
         // Share on WhatsApp
         function shareOnWhatsApp(orderId) {
             const paymentInfo = currentQuote.paymentLabel ? ` Forma de pagamento: ${currentQuote.paymentLabel}.` : '';
-            const message = `Olá! Seu pedido ${orderId} foi confirmado. Valor total: R$ ${currentQuote.totalPrice.toFixed(2)}.${paymentInfo} Prazo de entrega: ${new Date(getDeliveryDate()).toLocaleDateString('pt-BR')}. Obrigado!`;
+            const message = `Olá! Seu pedido ${orderId} foi confirmado. Valor total: ${formatMoney(currentQuote.totalPrice)}.${paymentInfo} Prazo de entrega: ${new Date(getDeliveryDate()).toLocaleDateString('pt-BR')}. Obrigado!`;
             const whatsappUrl = `https://wa.me/55${getNormalizedWhatsApp(currentQuote.customerWhatsApp)}?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
         }
@@ -4772,8 +4891,11 @@ async function getMelhorEnvioShipping(cep, type) {
                 part: '',
                 baseCost: 0,
                 laborCost: 0,
+                mao_de_obra: 0,
+                mao_de_obra_label: formatMoney(0),
                 freightCost: 0,
                 totalPrice: 0,
+                total_label: formatMoney(0),
                 customerName: '',
                 customerWhatsApp: '',
                 customerAddress: '',
@@ -4814,8 +4936,7 @@ async function getMelhorEnvioShipping(cep, type) {
 
         function goToContact() {
             closeMobileNav();
-            const whatsapp = COMPANY_WHATSAPP || '(11) 99999-9999';
-            showAlert(`Entre em contato conosco pelo WhatsApp: ${whatsapp}`, 'info');
+            abrirWhatsApp();
         }
 
         // Service Order Functions
