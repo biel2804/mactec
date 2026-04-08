@@ -1473,10 +1473,8 @@
                 </div>
                 <div class="form-group" id="installmentsGroup" style="display: none; margin-bottom: 0.75rem;">
                     <label for="installmentsSelect">Parcelamento no crédito:</label>
-                    <select id="installmentsSelect">
-                        <option value="1">1x sem juros</option>
-                        <option value="2">2x sem juros</option>
-                        <option value="3">3x sem juros</option>
+                    <select id="installmentsSelect" onchange="atualizarTotal()">
+                        <option value="1">1x de R$ 0,00 sem juros</option>
                     </select>
                 </div>
                 <p id="installmentsHint" style="display: none; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;"></p>
@@ -2328,18 +2326,27 @@
                 desconto = totalOriginal * 0.05;
             }
 
-            const valorFinal = totalOriginal - desconto;
+            const valorBase = totalOriginal - desconto;
             const canInstall = method === 'credito' && totalOriginal >= 200;
             installmentsGroup.style.display = canInstall ? 'block' : 'none';
+            atualizarOpcoesParcelamento(valorBase);
+
+            if (!canInstall) {
+                installmentsSelect.value = '1';
+            }
 
             if (method === 'credito' && totalOriginal < 200) {
                 installmentsHint.style.display = 'block';
-                installmentsHint.textContent = 'Parcelamento disponível apenas para pedidos a partir de R$ 200,00.';
+                installmentsHint.textContent = 'Parcelamento disponível apenas para pedidos a partir de R$ 100,00.';
                 installmentsSelect.value = '1';
             } else {
                 installmentsHint.style.display = 'none';
                 installmentsHint.textContent = '';
             }
+
+            const parcelasSelecionadas = canInstall ? Number(installmentsSelect.value || 1) : 1;
+            const parcelamento = calcularParcelamento(valorBase, parcelasSelecionadas);
+            const valorFinal = method === 'credito' ? parcelamento.totalComJuros : roundMoney(valorBase);
 
             discountNode.textContent = `R$ ${desconto.toFixed(2)}`;
             finalNode.textContent = `R$ ${valorFinal.toFixed(2)}`;
@@ -2364,7 +2371,8 @@
                 desconto,
                 valorFinal,
                 metodo: method,
-                parcelas: canInstall ? Number(installmentsSelect.value || 1) : 1
+                parcelas: parcelasSelecionadas,
+                valorParcela: parcelamento.valorParcela
             };
         }
 
@@ -2653,13 +2661,15 @@
             const paymentLabels = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito' };
             const formaPagamento = paymentLabels[checkoutData?.metodo] || savedOrder?.formaPagamento || 'Não informado';
             const parcelas = Number(checkoutData?.parcelas || 1);
+            const jurosLabel = parcelas <= 3 ? 'sem juros' : 'com juros';
+            const valorParcela = Number(checkoutData?.valorParcela || (parcelas > 0 ? valorFinal / parcelas : valorFinal));
 
             lines.push(`💰 *Total do pedido:* R$ ${total.toFixed(2)}`);
             lines.push(`🏷️ *Desconto aplicado:* R$ ${desconto.toFixed(2)}`);
             lines.push(`✅ *Valor final:* R$ ${valorFinal.toFixed(2)}`);
             lines.push(`💳 *Forma de pagamento:* ${formaPagamento}`);
             if (checkoutData?.metodo === 'credito') {
-                lines.push(`📆 *Parcelas:* ${parcelas}x sem juros`);
+                lines.push(`📆 *Parcelas:* ${parcelas}x de R$ ${valorParcela.toFixed(2)} ${jurosLabel}`);
             }
             if (savedOrder?.id) {
                 lines.push(`🆔 Pedido salvo no sistema: #${savedOrder.id}`);
@@ -3326,6 +3336,58 @@ function formatMoney(value) {
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue)) return 'A combinar';
     return `R$ ${numericValue.toFixed(2)}`;
+}
+
+const JUROS = {
+    4: 0.0497,
+    5: 0.0597,
+    6: 0.0697,
+    7: 0.0797,
+    8: 0.0797,
+    9: 0.0797,
+    10: 0.0797,
+    11: 0.0797,
+    12: 0.0797
+};
+
+function roundMoney(value) {
+    return Number((Number(value) || 0).toFixed(2));
+}
+
+function calcularParcelamento(total, parcelas) {
+    const normalizedTotal = Math.max(0, Number(total) || 0);
+    const normalizedParcelas = Math.max(1, Math.min(12, Number(parcelas) || 1));
+    const taxa = normalizedParcelas >= 4 ? Number(JUROS[normalizedParcelas] || 0) : 0;
+    const totalComJuros = normalizedParcelas >= 4
+        ? normalizedTotal * (1 + taxa)
+        : normalizedTotal;
+    const valorParcela = totalComJuros / normalizedParcelas;
+
+    return {
+        valorParcela: roundMoney(valorParcela),
+        totalComJuros: roundMoney(totalComJuros)
+    };
+}
+
+function atualizarOpcoesParcelamento(total) {
+    const installmentsSelect = document.getElementById('installmentsSelect');
+    if (!installmentsSelect) return;
+
+    const currentInstallment = Math.max(1, Math.min(12, Number(installmentsSelect.value) || 1));
+    const baseTotal = Math.max(0, Number(total) || 0);
+
+    installmentsSelect.innerHTML = '';
+
+    for (let parcelas = 1; parcelas <= 12; parcelas += 1) {
+        const option = document.createElement('option');
+        const { valorParcela } = calcularParcelamento(baseTotal, parcelas);
+        const jurosLabel = parcelas <= 3 ? 'sem juros' : 'com juros';
+        option.value = String(parcelas);
+        option.textContent = `${parcelas}x de ${formatCurrencyBRL(valorParcela)} ${jurosLabel}`;
+        installmentsSelect.appendChild(option);
+    }
+
+    installmentsSelect.value = String(currentInstallment);
 }
 
 function calculateLabor(costBase) {
