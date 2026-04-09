@@ -6,26 +6,69 @@
     <title>MacTec Support - Assistência Técnica de Celulares</title>
     <script src="/app-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        (function () {
+            const saved = localStorage.getItem('theme');
+
+            if (saved) {
+                document.documentElement.setAttribute('data-theme', saved);
+            } else {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+            }
+        })();
+    </script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
         }
 
-        :root {
-            --primary-dark: #0f172a;
-            --secondary-dark: #1a1f35;
-            --tertiary-dark: #2d3748;
-            --accent-green: #22c55e;
-            --accent-green-dark: #16a34a;
-            --accent-silver: #e2e8f0;
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
-            --border-color: #334155;
+        :root[data-theme="dark"] {
+            --bg-main: #0b0f1a;
+            --bg-secondary: #111827;
+            --text-main: #ffffff;
+            --text-secondary: #9ca3af;
+            --accent: #22c55e;
+            --card-bg: #1f2937;
+            --border: #374151;
+            --accent-contrast: #0b0f1a;
+            --accent-hover: #16a34a;
             --success: #10b981;
             --warning: #f59e0b;
             --error: #ef4444;
+            --shipping-bg: rgba(15, 23, 42, 0.65);
+            --overlay-bg: rgba(0, 0, 0, 0.7);
+        }
+
+        :root[data-theme="light"] {
+            --bg-main: #F8F9FA;
+            --bg-secondary: #E7F1FF;
+            --text-main: #000000;
+            --text-secondary: #4b5563;
+            --accent: #001F3F;
+            --card-bg: #ffffff;
+            --border: #d1d5db;
+            --accent-contrast: #ffffff;
+            --accent-hover: #001735;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --shipping-bg: #ffffff;
+            --overlay-bg: rgba(15, 23, 42, 0.35);
+        }
+
+        :root {
+            --primary-dark: var(--bg-main);
+            --secondary-dark: var(--bg-secondary);
+            --tertiary-dark: var(--card-bg);
+            --accent-green: var(--accent);
+            --accent-green-dark: var(--accent-hover);
+            --accent-silver: var(--border);
+            --text-primary: var(--text-main);
+            --border-color: var(--border);
         }
 
         body {
@@ -136,6 +179,24 @@
         }
 
         .admin-access-btn:hover {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
+        }
+
+        .theme-toggle-btn {
+            background: var(--tertiary-dark);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 0.85rem;
+            border-radius: 6px;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 0.65rem;
+        }
+
+        .theme-toggle-btn:hover {
             border-color: var(--accent-green);
             color: var(--accent-green);
             box-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
@@ -616,7 +677,7 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: var(--overlay-bg);
             animation: fadeIn 0.3s;
         }
 
@@ -916,7 +977,7 @@
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1rem;
-    background: rgba(15, 23, 42, 0.65);
+    background: var(--shipping-bg);
     transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
     cursor: pointer;
 }
@@ -1104,6 +1165,81 @@
         .hidden {
             display: none !important;
         }
+
+        .cart-modal-content {
+            max-width: 800px;
+            background: var(--bg-main);
+            color: var(--text-main);
+        }
+
+        .cart-container {
+            background: var(--bg-main);
+            color: var(--text-main);
+        }
+
+        .cart-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            padding: 1rem;
+        }
+
+        .cart-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .cart-item-title {
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .cart-item-meta {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+
+        .cart-summary-panel {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .cart-summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .cart-summary-row.total {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent);
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border);
+            margin-bottom: 0;
+        }
+
+        .cart-payment-panel-title {
+            color: var(--accent);
+            margin-bottom: 0.75rem;
+        }
+
+        .cart-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .cart-actions .btn-primary {
+            background: var(--accent);
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
@@ -1151,6 +1287,7 @@
             </button>
         </div>
         <div class="nav-search">
+            <button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()" title="Alternar tema">🌙</button>
             <button class="admin-access-btn" onclick="handleAdminSearch()" title="Entrar no painel administrativo">Admin</button>
             <button class="cart-icon-btn" onclick="openCartModal()" title="Carrinho de Compras" style="margin-left: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; position: relative;">
                 🛒
@@ -1439,28 +1576,28 @@
 
     <!-- Shopping Cart Modal -->
     <div id="cartModal" class="modal">
-        <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-content cart-modal-content">
             <span class="close" onclick="closeCartModal()">&times;</span>
             <h2 style="color: var(--accent-green); margin-bottom: 1.5rem;">Carrinho de Compras</h2>
-            <div id="cartItems" style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
-                <p style="text-align: center; color: var(--text-secondary);">Carrinho vazio</p>
+            <div id="cartItems" class="cart-container" style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
+                <p class="cart-item-meta" style="text-align: center;">Carrinho vazio</p>
             </div>
-            <div style="background: var(--secondary-dark); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <div class="cart-summary-panel">
+                <div class="cart-summary-row">
                     <span>Subtotal:</span>
                     <span id="cartSubtotal">R$ 0,00</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <div class="cart-summary-row">
                     <span>Frete:</span>
                     <span id="cartFreight">R$ 0,00</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; color: var(--accent-green); padding-top: 0.5rem; border-top: 1px solid var(--border-color);">
+                <div class="cart-summary-row total">
                     <span>Total:</span>
                     <span id="cartTotal">R$ 0,00</span>
                 </div>
             </div>
-            <div id="cartPaymentPanel" style="background: var(--secondary-dark); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
-                <h3 style="color: var(--accent-green); margin-bottom: 0.75rem;">Pagamento</h3>
+            <div id="cartPaymentPanel" class="cart-summary-panel">
+                <h3 class="cart-payment-panel-title">Pagamento</h3>
                 <div class="form-group" style="margin-bottom: 0.75rem;">
                     <label for="paymentMethodSelect">Forma de pagamento:</label>
                     <select id="paymentMethodSelect" onchange="atualizarTotal()">
@@ -1489,7 +1626,7 @@
                 <p id="cartSavings" style="display: none; color: var(--success); font-weight: 600;">Você economizou R$ 0,00</p>
                 <p id="cartCheckoutError" style="display: none; color: var(--error); margin-top: 0.5rem; font-size: 0.9rem;"></p>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="cart-actions">
                 <button class="btn btn-secondary" style="width: 100%;" onclick="closeCartModal()">Continuar Comprando</button>
                 <button class="btn btn-primary" style="width: 100%;" onclick="goToCheckout()">Finalizar Compra via WhatsApp</button>
             </div>
@@ -2005,8 +2142,39 @@
     <script>
         // Shopping Cart
         const CART_STORAGE_KEY = 'mactec_cart_v1';
+        const THEME_STORAGE_KEY = 'theme';
         let cart = [];
         let accessoriesStockById = {};
+
+        function applyTheme(theme) {
+            const nextTheme = theme === 'light' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', nextTheme);
+            localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+            const toggleBtn = document.getElementById('themeToggleBtn');
+            if (toggleBtn) {
+                toggleBtn.textContent = nextTheme === 'dark' ? '🌙' : '☀️';
+                toggleBtn.title = nextTheme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro';
+            }
+        }
+
+        function resolveTheme() {
+            const saved = localStorage.getItem(THEME_STORAGE_KEY);
+            if (saved === 'light' || saved === 'dark') {
+                return saved;
+            }
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            return prefersDark ? 'dark' : 'light';
+        }
+
+        function initializeTheme() {
+            applyTheme(resolveTheme());
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+        }
 
         function escapeHtml(value) {
             return String(value ?? '')
@@ -2383,7 +2551,7 @@
             const cartTotal = document.getElementById('cartTotal');
 
             if (cart.length === 0) {
-                cartItems.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Carrinho vazio</p>';
+                cartItems.innerHTML = '<p class="cart-item-meta" style="text-align: center;">Carrinho vazio</p>';
                 cartSubtotal.textContent = 'R$ 0,00';
                 cartFreight.textContent = 'R$ 0,00';
                 cartTotal.textContent = 'R$ 0,00';
@@ -2411,29 +2579,29 @@
             cart.forEach((item, index) => {
                 if (item.itemType === 'quote') {
                     html += `
-                        <div style="background: var(--secondary-dark); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border-color);">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span><strong>Orcamento #${item.id}</strong></span>
+                        <div class="cart-item">
+                            <div class="cart-item-header">
+                                <span class="cart-item-title">Orcamento #${item.id}</span>
                                 <button class="btn-small btn-delete" onclick="removeFromCart(${index})">Remover</button>
                             </div>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Cliente: ${escapeHtml(item.customerName)}</p>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Serviço: ${escapeHtml(item.serviceLabel || getServiceLabel(item.service))}</p>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Aparelho: ${escapeHtml(item.brand || 'Marca não informada')} ${escapeHtml(item.model || '')}</p>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Valor da peça: ${formatMoney(item.baseCost)}</p>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Mão de obra: ${formatMoney(item.mao_de_obra ?? item.laborCost)}</p>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">Total: ${formatMoney(item.totalPrice)}</p>
+                            <p class="cart-item-meta">Cliente: ${escapeHtml(item.customerName)}</p>
+                            <p class="cart-item-meta">Serviço: ${escapeHtml(item.serviceLabel || getServiceLabel(item.service))}</p>
+                            <p class="cart-item-meta">Aparelho: ${escapeHtml(item.brand || 'Marca não informada')} ${escapeHtml(item.model || '')}</p>
+                            <p class="cart-item-meta">Valor da peça: ${formatMoney(item.baseCost)}</p>
+                            <p class="cart-item-meta">Mão de obra: ${formatMoney(item.mao_de_obra ?? item.laborCost)}</p>
+                            <p class="cart-item-meta">Total: ${formatMoney(item.totalPrice)}</p>
                         </div>
                     `;
                     subtotal += Number(item.totalPrice || 0);
                     freight += item.freightCost || 0;
                 } else if (item.itemType === 'accessory') {
                     html += `
-                        <div style="background: var(--secondary-dark); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border-color);">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span><strong>${escapeHtml(item.name)}</strong></span>
+                        <div class="cart-item">
+                            <div class="cart-item-header">
+                                <span class="cart-item-title">${escapeHtml(item.name)}</span>
                                 <button class="btn-small btn-delete" onclick="removeFromCart(${index})">Remover</button>
                             </div>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">${item.quantity}x R$ ${item.price.toFixed(2)} = R$ ${item.subtotal.toFixed(2)}</p>
+                            <p class="cart-item-meta">${item.quantity}x R$ ${item.price.toFixed(2)} = R$ ${item.subtotal.toFixed(2)}</p>
                         </div>
                     `;
                     subtotal += item.subtotal;
@@ -2987,6 +3155,7 @@
             };
 
             safeRun('initSupabase', () => initSupabase());
+            safeRun('initializeTheme', () => initializeTheme());
             safeRun('initMobileNav', () => initMobileNav());
             safeRun('initializeCart', () => initializeCart());
             safeRun('bind companySettingsForm', () => {
