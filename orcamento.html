@@ -14,7 +14,9 @@
                 document.documentElement.setAttribute('data-theme', saved);
             } else {
                 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+
+                // mesmo que sistema seja dark, força light como padrão
+                document.documentElement.setAttribute('data-theme', 'light');
             }
         })();
     </script>
@@ -2162,8 +2164,7 @@
             if (saved === 'light' || saved === 'dark') {
                 return saved;
             }
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            return prefersDark ? 'dark' : 'light';
+            return 'light';
         }
 
         function initializeTheme() {
