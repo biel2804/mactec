@@ -6,6 +6,10 @@
     <title>MacTec Support - Assistência Técnica de Celulares</title>
     <script src="/app-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/sidebar.js" defer></script>
+    <script src="/financeiro.js" defer></script>
+    <script src="/dashboard.js" defer></script>
     <script>
         (function () {
             const saved = localStorage.getItem('theme');
@@ -867,38 +871,37 @@
             color: var(--accent-green);
         }
 
-        .admin-content {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 2rem;
+        .admin-layout { display: flex; min-height: calc(100vh - 94px); }
+        .admin-sidebar {
+            position: fixed;
+            top: 94px;
+            left: 0;
+            bottom: 0;
+            width: 220px;
+            background: var(--secondary-dark);
+            border-right: 1px solid var(--border-color);
+            transition: width 0.2s ease;
+            overflow: hidden;
+            z-index: 20;
         }
-
-        .admin-tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
+        .admin-sidebar.collapsed { width: 70px; }
+        .sidebar-header { padding: 1rem; border-bottom: 1px solid var(--border-color); display:flex; justify-content:flex-end; }
+        .sidebar-toggle { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius:8px; padding:0.45rem; cursor:pointer; }
+        .sidebar-nav { padding: 0.75rem; display:flex; flex-direction:column; gap:0.35rem; }
         .admin-tab {
-            padding: 1rem 1.5rem;
-            background: transparent;
-            color: var(--text-secondary);
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
+            display:flex; align-items:center; gap:0.7rem; width:100%; padding:0.7rem; border-radius:10px;
+            background:transparent; border:none; color:var(--text-secondary); cursor:pointer; text-align:left; transition: all 0.2s ease;
         }
-
-        .admin-tab.active {
-            color: var(--accent-green);
-            border-bottom-color: var(--accent-green);
+        .admin-tab:hover, .admin-tab.active { background: rgba(59,130,246,0.15); color:#3b82f6; }
+        .admin-tab .tab-icon { width:20px; text-align:center; font-size:1rem; }
+        .admin-sidebar.collapsed .admin-tab .tab-label { display:none; }
+        .admin-content {
+            margin-left: 220px;
+            width: calc(100% - 220px);
+            transition: margin-left 0.2s ease, width 0.2s ease;
+            padding: 1.5rem 2rem;
         }
-
-        .admin-tab:hover {
-            color: var(--accent-green);
-        }
+        .admin-content.sidebar-collapsed { margin-left:70px; width: calc(100% - 70px); }
 
         .tab-content {
             display: none;
@@ -916,9 +919,9 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            background: var(--secondary-dark);
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
         }
 
@@ -940,6 +943,16 @@
         tr:hover {
             background: var(--tertiary-dark);
         }
+        tbody tr:nth-child(even) { background: color-mix(in srgb, var(--secondary-dark) 75%, transparent); }
+        .finance-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:1rem; margin-bottom:1.25rem; }
+        .finance-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius:12px; padding:1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .finance-card h3 { color: var(--text-secondary); font-size:0.9rem; margin-bottom:0.45rem; }
+        .finance-card p { font-size:1.5rem; font-weight:700; color:#3b82f6; }
+        .text-profit { color:#16a34a !important; }
+        .text-expense { color:#dc2626 !important; }
+        .text-warn { color:#f59e0b !important; }
+        .chart-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+        .chart-card { background: var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:1rem; }
 
         .action-buttons {
             display: flex;
@@ -1731,35 +1744,43 @@
             <button class="btn btn-secondary" onclick="closeAdminPanel()">Fechar</button>
         </div>
 
-        <div class="admin-content">
-            <div class="admin-tabs">
-                <button class="admin-tab active" onclick="switchAdminTab('dashboard')">Dashboard</button>
-                <button class="admin-tab" onclick="switchAdminTab('parts')">Gerenciar Peças</button>
-                <button class="admin-tab" onclick="switchAdminTab('accessories')">Gerenciar Acessórios</button>
-                <button class="admin-tab" onclick="switchAdminTab('orders')">Pedidos</button>
-                <button class="admin-tab" onclick="switchAdminTab('service-orders')">Ordem de Serviço</button>
-                <button class="admin-tab" onclick="switchAdminTab('settings')">Configurações</button>
-            </div>
+        <div class="admin-layout">
+            <aside id="adminSidebar" class="admin-sidebar">
+                <div class="sidebar-header">
+                    <button class="sidebar-toggle" onclick="toggleAdminSidebar()" title="Expandir/Minimizar menu">☰</button>
+                </div>
+                <nav class="sidebar-nav">
+                    <button class="admin-tab active" data-tab="dashboard" onclick="switchAdminTab('dashboard', event)" title="Dashboard"><span class="tab-icon">📊</span><span class="tab-label">Dashboard</span></button>
+                    <button class="admin-tab" data-tab="orders" onclick="switchAdminTab('orders', event)" title="Pedidos"><span class="tab-icon">🧾</span><span class="tab-label">Pedidos</span></button>
+                    <button class="admin-tab" data-tab="service-orders" onclick="switchAdminTab('service-orders', event)" title="Ordem de Serviço"><span class="tab-icon">🛠️</span><span class="tab-label">Ordem de Serviço</span></button>
+                    <button class="admin-tab" data-tab="parts" onclick="switchAdminTab('parts', event)" title="Gerenciar Peças"><span class="tab-icon">📦</span><span class="tab-label">Gerenciar Peças</span></button>
+                    <button class="admin-tab" data-tab="despesas" onclick="switchAdminTab('despesas', event)" title="Despesas"><span class="tab-icon">💸</span><span class="tab-label">Despesas</span></button>
+                    <button class="admin-tab" data-tab="reports" onclick="switchAdminTab('reports', event)" title="Relatórios"><span class="tab-icon">📈</span><span class="tab-label">Relatórios</span></button>
+                    <button class="admin-tab" data-tab="settings" onclick="switchAdminTab('settings', event)" title="Configurações"><span class="tab-icon">⚙️</span><span class="tab-label">Configurações</span></button>
+                </nav>
+            </aside>
+
+        <div id="adminContent" class="admin-content">
 
             <!-- Dashboard Tab -->
             <div id="dashboard" class="tab-content active">
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Dashboard</h2>
                 <div class="services-grid">
-                    <div class="service-card">
-                        <div style="font-size: 2rem; color: var(--accent-green); margin-bottom: 1rem;">📊</div>
-                        <h3>Total de Pedidos</h3>
-                        <p id="totalOrders" style="font-size: 1.5rem; color: var(--accent-green);">0</p>
+                    <div class="finance-grid">
+                        <div class="finance-card"><h3>Faturamento Total</h3><p id="totalRevenue">R$ 0,00</p></div>
+                        <div class="finance-card"><h3>Total Despesas</h3><p id="totalExpenses" class="text-expense">R$ 0,00</p></div>
+                        <div class="finance-card"><h3>Lucro Líquido</h3><p id="netProfit" class="text-profit">R$ 0,00</p></div>
+                        <div class="finance-card"><h3>Total Pedidos</h3><p id="totalOrders">0</p></div>
                     </div>
-                    <div class="service-card">
-                        <div style="font-size: 2rem; color: var(--accent-green); margin-bottom: 1rem;">💰</div>
-                        <h3>Receita Total</h3>
-                        <p id="totalRevenue" style="font-size: 1.5rem; color: var(--accent-green);">R$ 0,00</p>
-                    </div>
-                    <div class="service-card">
-                        <div style="font-size: 2rem; color: var(--accent-green); margin-bottom: 1rem;">📦</div>
-                        <h3>Peças Cadastradas</h3>
-                        <p id="totalParts" style="font-size: 1.5rem; color: var(--accent-green);">0</p>
-                    </div>
+                </div>
+                <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                    <button class="btn btn-secondary" onclick="applyDashboardRange('today')">Hoje</button>
+                    <button class="btn btn-secondary" onclick="applyDashboardRange('week')">Semana</button>
+                    <button class="btn btn-secondary" onclick="applyDashboardRange('month')">Mês</button>
+                </div>
+                <div class="chart-grid">
+                    <div class="chart-card"><h3 style="margin-bottom:0.5rem;">Lucro Mensal</h3><canvas id="profitChart" height="120"></canvas></div>
+                    <div class="chart-card"><h3 style="margin-bottom:0.5rem;">Despesas por Categoria</h3><canvas id="expenseChart" height="120"></canvas></div>
                 </div>
             </div>
 
@@ -1830,68 +1851,6 @@
                 </div>
             </div>
 
-            <!-- Accessories Tab -->
-            <div id="accessories" class="tab-content">
-                <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Gerenciar Acessorios</h2>
-
-                <div style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color);">
-                    <h3 id="accessoryFormTitle" style="color: var(--accent-green); margin-bottom: 1rem;">Adicionar Novo Acessorio</h3>
-                    <form id="accessoryForm">
-                        <input type="hidden" id="editingAccessoryId" value="">
-                        <div class="form-group">
-                            <label for="newAccessoryName">Nome:</label>
-                            <input type="text" id="newAccessoryName" placeholder="Ex: Carregador Rapido, Pelicula de Vidro">
-                        </div>
-                        <div class="form-group">
-                            <label for="newAccessoryDesc">Descricao:</label>
-                            <textarea id="newAccessoryDesc" placeholder="Descricao do acessorio" style="min-height: 80px;"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="newAccessoryCategory">Categoria:</label>
-                            <input type="text" id="newAccessoryCategory" placeholder="Ex: Carregadores, Peliculas, Capas">
-                        </div>
-                        <div class="form-group">
-                            <label for="newAccessoryPrice">Preco (R$):</label>
-                            <input type="number" id="newAccessoryPrice" placeholder="0.00" step="0.01" min="0">
-                        </div>
-                        <div class="form-group">
-                            <label for="newAccessoryStock">Estoque:</label>
-                            <input type="number" id="newAccessoryStock" placeholder="0" step="1" min="0">
-                        </div>
-                        <div class="form-group">
-                            <label for="newAccessoryImage">Foto do Produto (opcional):</label>
-                            <input type="file" id="newAccessoryImage" accept="image/*" placeholder="Selecione uma imagem">
-                            <small style="color: var(--text-secondary);">Opcional. Tamanho máximo: 2MB. Formatos: JPG, PNG, WEBP</small>
-                        </div>
-                        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
-                            <button type="submit" class="btn btn-primary" id="saveAccessoryBtn">Adicionar Acessorio</button>
-                            <button type="button" class="btn btn-secondary" id="cancelAccessoryEditBtn" onclick="resetAccessoryForm()" style="display:none;">Cancelar Edição</button>
-                        </div>
-                        <p id="accessoryFormStatus" style="margin-top:0.75rem; color:var(--text-secondary);"></p>
-                    </form>
-                </div>
-
-                <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Acessorios Cadastrados</h3>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Categoria</th>
-                                <th>Preco</th>
-                                <th>Estoque</th>
-                                <th>Acoes</th>
-                            </tr>
-                        </thead>
-                        <tbody id="accessoriesTable">
-                            <tr>
-                                <td colspan="5" style="text-align: center; color: var(--text-secondary);">Carregando acessorios...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
             <!-- Orders Tab -->
             <div id="orders" class="tab-content">
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Pedidos</h2>
@@ -1899,19 +1858,20 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Cliente</th>
-                                <th>Dispositivo</th>
+                                <th>Aparelho</th>
                                 <th>Valor</th>
+                                <th>Custo Peça</th>
+                                <th>Mão de Obra</th>
+                                <th>Lucro</th>
                                 <th>Status</th>
-                                <th>Pgto</th>
-                                <th>Data</th>
+                                <th>Pagamento</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="ordersTable">
                             <tr>
-                                <td colspan="8" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td>
+                                <td colspan="9" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1940,17 +1900,27 @@
                             <input type="text" id="orderModel">
                         </div>
                         <div class="form-group">
-                            <label for="orderTotal">Valor Total (R$):</label>
-                            <input type="number" id="orderTotal" step="0.01" min="0">
+                            <label for="orderTotal">Valor Serviço (R$):</label>
+                            <input type="number" id="orderTotal" step="0.01" min="0" oninput="recalculateOrderFinance()">
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem;">
+                            <div class="form-group">
+                                <label for="orderPartCost">Custo Peça (R$):</label>
+                                <input type="number" id="orderPartCost" step="0.01" min="0" oninput="recalculateOrderFinance()">
+                            </div>
+                            <div class="form-group">
+                                <label for="orderLaborCost">Custo Mão de Obra (R$):</label>
+                                <input type="number" id="orderLaborCost" step="0.01" min="0" oninput="recalculateOrderFinance()">
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="orderStatus">Status:</label>
                             <select id="orderStatus">
-                                <option value="pendente">Pendente</option>
+                                <option value="orcamento">Orçamento</option>
                                 <option value="aprovado">Aprovado</option>
-                                <option value="em_andamento">Em andamento</option>
-                                <option value="concluido">Concluído</option>
-                                <option value="cancelado">Cancelado</option>
+                                <option value="andamento">Andamento</option>
+                                <option value="finalizado">Finalizado</option>
+                                <option value="entregue">Entregue</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1958,9 +1928,9 @@
                             <select id="orderPaymentStatus">
                                 <option value="pendente">Pendente</option>
                                 <option value="pago">Pago</option>
-                                <option value="cancelado">Cancelado</option>
                             </select>
                         </div>
+                        <p id="orderFinancePreview" style="margin-bottom:0.75rem; color:var(--text-secondary);"></p>
                         <div class="form-group">
                             <label for="orderCreatedAt">Data:</label>
                             <input type="text" id="orderCreatedAt" readonly>
@@ -1981,6 +1951,36 @@
                         <p id="orderModalStatus" style="margin-top:0.75rem; color:var(--text-secondary);"></p>
                     </form>
                 </div>
+            </div>
+
+            <div id="despesas" class="tab-content">
+                <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Despesas</h2>
+                <div style="background: var(--secondary-dark); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border-color);">
+                    <form id="expenseForm" style="display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:0.75rem;">
+                        <div class="form-group"><label for="expenseType">Tipo</label><select id="expenseType"><option value="estoque">Estoque</option><option value="marketing">Marketing</option><option value="ferramentas">Ferramentas</option><option value="fixo">Fixo</option></select></div>
+                        <div class="form-group"><label for="expenseValue">Valor</label><input id="expenseValue" type="number" min="0" step="0.01"></div>
+                        <div class="form-group"><label for="expenseDate">Data</label><input id="expenseDate" type="date"></div>
+                        <div class="form-group"><label for="expenseOrderId">Pedido ID (opcional)</label><input id="expenseOrderId" type="text"></div>
+                        <div class="form-group" style="grid-column: 1/-1;"><label for="expenseDescription">Descrição</label><input id="expenseDescription" type="text"></div>
+                        <div><button class="btn btn-primary" type="submit">Adicionar despesa</button></div>
+                    </form>
+                </div>
+                <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                    <input type="date" id="expenseFilterStart">
+                    <input type="date" id="expenseFilterEnd">
+                    <button class="btn btn-secondary" onclick="filterExpensesByDate()">Filtrar período</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Tipo</th><th>Valor</th><th>Descrição</th><th>Data</th><th>Pedido</th></tr></thead>
+                        <tbody id="expensesTable"><tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">Carregando despesas...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="reports" class="tab-content">
+                <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Relatórios</h2>
+                <p style="color: var(--text-secondary);">Use os gráficos do dashboard e filtros de despesas para análise financeira mensal.</p>
             </div>
 
             <!-- Service Orders Tab -->
@@ -2210,6 +2210,7 @@
                     <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="saveSocialMediaVisibility()">Salvar Preferências</button>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 
@@ -3020,17 +3021,25 @@
 
         const ORDER_STATUS = Object.freeze({
             PENDENTE: 'pendente',
+            ORCAMENTO: 'orcamento',
             APROVADO: 'aprovado',
             EM_ANDAMENTO: 'em_andamento',
+            ANDAMENTO: 'andamento',
             CONCLUIDO: 'concluido',
+            FINALIZADO: 'finalizado',
+            ENTREGUE: 'entregue',
             CANCELADO: 'cancelado'
         });
 
         const STATUS_LABELS = Object.freeze({
             [ORDER_STATUS.PENDENTE]: 'Pendente',
+            [ORDER_STATUS.ORCAMENTO]: 'Orçamento',
             [ORDER_STATUS.APROVADO]: 'Aprovado',
             [ORDER_STATUS.EM_ANDAMENTO]: 'Em Andamento',
+            [ORDER_STATUS.ANDAMENTO]: 'Andamento',
             [ORDER_STATUS.CONCLUIDO]: 'Concluído',
+            [ORDER_STATUS.FINALIZADO]: 'Finalizado',
+            [ORDER_STATUS.ENTREGUE]: 'Entregue',
             [ORDER_STATUS.CANCELADO]: 'Cancelado'
         });
 
@@ -4287,6 +4296,7 @@ async function calcularFrete(cep) {
         function openAdminPanel() {
             document.getElementById('adminPanel').classList.add('active');
             document.getElementById('mainContent').style.display = 'none';
+            if (window.SidebarModule?.init) window.SidebarModule.init();
             loadAdminData();
         }
 
@@ -4295,7 +4305,7 @@ async function calcularFrete(cep) {
             document.getElementById('mainContent').style.display = 'block';
         }
 
-        function switchAdminTab(tabName) {
+        function switchAdminTab(tabName, ev = null) {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
@@ -4306,17 +4316,18 @@ async function calcularFrete(cep) {
 
             // Show selected tab
             document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+            const clicked = ev?.currentTarget || document.querySelector(`.admin-tab[data-tab="${tabName}"]`);
+            if (clicked) clicked.classList.add('active');
 
             // Load data if needed
             if (tabName === 'parts') {
                 loadPartsTable();
-            } else if (tabName === 'accessories') {
-                loadAccessoriesTable();
             } else if (tabName === 'orders') {
                 loadOrdersTable();
             } else if (tabName === 'service-orders') {
                 loadServiceOrdersTable();
+            } else if (tabName === 'despesas') {
+                loadExpensesTable();
             }
         }
 
@@ -4340,15 +4351,7 @@ async function calcularFrete(cep) {
                 document.getElementById('linkedinUrl').value = LINKEDIN_URL;
                 document.getElementById('youtubeUrl').value = YOUTUBE_URL;
 
-                // Load dashboard stats
-                const { data: orders } = await supabaseClient.from('pedidos').select('*');
-                const { data: parts } = await supabaseClient.from('pecas').select('*');
-
-                document.getElementById('totalOrders').textContent = orders?.length || 0;
-                document.getElementById('totalParts').textContent = parts?.length || 0;
-
-                const totalRevenue = orders?.reduce((sum, order) => sum + order.valor_total, 0) || 0;
-                document.getElementById('totalRevenue').textContent = `R$ ${totalRevenue.toFixed(2)}`;
+                await refreshFinancialDashboard();
             } catch (error) {
                 console.error('Erro ao carregar dados:', error);
             }
@@ -4503,7 +4506,7 @@ async function calcularFrete(cep) {
                 const client = ensureSupabaseClient(true);
                 if (!client) return;
                 const tbody = document.getElementById('ordersTable');
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td></tr>';
 
                 const { data: orders, error } = await client.from('pedidos').select('*').order('created_at', { ascending: false });
                 if (error) throw error;
@@ -4511,20 +4514,22 @@ async function calcularFrete(cep) {
                 tbody.innerHTML = '';
 
                 if (!orders || orders.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Nenhum pedido</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">Nenhum pedido</td></tr>';
                     return;
                 }
 
                 orders.forEach(order => {
+                    const financial = window.FinanceiroModule?.calculateOrderFinancials(order) || { lucro_bruto: 0 };
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${escapeHtml(order.id)}</td>
                         <td>${escapeHtml(order.cliente_nome || 'Não informado')}</td>
                         <td>${escapeHtml(order.modelo_dispositivo || 'Não informado')}</td>
-                        <td>R$ ${Number(order.valor_total || 0).toFixed(2)}</td>
+                        <td>R$ ${Number((order.valor_servico ?? order.valor_total) || 0).toFixed(2)}</td>
+                        <td>R$ ${Number(order.custo_peca || 0).toFixed(2)}</td>
+                        <td>R$ ${Number(order.custo_mao_obra || 0).toFixed(2)}</td>
+                        <td class="${financial.lucro_bruto >= 0 ? 'text-profit' : 'text-expense'}">R$ ${Number(financial.lucro_bruto || 0).toFixed(2)}</td>
                         <td><span style="color: ${getStatusColor(order.status)}; font-weight: 600;">${formatStatus(order.status)}</span></td>
                         <td>${escapeHtml(formatPaymentStatus(order.status_pagamento))}</td>
-                        <td>${order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : '-'}</td>
                         <td>
                             <div class="action-buttons">
                                 <button class="btn-small btn-secondary js-admin-order-action" data-action="view" data-id="${order.id}">Ver</button>
@@ -4538,7 +4543,7 @@ async function calcularFrete(cep) {
             } catch (error) {
                 console.error('Erro ao carregar pedidos:', error);
                 const tbody = document.getElementById('ordersTable');
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--error);">Erro ao carregar pedidos: ${escapeHtml(error.message || 'desconhecido')}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--error);">Erro ao carregar pedidos: ${escapeHtml(error.message || 'desconhecido')}</td></tr>`;
                 showAlert('Erro ao carregar pedidos no admin.', 'error');
             }
         }
@@ -5030,7 +5035,7 @@ async function calcularFrete(cep) {
             if (status) status.textContent = isEditMode ? 'Edite os campos e salve para atualizar o pedido.' : 'Modo visualização.';
             if (saveBtn) saveBtn.style.display = isEditMode ? 'inline-flex' : 'none';
 
-            ['orderCustomerName', 'orderWhatsApp', 'orderModel', 'orderTotal', 'orderStatus', 'orderPaymentStatus', 'orderNotes'].forEach((id) => {
+            ['orderCustomerName', 'orderWhatsApp', 'orderModel', 'orderTotal', 'orderPartCost', 'orderLaborCost', 'orderStatus', 'orderPaymentStatus', 'orderNotes'].forEach((id) => {
                 const el = document.getElementById(id);
                 if (el) el.disabled = !isEditMode;
             });
@@ -5069,12 +5074,15 @@ async function calcularFrete(cep) {
             document.getElementById('orderCustomerName').value = order.cliente_nome || '';
             document.getElementById('orderWhatsApp').value = order.whatsapp || '';
             document.getElementById('orderModel').value = order.modelo_dispositivo || '';
-            document.getElementById('orderTotal').value = Number(order.valor_total || 0);
+            document.getElementById('orderTotal').value = Number((order.valor_servico ?? order.valor_total) || 0);
+            document.getElementById('orderPartCost').value = Number(order.custo_peca || 0);
+            document.getElementById('orderLaborCost').value = Number(order.custo_mao_obra || 0);
             document.getElementById('orderStatus').value = order.status || ORDER_STATUS.PENDENTE;
             document.getElementById('orderPaymentStatus').value = order.status_pagamento || 'pendente';
             document.getElementById('orderCreatedAt').value = order.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : '';
             document.getElementById('orderItems').value = formatOrderItems(order.itens_json);
             document.getElementById('orderNotes').value = order.observacoes || '';
+            recalculateOrderFinance();
         }
 
         async function viewOrder(orderId) {
@@ -5124,11 +5132,22 @@ async function calcularFrete(cep) {
             setButtonLoading(saveBtn, true, 'Salvando...');
             try {
                 const paymentStatus = document.getElementById('orderPaymentStatus').value;
+                const financialInput = {
+                    valor_servico: Number(document.getElementById('orderTotal').value || 0),
+                    custo_peca: Number(document.getElementById('orderPartCost').value || 0),
+                    custo_mao_obra: Number(document.getElementById('orderLaborCost').value || 0)
+                };
+                const calculated = window.FinanceiroModule?.calculateOrderFinancials(financialInput) || {};
                 const payload = {
                     cliente_nome: document.getElementById('orderCustomerName').value.trim(),
                     whatsapp: document.getElementById('orderWhatsApp').value.trim(),
                     modelo_dispositivo: document.getElementById('orderModel').value.trim(),
-                    valor_total: Number(document.getElementById('orderTotal').value || 0),
+                    valor_total: financialInput.valor_servico,
+                    valor_servico: financialInput.valor_servico,
+                    custo_peca: financialInput.custo_peca,
+                    custo_mao_obra: financialInput.custo_mao_obra,
+                    lucro_bruto: calculated.lucro_bruto || 0,
+                    margem: calculated.margem || 0,
                     status: document.getElementById('orderStatus').value,
                     status_pagamento: paymentStatus,
                     observacoes: document.getElementById('orderNotes').value.trim()
@@ -5144,6 +5163,7 @@ async function calcularFrete(cep) {
                 showAlert('Pedido atualizado com sucesso!', 'success');
                 closeOrderModal();
                 await loadOrdersTable();
+                await refreshFinancialDashboard();
             } catch (error) {
                 showAlert('Erro ao salvar pedido: ' + error.message, 'error');
             } finally {
@@ -5496,9 +5516,13 @@ async function getMelhorEnvioShipping(cep, type) {
         function getStatusColor(status) {
             const colors = {
                 [ORDER_STATUS.PENDENTE]: '#f59e0b',
+                [ORDER_STATUS.ORCAMENTO]: '#f59e0b',
                 [ORDER_STATUS.APROVADO]: '#8b5cf6',
                 [ORDER_STATUS.EM_ANDAMENTO]: '#3b82f6',
+                [ORDER_STATUS.ANDAMENTO]: '#3b82f6',
                 [ORDER_STATUS.CONCLUIDO]: '#10b981',
+                [ORDER_STATUS.FINALIZADO]: '#10b981',
+                [ORDER_STATUS.ENTREGUE]: '#16a34a',
                 [ORDER_STATUS.CANCELADO]: '#ef4444'
             };
             return colors[status] || '#6b7280';
