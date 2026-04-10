@@ -8,16 +8,18 @@
     const valor_servico = toNumber(order.valor_servico ?? order.valor_total);
     const custo_peca = toNumber(order.custo_peca);
     const custo_mao_obra = toNumber(order.custo_mao_obra);
+    const valor_frete = toNumber(order.valor_frete);
     const lucro_bruto = valor_servico - (custo_peca + custo_mao_obra);
     const margem = valor_servico > 0 ? (lucro_bruto / valor_servico) * 100 : 0;
-    return { valor_servico, custo_peca, custo_mao_obra, lucro_bruto, margem };
+    return { valor_servico, custo_peca, custo_mao_obra, valor_frete, lucro_bruto, margem };
   }
 
   function recalculateOrderFinance() {
     const input = {
       valor_servico: document.getElementById('orderTotal')?.value,
       custo_peca: document.getElementById('orderPartCost')?.value,
-      custo_mao_obra: document.getElementById('orderLaborCost')?.value
+      custo_mao_obra: document.getElementById('orderLaborCost')?.value,
+      valor_frete: document.getElementById('orderFreightCost')?.value
     };
     const result = calculateOrderFinancials(input);
     const el = document.getElementById('orderFinancePreview');
