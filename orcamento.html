@@ -770,6 +770,7 @@
             max-width: 600px;
             max-height: 80vh;
             overflow-y: auto;
+            overflow-x: hidden;
             animation: slideIn 0.3s;
         }
 
@@ -1143,6 +1144,7 @@
     margin-top: 0.4rem;
     color: var(--text-secondary);
     font-size: 0.85rem;
+    overflow-wrap: anywhere;
 }
 
 .shipping-service-options {
@@ -1295,6 +1297,7 @@
             max-width: 800px;
             background: var(--bg-main);
             color: var(--text-main);
+            width: min(800px, 96vw);
         }
 
         .cart-container {
@@ -1313,6 +1316,8 @@
         .cart-item-header {
             display: flex;
             justify-content: space-between;
+            gap: 0.75rem;
+            align-items: flex-start;
             margin-bottom: 0.5rem;
         }
 
@@ -1338,6 +1343,7 @@
         .cart-summary-row {
             display: flex;
             justify-content: space-between;
+            gap: 0.65rem;
             margin-bottom: 0.5rem;
         }
 
@@ -1355,6 +1361,45 @@
             margin-bottom: 0.75rem;
         }
 
+        .cart-payment-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.65rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .quote-address-grid {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .quote-address-grid.cols-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .quote-address-grid.cols-2-1 {
+            grid-template-columns: 2fr 1fr;
+        }
+
+        .dashboard-range-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .order-finance-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .order-modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
         .cart-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -1364,6 +1409,134 @@
         .cart-actions .btn-primary {
             background: var(--accent);
             color: #ffffff;
+        }
+
+        @media (max-width: 1024px) {
+            .admin-header {
+                padding: 1.25rem 1rem;
+            }
+
+            .admin-layout {
+                min-height: calc(100vh - 84px);
+            }
+
+            .admin-sidebar {
+                top: 84px;
+                width: min(280px, 82vw);
+                transform: translateX(-100%);
+                transition: transform 0.25s ease;
+                box-shadow: 8px 0 24px rgba(0, 0, 0, 0.25);
+                z-index: 40;
+            }
+
+            .admin-sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .admin-sidebar.collapsed {
+                width: min(280px, 82vw);
+            }
+
+            .admin-sidebar.collapsed .admin-tab .tab-label {
+                display: inline;
+            }
+
+            .admin-content,
+            .admin-content.sidebar-collapsed {
+                margin-left: 0;
+                width: 100%;
+                padding: 1.25rem 1rem 1.5rem;
+            }
+
+            .finance-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .quote-container {
+                padding: 1rem;
+            }
+
+            .summary-row,
+            .summary-row.total,
+            .cart-summary-row,
+            .cart-payment-row {
+                flex-wrap: wrap;
+            }
+
+            .summary-shipping-label {
+                text-align: left;
+            }
+
+            .shipping-card-header,
+            .shipping-service-option-main {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.4rem;
+            }
+
+            .shipping-price {
+                white-space: normal;
+            }
+
+            .cart-item-header {
+                flex-direction: column;
+            }
+
+            .cart-actions {
+                grid-template-columns: 1fr;
+                gap: 0.65rem;
+            }
+
+            .quote-address-grid.cols-2,
+            .quote-address-grid.cols-2-1,
+            .order-finance-grid {
+                grid-template-columns: 1fr;
+            }
+
+            #orderModal .modal-content {
+                width: min(760px, 96vw);
+                margin: 8% auto;
+                padding: 1rem;
+                max-height: 88vh;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .admin-header {
+                padding: 0.9rem 0.75rem;
+            }
+
+            .admin-header h1 {
+                font-size: 1.1rem;
+            }
+
+            .admin-sidebar {
+                top: 74px;
+                width: 86vw;
+            }
+
+            .finance-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .finance-card p {
+                font-size: 1.2rem;
+            }
+
+            .dashboard-range-actions .btn {
+                flex: 1;
+                min-width: 92px;
+            }
+
+            .order-modal-actions .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -1679,7 +1852,7 @@
                         <label for="customerStreet">Rua:</label>
                         <input type="text" id="customerStreet" placeholder="Ex: Rua das Flores">
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="quote-address-grid cols-2">
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="customerNumber">Número:</label>
                             <input type="text" id="customerNumber" placeholder="Ex: 123">
@@ -1689,7 +1862,7 @@
                             <input type="text" id="customerDistrict" placeholder="Ex: Centro">
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
+                    <div class="quote-address-grid cols-2-1">
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="customerCity">Cidade:</label>
                             <input type="text" id="customerCity" placeholder="Ex: São Paulo">
@@ -1764,11 +1937,11 @@
                     </select>
                 </div>
                 <p id="installmentsHint" style="display: none; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;"></p>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                <div class="cart-payment-row">
                     <span>Desconto:</span>
                     <span id="cartDiscount">R$ 0,00</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                <div class="cart-payment-row">
                     <span>Valor final:</span>
                     <span id="cartFinalTotal" style="font-weight: bold; color: var(--accent-green);">R$ 0,00</span>
                 </div>
@@ -1821,7 +1994,7 @@
                         <div class="finance-card"><h3>Ticket Médio</h3><p id="avgTicket">R$ 0,00</p></div>
                     </div>
                 </div>
-                <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                <div class="dashboard-range-actions">
                     <button class="btn btn-secondary" onclick="applyDashboardRange('today')">Hoje</button>
                     <button class="btn btn-secondary" onclick="applyDashboardRange('week')">Semana</button>
                     <button class="btn btn-secondary" onclick="applyDashboardRange('month')">Mês</button>
@@ -1951,7 +2124,7 @@
                             <label for="orderTotal">Valor Serviço (R$):</label>
                             <input type="number" id="orderTotal" step="0.01" min="0" oninput="recalculateOrderFinance()">
                         </div>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem;">
+                        <div class="order-finance-grid">
                             <div class="form-group">
                                 <label for="orderPartCost">Custo Peça (R$):</label>
                                 <input type="number" id="orderPartCost" step="0.01" min="0" oninput="recalculateOrderFinance()">
@@ -1996,7 +2169,7 @@
                             <textarea id="orderNotes" rows="3"></textarea>
                         </div>
 
-                        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                        <div class="order-modal-actions">
                             <button type="submit" class="btn btn-primary" id="saveOrderBtn">Salvar Alterações</button>
                             <button type="button" class="btn btn-secondary" onclick="closeOrderModal()">Cancelar</button>
                         </div>
@@ -4932,6 +5105,9 @@ async function calcularFrete(cep) {
             document.getElementById(tabName).classList.add('active');
             const clicked = ev?.currentTarget || document.querySelector(`.admin-tab[data-tab="${tabName}"]`);
             if (clicked) clicked.classList.add('active');
+            if (window.innerWidth <= 1024 && window.SidebarModule?.closeMobile) {
+                window.SidebarModule.closeMobile();
+            }
 
             // Load data if needed
             if (tabName === 'parts') {
