@@ -98,6 +98,7 @@
     const valor_servico = valor_final;
     const despesa_direta = custo_peca;
     const lucro_bruto = roundMoney(valor_servico - despesa_direta);
+    const lucro_bruto = roundMoney(valor_servico - (custo_peca + custo_mao_obra));
     const margem = valor_servico > 0 ? (lucro_bruto / valor_servico) * 100 : 0;
 
     return {
