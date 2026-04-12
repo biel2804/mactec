@@ -2900,8 +2900,26 @@
                 previsao_entrega: pedido.data
             };
 
-            const { data, error } = await client.from('pedidos').insert([payload]).select().single();
-            if (error) throw error;
+            const insertPayload = { ...payload };
+            let data = null;
+            let lastError = null;
+            for (let attempt = 0; attempt < 8; attempt += 1) {
+                const response = await client.from('pedidos').insert([insertPayload]).select().single();
+                if (!response.error) {
+                    data = response.data;
+                    lastError = null;
+                    break;
+                }
+
+                lastError = response.error;
+                const missingColumnMatch = String(response.error.message || '').match(/Could not find the '([^']+)' column of 'pedidos'/i);
+                if (!missingColumnMatch) break;
+
+                const missingColumn = missingColumnMatch[1];
+                if (!(missingColumn in insertPayload)) break;
+                delete insertPayload[missingColumn];
+            }
+            if (lastError) throw lastError;
 
             await loadOrdersTable();
             return {
