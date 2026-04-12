@@ -2829,6 +2829,66 @@
             };
         }
 
+        const PEDIDOS_WRITABLE_COLUMNS = new Set([
+            'cliente_nome',
+            'whatsapp',
+            'endereco',
+            'modelo_dispositivo',
+            'servico',
+            'valor_total',
+            'valor_servico',
+            'custo_peca',
+            'custo_mao_obra',
+            'valor_frete',
+            'lucro_bruto',
+            'margem',
+            'desconto',
+            'valor_total_final',
+            'percentual_juros',
+            'valor_total_com_juros',
+            'valor_parcela',
+            'forma_pagamento',
+            'parcelas',
+            'status_pagamento',
+            'status',
+            'observacoes',
+            'previsao_entrega',
+            'distancia_km',
+            'tipo_envio',
+            'itens_json'
+        ]);
+
+        function validatePedidosPayload(payload, context = 'insert') {
+            if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+                throw new Error(`Payload inválido para ${context} em pedidos.`);
+            }
+
+            const invalidKeys = Object.keys(payload).filter((key) => !PEDIDOS_WRITABLE_COLUMNS.has(key));
+            if (invalidKeys.length > 0) {
+                throw new Error(`Payload de pedidos contém colunas não mapeadas: ${invalidKeys.join(', ')}.`);
+            }
+
+            return payload;
+        }
+
+        function throwPedidosColumnMismatch(error, payload, context = 'insert') {
+            const message = String(error?.message || '');
+            const missingColumnMatch = message.match(/Could not find the '([^']+)' column of 'pedidos'/i);
+            if (!missingColumnMatch) return false;
+
+            const missingColumn = missingColumnMatch[1];
+            console.error(`[pedidos:${context}] Coluna ausente no banco: ${missingColumn}.`, {
+                missingColumn,
+                payloadKeys: Object.keys(payload || {})
+            });
+            logClientError({
+                message: `Coluna ausente em public.pedidos: ${missingColumn}`,
+                stack: message,
+                origin: `pedidos_${context}_column_mismatch`
+            });
+            throw new Error(`A coluna "${missingColumn}" não existe em public.pedidos. Rode a migration do contrato de dados (Lote 1) e tente novamente.`);
+        }
+
         async function saveCartOrder(checkoutData) {
             const client = ensureSupabaseClient(true);
             if (!client) throw new Error('Supabase não configurado.');
@@ -2900,26 +2960,12 @@
                 previsao_entrega: pedido.data
             };
 
-            const insertPayload = { ...payload };
-            let data = null;
-            let lastError = null;
-            for (let attempt = 0; attempt < 8; attempt += 1) {
-                const response = await client.from('pedidos').insert([insertPayload]).select().single();
-                if (!response.error) {
-                    data = response.data;
-                    lastError = null;
-                    break;
-                }
-
-                lastError = response.error;
-                const missingColumnMatch = String(response.error.message || '').match(/Could not find the '([^']+)' column of 'pedidos'/i);
-                if (!missingColumnMatch) break;
-
-                const missingColumn = missingColumnMatch[1];
-                if (!(missingColumn in insertPayload)) break;
-                delete insertPayload[missingColumn];
+            const insertPayload = validatePedidosPayload({ ...payload }, 'insert_cart');
+            const { data, error } = await client.from('pedidos').insert([insertPayload]).select().single();
+            if (error) {
+                throwPedidosColumnMismatch(error, insertPayload, 'insert_cart');
+                throw error;
             }
-            if (lastError) throw lastError;
 
             await loadOrdersTable();
             return {
@@ -4245,6 +4291,7 @@ async function calcularFrete(cep) {
                     ].filter(Boolean).join(' | '),
                     previsao_entrega: getDeliveryDate()
                 };
+                validatePedidosPayload(payload, 'insert_quote');
 
                 const client = ensureSupabaseClient(true);
                 if (!client) {
@@ -4257,7 +4304,10 @@ async function calcularFrete(cep) {
                     .select()
                     .single();
 
-                if (error) throw error;
+                if (error) {
+                    throwPedidosColumnMismatch(error, payload, 'insert_quote');
+                    throw error;
+                }
 
                 await createServiceOrder(quote, data, orderCode);
                 return data;
@@ -5241,12 +5291,16 @@ async function calcularFrete(cep) {
                     status_pagamento: paymentStatus,
                     observacoes: document.getElementById('orderNotes').value.trim()
                 };
+                validatePedidosPayload(payload, 'update_admin');
 
                 const { error } = await client
                     .from('pedidos')
                     .update(payload)
                     .eq('id', orderId);
-                if (error) throw error;
+                if (error) {
+                    throwPedidosColumnMismatch(error, payload, 'update_admin');
+                    throw error;
+                }
                 await atualizarStatusPagamento(orderId, paymentStatus, client);
 
                 showAlert('Pedido atualizado com sucesso!', 'success');
