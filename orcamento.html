@@ -1644,7 +1644,7 @@
                         <span id="laborCost">R$ 0,00</span>
                     </div>
                     <div class="summary-row">
-                        <span>🚚 Frete:</span>
+                        <span>🛵 Frete:</span>
                         <div>
                             <span id="freightCost">R$ 0,00</span>
                             <small id="freightChoiceLabel" class="summary-shipping-label">Selecione uma opção de frete.</small>
@@ -2749,7 +2749,7 @@
                             <p class="cart-item-meta">Cliente: ${escapeHtml(item.customerName)}</p>
                             <p class="cart-item-meta">Serviço: ${escapeHtml(item.serviceLabel || getServiceLabel(item.service))}</p>
                             <p class="cart-item-meta">Aparelho: ${escapeHtml(item.brand || 'Marca não informada')} ${escapeHtml(item.model || '')}</p>
-                            <p class="cart-item-meta">🚚 Entrega: ${escapeHtml(item.shippingServiceLabel || getShippingServiceLabel(item.shippingServiceType) || 'Não informado')}</p>
+                            <p class="cart-item-meta">🛵 Entrega: ${escapeHtml(item.shippingServiceLabel || getShippingServiceLabel(item.shippingServiceType) || 'Não informado')}</p>
                             <p class="cart-item-meta">Valor da peça: ${formatMoney(item.baseCost)}</p>
                             <p class="cart-item-meta">Mão de obra: ${formatMoney(item.mao_de_obra ?? item.laborCost)}</p>
                             <p class="cart-item-meta">Total: ${formatMoney(item.totalPrice)}</p>
@@ -3208,7 +3208,7 @@
                     };
                 }
 
-                const subtotal = Number(item.subtotal ?? item.valor_total ?? ((Number(item.price || 0) * Number(item.quantity || 1))) || 0);
+                const subtotal = Number((item.subtotal ?? item.valor_total ?? (Number(item.price || 0) * Number(item.quantity || 1))) || 0);
                 return {
                     aparelho: item.name || item.nome || 'Acessório',
                     servico: `Acessório (${Number(item.quantity || item.quantidade || 1)}x)`,
@@ -3261,8 +3261,8 @@
                     '',
                     `⚙️ Peça: ${monetary(item.peca)}`,
                     `👨‍🔧 Mão de obra: ${monetary(item.maoObra)}`,
-                    `🚚 Entrega: ${item.entrega || 'Não informado'}`,
-                    `🚚 Frete: ${monetary(item.frete)}`,
+                    `🛵 Entrega: ${item.entrega || 'Não informado'}`,
+                    `🛵 Frete: ${monetary(item.frete)}`,
                     '',
                     `➡️ *Total do serviço:* ${monetary(item.totalItem)}`,
                     ''
@@ -3274,8 +3274,8 @@
                         `   🔧 *Serviço:* ${item.servico}`,
                         `   ⚙️ Peça: ${monetary(item.peca)}`,
                         `   👨‍🔧 Mão de obra: ${monetary(item.maoObra)}`,
-                        `   🚚 Entrega: ${item.entrega || 'Não informado'}`,
-                        `   🚚 Frete: ${monetary(item.frete)}`,
+                        `   🛵 Entrega: ${item.entrega || 'Não informado'}`,
+                        `   🛵 Frete: ${monetary(item.frete)}`,
                         `   ➡️ Total do item: ${monetary(item.totalItem)}`,
                         ''
                     );
@@ -3303,7 +3303,7 @@
                 '',
                 separator,
                 '',
-                '🚚 *Entrega:*',
+                '🛵 *Entrega:*',
                 order.delivery || 'Retirada e entrega a combinar',
                 '',
                 separator,
@@ -4408,7 +4408,7 @@ async function calculateFreight() {
             id: 'motoboy',
             badgeClass: 'local',
             badgeLabel: 'Local',
-            icon: '🚚',
+            icon: '🛵',
             title: motoboyResult.label,
             description: context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM
                 ? 'Prioridade para entrega local em São Bernardo do Campo.'
@@ -5136,7 +5136,7 @@ async function calcularFrete(cep) {
                         <td>${escapeHtml(order.cliente_nome || 'Não informado')}</td>
                         <td>
                             <div>${escapeHtml(order.modelo_dispositivo || 'Não informado')}</div>
-                            <small style="color: var(--text-secondary);">🚚 ${escapeHtml(getShippingServiceLabel(order.tipo_envio))}</small>
+                            <small style="color: var(--text-secondary);">🛵 ${escapeHtml(getShippingServiceLabel(order.tipo_envio))}</small>
                         </td>
                         <td>R$ ${Number((order.valor_servico ?? order.valor_total) || 0).toFixed(2)}</td>
                         <td>R$ ${Number(order.custo_peca || 0).toFixed(2)}</td>
