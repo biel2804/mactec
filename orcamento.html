@@ -2551,13 +2551,28 @@
             }
         }
 
-        function calcularTotalPedido(itens, desconto = 0) {
-            const subtotal = itens.reduce((acc, item) => acc + Number(item.valor_total || 0), 0);
-            const valorFinal = Math.max(subtotal - Number(desconto || 0), 0);
+        function calcularTotalPedido(itens, desconto = 0, parcelas = 1) {
+            const canonical = window.FinanceiroModule?.calculateCanonicalOrderFinancials?.({
+                itens,
+                desconto,
+                parcelas
+            }) || {};
+
             return {
-                subtotal: roundMoney(subtotal),
-                valor_total: roundMoney(subtotal),
-                valor_final: roundMoney(valorFinal)
+                subtotal: Number(canonical.subtotal_itens || 0),
+                valor_total: Number(canonical.valor_total || 0),
+                valor_final: Number(canonical.valor_final || 0),
+                valor_frete: Number(canonical.valor_frete || 0),
+                parcelas: Number(canonical.parcelas || 1),
+                percentual_juros: Number(canonical.percentual_juros || 0),
+                valor_total_com_juros: Number(canonical.valor_total_com_juros || 0),
+                valor_parcela: Number(canonical.valor_parcela || 0),
+                valor_servico: Number(canonical.valor_servico || 0),
+                custo_peca: Number(canonical.custo_peca || 0),
+                custo_mao_obra: Number(canonical.custo_mao_obra || 0),
+                lucro_bruto: Number(canonical.lucro_bruto || 0),
+                margem: Number(canonical.margem || 0),
+                desconto: Number(canonical.desconto || 0)
             };
         }
 
@@ -2569,8 +2584,7 @@
                 return { valor_total: Number(item.subtotal || 0), valor_frete: 0 };
             });
             const totals = calcularTotalPedido(itens, 0);
-            const freight = itens.reduce((acc, item) => acc + Number(item.valor_frete || 0), 0);
-            return { subtotal: totals.subtotal, freight: roundMoney(freight), totalOriginal: totals.valor_total };
+            return { subtotal: totals.subtotal, freight: roundMoney(totals.valor_frete), totalOriginal: totals.valor_total };
         }
 
         function atualizarTotal() {
@@ -2604,13 +2618,18 @@
             }
 
             const parcelasSelecionadas = canInstall ? Number(installmentsSelect.value || 1) : 1;
-            const parcelamento = calcularParcelamento(valorBase, parcelasSelecionadas);
-            const valorFinal = method === 'credito' ? parcelamento.valor_total_com_juros : roundMoney(valorBase);
+            const canonical = window.FinanceiroModule?.calculateCanonicalOrderFinancials?.({
+                valor_total: valorBase,
+                valor_frete: 0,
+                desconto: 0,
+                parcelas: parcelasSelecionadas
+            }) || {};
+            const valorFinal = Number(canonical.valor_total_com_juros || valorBase);
             installmentsHint.style.display = method === 'credito' ? 'block' : 'none';
             installmentsHint.textContent = method === 'credito'
-                ? (parcelamento.percentual_juros > 0
-                    ? `${parcelamento.parcelas}x de ${formatCurrencyBRL(parcelamento.valor_parcela)} com juros de ${parcelamento.percentual_juros.toFixed(2).replace('.', ',')}% | Total: ${formatCurrencyBRL(parcelamento.valor_total_com_juros)}`
-                    : `${parcelamento.parcelas}x de ${formatCurrencyBRL(parcelamento.valor_parcela)} sem juros`)
+                ? (Number(canonical.percentual_juros || 0) > 0
+                    ? `${canonical.parcelas}x de ${formatCurrencyBRL(canonical.valor_parcela)} com juros de ${Number(canonical.percentual_juros || 0).toFixed(2).replace('.', ',')}% | Total: ${formatCurrencyBRL(canonical.valor_total_com_juros)}`
+                    : `${canonical.parcelas}x de ${formatCurrencyBRL(canonical.valor_parcela)} sem juros`)
                 : '';
 
             discountNode.textContent = `R$ ${desconto.toFixed(2)}`;
@@ -2634,12 +2653,12 @@
             return {
                 totalOriginal,
                 desconto,
-                valorFinal,
+                valorFinal: Number(canonical.valor_final ?? valorBase),
                 metodo: method,
-                parcelas: parcelasSelecionadas,
-                percentualJuros: parcelamento.percentual_juros,
-                valorParcela: parcelamento.valor_parcela,
-                valorTotalComJuros: parcelamento.valor_total_com_juros
+                parcelas: Number(canonical.parcelas || parcelasSelecionadas),
+                percentualJuros: Number(canonical.percentual_juros || 0),
+                valorParcela: Number(canonical.valor_parcela || 0),
+                valorTotalComJuros: Number(canonical.valor_total_com_juros || valorBase)
             };
         }
 
@@ -2895,24 +2914,19 @@
 
             const items = buildCartItemsSummary();
             const desconto = Number(checkoutData?.desconto || 0);
-            const totals = calcularTotalPedido(items, desconto);
-            const total = Number(totals.valor_total || 0);
-            const valorFinal = Number(totals.valor_final || total);
             const parcelas = Number(checkoutData?.parcelas || 1);
-            const percentualJuros = Number(checkoutData?.percentualJuros || 0);
-            const valorTotalComJuros = Number(checkoutData?.valorTotalComJuros || valorFinal);
-            const valorParcela = Number(checkoutData?.valorParcela || (parcelas > 0 ? valorTotalComJuros / parcelas : valorTotalComJuros));
+            const financeiro = window.FinanceiroModule?.calculateCanonicalOrderFinancials?.({
+                itens: items,
+                desconto,
+                parcelas
+            }) || calcularTotalPedido(items, desconto, parcelas);
+            const total = Number(financeiro.valor_total || 0);
+            const valorFinal = Number(financeiro.valor_final || total);
+            const percentualJuros = Number(financeiro.percentual_juros || 0);
+            const valorTotalComJuros = Number(financeiro.valor_total_com_juros || valorFinal);
+            const valorParcela = Number(financeiro.valor_parcela || (parcelas > 0 ? valorTotalComJuros / parcelas : valorTotalComJuros));
             const customer = getCartCustomerData();
             const mainDevice = items.find(item => item.tipo === 'orcamento');
-            const financeiro = items.reduce((acc, item) => {
-                acc.custo_peca += Number(item.valor_peca || 0);
-                acc.custo_mao_obra += Number(item.mao_de_obra || 0);
-                acc.valor_frete += Number(item.valor_frete || 0);
-                return acc;
-            }, { custo_peca: 0, custo_mao_obra: 0, valor_frete: 0 });
-            financeiro.valor_servico = total;
-            financeiro.lucro_bruto = total - (financeiro.custo_peca + financeiro.custo_mao_obra);
-            financeiro.margem = total > 0 ? (financeiro.lucro_bruto / total) * 100 : 0;
             const paymentMethodLabels = {
                 dinheiro: 'Dinheiro',
                 pix: 'Pix',
@@ -2927,7 +2941,7 @@
                 desconto,
                 valor_final: valorFinal,
                 forma_pagamento: paymentMethodLabels[formaPagamento] || formaPagamento || null,
-                parcelas,
+                parcelas: Number(financeiro.parcelas || parcelas),
                 percentual_juros: percentualJuros,
                 valor_total_com_juros: valorTotalComJuros,
                 valor_parcela: valorParcela,
@@ -2953,7 +2967,7 @@
                 valor_total_com_juros: valorTotalComJuros,
                 valor_parcela: valorParcela,
                 forma_pagamento: pedido.forma_pagamento,
-                parcelas,
+                parcelas: Number(financeiro.parcelas || parcelas),
                 status_pagamento: 'pendente',
                 status: ORDER_STATUS.PENDENTE,
                 observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)} | cliente: ${JSON.stringify({ email: customer.email, endereco: customer.address })} | pagamento: ${JSON.stringify(pedido)} | financeiro: ${JSON.stringify(financeiro)}`,
@@ -2975,7 +2989,7 @@
                 desconto,
                 valorFinal,
                 formaPagamento: paymentMethodLabels[formaPagamento] || formaPagamento || 'Não informado',
-                parcelas,
+                parcelas: Number(financeiro.parcelas || parcelas),
                 percentualJuros,
                 valorTotalComJuros,
                 valorParcela
@@ -3732,37 +3746,16 @@ function formatMoney(value) {
     return `R$ ${numericValue.toFixed(2)}`;
 }
 
-const JUROS_PARCELAMENTO = {
-    1: 0,
-    2: 0,
-    3: 0,
-    4: 4.97,
-    5: 5.97,
-    6: 6.97,
-    7: 7.97,
-    8: 7.97,
-    9: 7.97,
-    10: 7.97,
-    11: 7.97,
-    12: 7.97
-};
-
 function roundMoney(value) {
     return Number((Number(value) || 0).toFixed(2));
 }
 
 function calcularParcelamento(valorFinal, parcelas) {
-    const totalBase = Math.max(0, Number(valorFinal || 0));
-    const qtdParcelas = Math.max(1, Math.min(12, Number(parcelas || 1)));
-    const percentualJuros = Number(JUROS_PARCELAMENTO[qtdParcelas] || 0);
-    const valorTotalComJuros = totalBase * (1 + percentualJuros / 100);
-    const valorParcela = valorTotalComJuros / qtdParcelas;
-
-    return {
-        parcelas: qtdParcelas,
-        percentual_juros: percentualJuros,
-        valor_total_com_juros: roundMoney(valorTotalComJuros),
-        valor_parcela: roundMoney(valorParcela)
+    return window.FinanceiroModule?.calculateInstallments?.(valorFinal, parcelas) || {
+        parcelas: 1,
+        percentual_juros: 0,
+        valor_total_com_juros: roundMoney(valorFinal),
+        valor_parcela: roundMoney(valorFinal)
     };
 }
 
@@ -4261,6 +4254,17 @@ async function calcularFrete(cep) {
         async function saveOrder(orderCode, quote = currentQuote) {
             try {
                 syncQuoteSelections(quote);
+                const quoteItem = {
+                    valor_total: Number(quote.totalPrice || 0),
+                    valor_frete: Number(quote.freightCost || 0),
+                    valor_peca: Number(quote.baseCost || 0),
+                    mao_de_obra: Number(quote.mao_de_obra ?? quote.laborCost ?? 0)
+                };
+                const financial = window.FinanceiroModule?.calculateCanonicalOrderFinancials?.({
+                    itens: [quoteItem],
+                    desconto: 0,
+                    parcelas: 1
+                }) || {};
 
                 const payload = {
                     cliente_nome: quote.customerName,
@@ -4268,15 +4272,19 @@ async function calcularFrete(cep) {
                     endereco: quote.customerAddress,
                     modelo_dispositivo: `${quote.brand} ${quote.model}`.trim(),
                     servico: quote.serviceLabel || getServiceLabel(quote.service),
-                    valor_total: quote.totalPrice,
-                    valor_servico: quote.totalPrice,
-                    custo_peca: Number(quote.baseCost || 0),
-                    custo_mao_obra: Number(quote.mao_de_obra ?? quote.laborCost ?? 0),
-                    valor_frete: Number(quote.freightCost || 0),
-                    lucro_bruto: Number(quote.totalPrice || 0) - (Number(quote.baseCost || 0) + Number(quote.mao_de_obra ?? quote.laborCost ?? 0)),
-                    margem: Number(quote.totalPrice || 0) > 0
-                        ? ((Number(quote.totalPrice || 0) - (Number(quote.baseCost || 0) + Number(quote.mao_de_obra ?? quote.laborCost ?? 0))) / Number(quote.totalPrice || 0)) * 100
-                        : 0,
+                    valor_total: Number(financial.valor_total || quote.totalPrice || 0),
+                    valor_servico: Number(financial.valor_servico || quote.totalPrice || 0),
+                    custo_peca: Number(financial.custo_peca || quote.baseCost || 0),
+                    custo_mao_obra: Number(financial.custo_mao_obra ?? quote.mao_de_obra ?? quote.laborCost ?? 0),
+                    valor_frete: Number(financial.valor_frete || quote.freightCost || 0),
+                    lucro_bruto: Number(financial.lucro_bruto || 0),
+                    margem: Number(financial.margem || 0),
+                    desconto: Number(financial.desconto || 0),
+                    valor_total_final: Number(financial.valor_final || quote.totalPrice || 0),
+                    percentual_juros: Number(financial.percentual_juros || 0),
+                    valor_total_com_juros: Number(financial.valor_total_com_juros || quote.totalPrice || 0),
+                    valor_parcela: Number(financial.valor_parcela || quote.totalPrice || 0),
+                    parcelas: Number(financial.parcelas || 1),
                     status: ORDER_STATUS.PENDENTE,
                     distancia_km: quote.distance,
                     tipo_envio: quote.shippingType || null,
@@ -5270,23 +5278,31 @@ async function calcularFrete(cep) {
             try {
                 const paymentStatus = document.getElementById('orderPaymentStatus').value;
                 const financialInput = {
-                    valor_servico: Number(document.getElementById('orderTotal').value || 0),
+                    valor_total: Number(document.getElementById('orderTotal').value || 0),
                     custo_peca: Number(document.getElementById('orderPartCost').value || 0),
                     custo_mao_obra: Number(document.getElementById('orderLaborCost').value || 0),
-                    valor_frete: Number(document.getElementById('orderFreightCost').value || 0)
+                    valor_frete: Number(document.getElementById('orderFreightCost').value || 0),
+                    desconto: 0,
+                    parcelas: 1
                 };
                 const calculated = window.FinanceiroModule?.calculateOrderFinancials(financialInput) || {};
                 const payload = {
                     cliente_nome: document.getElementById('orderCustomerName').value.trim(),
                     whatsapp: document.getElementById('orderWhatsApp').value.trim(),
                     modelo_dispositivo: document.getElementById('orderModel').value.trim(),
-                    valor_total: financialInput.valor_servico,
-                    valor_servico: financialInput.valor_servico,
+                    valor_total: calculated.valor_total || financialInput.valor_total,
+                    valor_servico: calculated.valor_servico || financialInput.valor_total,
                     custo_peca: financialInput.custo_peca,
                     custo_mao_obra: financialInput.custo_mao_obra,
                     valor_frete: financialInput.valor_frete,
                     lucro_bruto: calculated.lucro_bruto || 0,
                     margem: calculated.margem || 0,
+                    desconto: calculated.desconto || 0,
+                    valor_total_final: calculated.valor_final || financialInput.valor_total,
+                    percentual_juros: calculated.percentual_juros || 0,
+                    valor_total_com_juros: calculated.valor_total_com_juros || financialInput.valor_total,
+                    valor_parcela: calculated.valor_parcela || financialInput.valor_total,
+                    parcelas: calculated.parcelas || 1,
                     status: document.getElementById('orderStatus').value,
                     status_pagamento: paymentStatus,
                     observacoes: document.getElementById('orderNotes').value.trim()
