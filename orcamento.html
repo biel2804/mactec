@@ -3156,8 +3156,12 @@
                         totalItem
                     };
                 }
-
-                const subtotal = Number(item.subtotal ?? item.valor_total ?? ((Number(item.price || 0) * Number(item.quantity || 1))) || 0);
+                    const subtotal = Number(
+                    item.subtotal ??
+                    item.valor_total ??
+                    (Number(item.price || 0) * Number(item.quantity || 1)) ??
+  0
+                );
                 return {
                     aparelho: item.name || item.nome || 'Acessório',
                     servico: `Acessório (${Number(item.quantity || item.quantidade || 1)}x)`,
