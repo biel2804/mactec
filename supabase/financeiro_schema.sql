@@ -5,8 +5,13 @@ alter table if exists pedidos
   add column if not exists valor_servico numeric(12,2) default 0,
   add column if not exists custo_peca numeric(12,2) default 0,
   add column if not exists custo_mao_obra numeric(12,2) default 0,
+  add column if not exists valor_frete numeric(12,2) default 0,
   add column if not exists lucro_bruto numeric(12,2) default 0,
   add column if not exists margem numeric(8,2) default 0,
+  add column if not exists parcelas integer default 1,
+  add column if not exists percentual_juros numeric(8,2) default 0,
+  add column if not exists valor_total_com_juros numeric(12,2) default 0,
+  add column if not exists valor_parcela numeric(12,2) default 0,
   add column if not exists status_pagamento text default 'pendente';
 
 create table if not exists despesas (
@@ -18,3 +23,6 @@ create table if not exists despesas (
   pedido_id bigint null references pedidos(id) on delete set null,
   created_at timestamptz not null default now()
 );
+
+-- Força atualização do schema cache do PostgREST (Supabase API)
+notify pgrst, 'reload schema';
