@@ -30,11 +30,9 @@
     return result;
   }
 
-  async function loadExpensesTable(filters = {}) {
-    const tbody = document.getElementById('expensesTable');
-    if (!tbody || !window.ensureSupabaseClient) return;
-    const client = window.ensureSupabaseClient(true);
-    if (!client) return;
+  async function loadExpenses(filters = {}) {
+    const client = window.ensureSupabaseClient?.(true);
+    if (!client) return [];
 
     let query = client.from('despesas').select('*').order('data', { ascending: false });
     if (filters.start) query = query.gte('data', filters.start);
@@ -42,9 +40,22 @@
 
     const { data, error } = await query;
     if (error) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--error);">${error.message}</td></tr>`;
-      return;
+      const message = String(error.message || '');
+      if (error.code === '42P01' || error.status === 404 || message.includes('404')) {
+        console.warn('Tabela despesas indisponível ou não criada ainda:', message || error);
+        return [];
+      }
+      console.warn('Falha ao carregar despesas:', message || error);
+      return [];
     }
+
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function loadExpensesTable(filters = {}) {
+    const tbody = document.getElementById('expensesTable');
+    if (!tbody || !window.ensureSupabaseClient) return;
+    const data = await loadExpenses(filters);
     if (!data || data.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">Nenhuma despesa encontrada</td></tr>';
       return;
@@ -100,5 +111,5 @@
   window.loadExpensesTable = loadExpensesTable;
   window.filterExpensesByDate = filterExpensesByDate;
   window.recalculateOrderFinance = recalculateOrderFinance;
-  window.FinanceiroModule = { calculateOrderFinancials, recalculateOrderFinance, loadExpensesTable };
+  window.FinanceiroModule = { calculateOrderFinancials, recalculateOrderFinance, loadExpenses, loadExpensesTable };
 })();

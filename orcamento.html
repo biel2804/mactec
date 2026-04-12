@@ -3017,7 +3017,7 @@
         let SUPABASE_URL = APP_CONFIG.SUPABASE_URL || '';
         let SUPABASE_KEY = APP_CONFIG.SUPABASE_KEY || '';
         let supabaseClient = null;
-        const SHIPPING_API_URL = APP_CONFIG.SHIPPING_API_URL || '/api/shipping';
+        const SHIPPING_API_URL = APP_CONFIG.SHIPPING_API_URL || '';
         const FREIGHT_FUNCTION_URL = APP_CONFIG.FREIGHT_FUNCTION_URL || (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/calcular-frete` : '/functions/v1/calcular-frete');
         const ERROR_LOG_TABLE = APP_CONFIG.ERROR_LOG_TABLE || 'logs_erros';
         const COMPANY_SETTINGS_TABLE = APP_CONFIG.COMPANY_SETTINGS_TABLE || 'configuracoes_empresa';
@@ -3834,9 +3834,22 @@ async function getShippingContext(cep) {
 }
 
 async function getMelhorEnvioShippingQuotes(cep) {
+    if (!SHIPPING_API_URL) {
+        return { sedex: null, pac: null, warning: 'Frete online não configurado.', fallback: true };
+    }
+
     const response = await fetch(`${SHIPPING_API_URL}?cep=${encodeURIComponent(cep)}`);
 
     if (!response.ok) {
+        if (response.status === 404) {
+            console.warn('Endpoint de frete online não encontrado (404). Usando fallback local.');
+            return {
+                sedex: null,
+                pac: null,
+                warning: 'Frete online indisponível no momento.',
+                fallback: true
+            };
+        }
         const errorPayload = await response.json().catch(() => ({}));
         throw new Error(errorPayload.error || `Não foi possível consultar o frete online (status ${response.status}).`);
     }
@@ -3848,7 +3861,8 @@ async function getMelhorEnvioShippingQuotes(cep) {
     return {
         sedex: pickQuote((name) => name.includes('SEDEX')),
         pac: pickQuote((name) => name.includes('PAC')),
-        warning: result.warning || ''
+        warning: result.warning || '',
+        fallback: false
     };
 }
 
@@ -3980,6 +3994,9 @@ async function calculateFreight() {
         let melhorEnvio = { sedex: null, pac: null, warning: '' };
         try {
             melhorEnvio = await getMelhorEnvioShippingQuotes(cep);
+            if (melhorEnvio.warning) {
+                console.warn('Frete online indisponível:', melhorEnvio.warning);
+            }
         } catch (shippingError) {
             console.warn('Frete online indisponível:', shippingError);
             melhorEnvio.warning = shippingError.message;

@@ -61,16 +61,35 @@
     });
   }
 
+  async function loadExpensesSafe(client) {
+    const { data, error } = await client.from('despesas').select('*');
+    if (error) {
+      const message = String(error.message || '');
+      if (error.code === '42P01' || error.status === 404 || message.includes('404')) {
+        console.warn('Tabela despesas indisponível ou não criada ainda:', message || error);
+        return [];
+      }
+      console.warn('Falha ao carregar despesas para o dashboard:', message || error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  }
+
   async function refreshFinancialDashboard(range = window.__dashboardRange || null) {
     const client = window.ensureSupabaseClient?.(true);
     if (!client) return;
     window.__dashboardRange = range;
 
-    const { data: orders = [] } = await client.from('pedidos').select('*');
-    const { data: expenses = [] } = await client.from('despesas').select('*');
+    const { data: pedidosData, error: pedidosError } = await client.from('pedidos').select('*');
+    if (pedidosError) {
+      console.warn('Falha ao carregar pedidos para o dashboard:', pedidosError.message || pedidosError);
+    }
 
-    const filteredOrders = orders.filter((o) => inRange(o.created_at, range));
-    const filteredExpenses = expenses.filter((e) => inRange(e.data, range));
+    const orders = Array.isArray(pedidosData) ? pedidosData : [];
+    const expenses = await loadExpensesSafe(client);
+
+    const filteredOrders = orders.filter((o) => inRange(o?.created_at, range));
+    const filteredExpenses = expenses.filter((e) => inRange(e?.data, range));
 
     const faturamento = filteredOrders
       .filter((o) => ['finalizado', 'entregue'].includes((o.status || '').toLowerCase()))
