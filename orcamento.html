@@ -2908,6 +2908,51 @@
             throw new Error(`A coluna "${missingColumn}" não existe em public.pedidos. Rode a migration do contrato de dados (Lote 1) e tente novamente.`);
         }
 
+        const PAYMENT_METHOD_LABELS = {
+            dinheiro: 'Dinheiro',
+            pix: 'Pix',
+            debito: 'Débito',
+            credito: 'Crédito'
+        };
+
+        function normalizePaymentMethod(rawMethod = '') {
+            const key = String(rawMethod || '').trim().toLowerCase();
+            return {
+                key,
+                label: PAYMENT_METHOD_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : null)
+            };
+        }
+
+        function resolveInitialPaymentStatus() {
+            return 'pendente';
+        }
+
+        function buildCanonicalOrderPayload({ origin, base, financial, payment, observacoes }) {
+            const normalizedPayment = normalizePaymentMethod(payment?.metodo);
+            const parcelas = Number(financial?.parcelas || 1);
+            const payload = {
+                ...base,
+                valor_total: Number(financial?.valor_total || 0),
+                valor_servico: Number(financial?.valor_servico || 0),
+                custo_peca: Number(financial?.custo_peca || 0),
+                custo_mao_obra: Number(financial?.custo_mao_obra || 0),
+                valor_frete: Number(financial?.valor_frete || 0),
+                lucro_bruto: Number(financial?.lucro_bruto || 0),
+                margem: Number(financial?.margem || 0),
+                desconto: Number(financial?.desconto || 0),
+                valor_total_final: Number(financial?.valor_final || 0),
+                percentual_juros: Number(financial?.percentual_juros || 0),
+                valor_total_com_juros: Number(financial?.valor_total_com_juros || 0),
+                valor_parcela: Number(financial?.valor_parcela || 0),
+                forma_pagamento: normalizedPayment.label,
+                parcelas,
+                status_pagamento: resolveInitialPaymentStatus(origin, normalizedPayment.key),
+                observacoes
+            };
+
+            return validatePedidosPayload(payload, `insert_${origin}`);
+        }
+
         async function saveCartOrder(checkoutData) {
             const client = ensureSupabaseClient(true);
             if (!client) throw new Error('Supabase não configurado.');
@@ -2927,20 +2972,15 @@
             const valorParcela = Number(financeiro.valor_parcela || (parcelas > 0 ? valorTotalComJuros / parcelas : valorTotalComJuros));
             const customer = getCartCustomerData();
             const mainDevice = items.find(item => item.tipo === 'orcamento');
-            const paymentMethodLabels = {
-                dinheiro: 'Dinheiro',
-                pix: 'Pix',
-                debito: 'Débito',
-                credito: 'Crédito'
-            };
             const formaPagamento = checkoutData?.metodo || '';
+            const normalizedPayment = normalizePaymentMethod(formaPagamento);
             const pedido = {
                 cliente: customer.name,
                 itens: items,
                 valor_total: total,
                 desconto,
                 valor_final: valorFinal,
-                forma_pagamento: paymentMethodLabels[formaPagamento] || formaPagamento || null,
+                forma_pagamento: normalizedPayment.label,
                 parcelas: Number(financeiro.parcelas || parcelas),
                 percentual_juros: percentualJuros,
                 valor_total_com_juros: valorTotalComJuros,
@@ -2948,33 +2988,22 @@
                 data: new Date().toISOString()
             };
 
-            const payload = {
+            const payload = buildCanonicalOrderPayload({
+                origin: 'cart',
+                base: {
                 cliente_nome: customer.name,
                 whatsapp: customer.phone,
                 endereco: customer.address.formatted,
                 modelo_dispositivo: mainDevice ? `${mainDevice.marca || ''} ${mainDevice.modelo || ''}`.trim() : 'Pedido de acessórios',
                 servico: mainDevice?.servico || 'Pedido via carrinho',
-                valor_total: total,
-                valor_servico: financeiro.valor_servico,
-                custo_peca: financeiro.custo_peca,
-                custo_mao_obra: financeiro.custo_mao_obra,
-                valor_frete: financeiro.valor_frete,
-                lucro_bruto: financeiro.lucro_bruto,
-                margem: financeiro.margem,
-                desconto,
-                valor_total_final: valorFinal,
-                percentual_juros: percentualJuros,
-                valor_total_com_juros: valorTotalComJuros,
-                valor_parcela: valorParcela,
-                forma_pagamento: pedido.forma_pagamento,
-                parcelas: Number(financeiro.parcelas || parcelas),
-                status_pagamento: 'pendente',
                 status: ORDER_STATUS.PENDENTE,
-                observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)} | cliente: ${JSON.stringify({ email: customer.email, endereco: customer.address })} | pagamento: ${JSON.stringify(pedido)} | financeiro: ${JSON.stringify(financeiro)}`,
                 previsao_entrega: pedido.data
-            };
-
-            const insertPayload = validatePedidosPayload({ ...payload }, 'insert_cart');
+                },
+                financial: financeiro,
+                payment: { metodo: formaPagamento },
+                observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)} | cliente: ${JSON.stringify({ email: customer.email, endereco: customer.address })} | pagamento: ${JSON.stringify(pedido)} | financeiro: ${JSON.stringify(financeiro)}`
+            });
+            const insertPayload = { ...payload };
             const { data, error } = await client.from('pedidos').insert([insertPayload]).select().single();
             if (error) {
                 throwPedidosColumnMismatch(error, insertPayload, 'insert_cart');
@@ -2988,7 +3017,7 @@
                 total,
                 desconto,
                 valorFinal,
-                formaPagamento: paymentMethodLabels[formaPagamento] || formaPagamento || 'Não informado',
+                formaPagamento: normalizedPayment.label || 'Não informado',
                 parcelas: Number(financeiro.parcelas || parcelas),
                 percentualJuros,
                 valorTotalComJuros,
@@ -4222,10 +4251,16 @@ async function calcularFrete(cep) {
                         <button class="btn btn-primary" style="width: 100%;" onclick="completePaymentSelection('credito', 'Cartão de Crédito')">
                             💳 Cartão de Crédito
                         </button>
+                        <div id="quoteInstallmentsGroup" style="margin-top: 0.5rem;">
+                            <label for="quoteInstallmentsSelect" style="display:block;margin-bottom:0.35rem;">Parcelamento no crédito:</label>
+                            <select id="quoteInstallmentsSelect" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid var(--border-color);" onchange="renderQuoteInstallmentHint()"></select>
+                            <p id="quoteInstallmentsHint" style="margin:0.5rem 0 0;color:var(--text-secondary);font-size:0.85rem;"></p>
+                        </div>
                     </div>
                 </div>
             `;
             document.body.appendChild(paymentModal);
+            updateQuoteInstallmentOptions();
         }
 
         function closePaymentOptionsModal() {
@@ -4235,10 +4270,42 @@ async function calcularFrete(cep) {
             }
         }
 
+        function updateQuoteInstallmentOptions() {
+            const select = document.getElementById('quoteInstallmentsSelect');
+            if (!select) return;
+            const baseTotal = Number(currentQuote.totalPrice || 0);
+            const selected = Math.max(1, Math.min(12, Number(currentQuote.installments || select.value || 1)));
+            select.innerHTML = '';
+            for (let i = 1; i <= 12; i += 1) {
+                const installment = calcularParcelamento(baseTotal, i);
+                const option = document.createElement('option');
+                option.value = String(i);
+                option.textContent = `${i}x de ${formatCurrencyBRL(installment.valor_parcela)} ${installment.percentual_juros > 0 ? `com juros de ${installment.percentual_juros.toFixed(2).replace('.', ',')}%` : 'sem juros'}`;
+                select.appendChild(option);
+            }
+            select.value = String(selected);
+            renderQuoteInstallmentHint();
+        }
+
+        function renderQuoteInstallmentHint() {
+            const hint = document.getElementById('quoteInstallmentsHint');
+            const select = document.getElementById('quoteInstallmentsSelect');
+            if (!hint || !select) return;
+            const parcelas = Number(select.value || 1);
+            const installment = calcularParcelamento(Number(currentQuote.totalPrice || 0), parcelas);
+            const juros = Number(installment.percentual_juros || 0);
+            hint.textContent = juros > 0
+                ? `${installment.parcelas}x de ${formatCurrencyBRL(installment.valor_parcela)} com juros de ${juros.toFixed(2).replace('.', ',')}% | Total: ${formatCurrencyBRL(installment.valor_total_com_juros)}`
+                : `${installment.parcelas}x de ${formatCurrencyBRL(installment.valor_parcela)} sem juros`;
+        }
+
         async function completePaymentSelection(method, label) {
             const orderId = 'ORD-' + Date.now();
             currentQuote.paymentMethod = method;
             currentQuote.paymentLabel = label;
+            currentQuote.installments = method === 'credito'
+                ? Number(document.getElementById('quoteInstallmentsSelect')?.value || 1)
+                : 1;
 
             try {
                 const savedOrder = await saveOrder(orderId);
@@ -4263,43 +4330,36 @@ async function calcularFrete(cep) {
                 const financial = window.FinanceiroModule?.calculateCanonicalOrderFinancials?.({
                     itens: [quoteItem],
                     desconto: 0,
-                    parcelas: 1
+                    parcelas: Number(quote.installments || 1)
                 }) || {};
+                quote.financial = financial;
 
-                const payload = {
-                    cliente_nome: quote.customerName,
-                    whatsapp: quote.customerWhatsApp,
-                    endereco: quote.customerAddress,
-                    modelo_dispositivo: `${quote.brand} ${quote.model}`.trim(),
-                    servico: quote.serviceLabel || getServiceLabel(quote.service),
-                    valor_total: Number(financial.valor_total || quote.totalPrice || 0),
-                    valor_servico: Number(financial.valor_servico || quote.totalPrice || 0),
-                    custo_peca: Number(financial.custo_peca || quote.baseCost || 0),
-                    custo_mao_obra: Number(financial.custo_mao_obra ?? quote.mao_de_obra ?? quote.laborCost ?? 0),
-                    valor_frete: Number(financial.valor_frete || quote.freightCost || 0),
-                    lucro_bruto: Number(financial.lucro_bruto || 0),
-                    margem: Number(financial.margem || 0),
-                    desconto: Number(financial.desconto || 0),
-                    valor_total_final: Number(financial.valor_final || quote.totalPrice || 0),
-                    percentual_juros: Number(financial.percentual_juros || 0),
-                    valor_total_com_juros: Number(financial.valor_total_com_juros || quote.totalPrice || 0),
-                    valor_parcela: Number(financial.valor_parcela || quote.totalPrice || 0),
-                    parcelas: Number(financial.parcelas || 1),
-                    status: ORDER_STATUS.PENDENTE,
-                    distancia_km: quote.distance,
-                    tipo_envio: quote.shippingType || null,
-                    status_pagamento: 'pendente',
+                const payload = buildCanonicalOrderPayload({
+                    origin: 'quote',
+                    base: {
+                        cliente_nome: quote.customerName,
+                        whatsapp: quote.customerWhatsApp,
+                        endereco: quote.customerAddress,
+                        modelo_dispositivo: `${quote.brand} ${quote.model}`.trim(),
+                        servico: quote.serviceLabel || getServiceLabel(quote.service),
+                        status: ORDER_STATUS.PENDENTE,
+                        distancia_km: quote.distance,
+                        tipo_envio: quote.shippingType || null,
+                        previsao_entrega: getDeliveryDate()
+                    },
+                    financial,
+                    payment: { metodo: quote.paymentMethod },
                     observacoes: [
                         quote.shippingLabel ? `Frete escolhido: ${quote.shippingLabel}` : '',
                         quote.shippingEtaText || '',
                         quote.shippingCarrier ? `Transportadora: ${quote.shippingCarrier}` : '',
                         quote.paymentLabel ? `Forma de pagamento: ${quote.paymentLabel}` : '',
+                        `Parcelamento: ${Number(financial.parcelas || quote.installments || 1)}x`,
+                        `Total com juros: ${formatMoney(financial.valor_total_com_juros || quote.totalPrice || 0)}`,
                         quote.customerEmail ? `E-mail: ${quote.customerEmail}` : '',
                         quote.customerAddressData ? `Endereço detalhado: ${JSON.stringify(quote.customerAddressData)}` : ''
-                    ].filter(Boolean).join(' | '),
-                    previsao_entrega: getDeliveryDate()
-                };
-                validatePedidosPayload(payload, 'insert_quote');
+                    ].filter(Boolean).join(' | ')
+                });
 
                 const client = ensureSupabaseClient(true);
                 if (!client) {
@@ -4416,7 +4476,8 @@ async function calcularFrete(cep) {
         // Share on WhatsApp
         function shareOnWhatsApp(orderId) {
             const paymentInfo = currentQuote.paymentLabel ? ` Forma de pagamento: ${currentQuote.paymentLabel}.` : '';
-            const message = `Olá! Seu pedido ${orderId} foi confirmado. Valor total: ${formatMoney(currentQuote.totalPrice)}.${paymentInfo} Prazo de entrega: ${new Date(getDeliveryDate()).toLocaleDateString('pt-BR')}. Obrigado!`;
+            const totalComJuros = Number(currentQuote.financial?.valor_total_com_juros || currentQuote.totalPrice || 0);
+            const message = `Olá! Seu pedido ${orderId} foi confirmado. Valor total: ${formatMoney(totalComJuros)}.${paymentInfo} Prazo de entrega: ${new Date(getDeliveryDate()).toLocaleDateString('pt-BR')}. Obrigado!`;
             const whatsappUrl = `https://wa.me/55${getNormalizedWhatsApp(currentQuote.customerWhatsApp)}?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
         }
