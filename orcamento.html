@@ -1145,6 +1145,48 @@
     font-size: 0.85rem;
 }
 
+.shipping-service-options {
+    margin-top: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.9rem;
+    background: var(--shipping-bg);
+}
+
+.shipping-service-options h4 {
+    margin: 0 0 0.65rem;
+    color: var(--text-primary);
+}
+
+.shipping-service-option {
+    display: flex;
+    gap: 0.65rem;
+    align-items: flex-start;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.7rem;
+}
+
+.shipping-service-option + .shipping-service-option {
+    margin-top: 0.55rem;
+}
+
+.shipping-service-option input[type="radio"] {
+    margin-top: 0.2rem;
+}
+
+.shipping-service-option-main {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.8rem;
+    align-items: baseline;
+}
+
+.shipping-service-price {
+    font-weight: 700;
+    color: var(--accent-green);
+}
+
 .summary-shipping-label {
     display: block;
     margin-top: 0.4rem;
@@ -1587,6 +1629,9 @@
                     <div id="shippingOptions" class="shipping-options shipping-options-empty">
                         <p>Digite o CEP para ver as opções de envio via Motoboy, SEDEX e PAC.</p>
                     </div>
+                    <div id="shippingServiceOptions" class="shipping-options shipping-options-empty">
+                        <p>Calcule o frete para escolher entre retirada e entrega, só retirada ou só entrega.</p>
+                    </div>
                 </div>
 
                 <div class="quote-summary">
@@ -1599,7 +1644,7 @@
                         <span id="laborCost">R$ 0,00</span>
                     </div>
                     <div class="summary-row">
-                        <span>🚚 Frete:</span>
+                        <span>🛵 Frete:</span>
                         <div>
                             <span id="freightCost">R$ 0,00</span>
                             <small id="freightChoiceLabel" class="summary-shipping-label">Selecione uma opção de frete.</small>
@@ -2704,6 +2749,7 @@
                             <p class="cart-item-meta">Cliente: ${escapeHtml(item.customerName)}</p>
                             <p class="cart-item-meta">Serviço: ${escapeHtml(item.serviceLabel || getServiceLabel(item.service))}</p>
                             <p class="cart-item-meta">Aparelho: ${escapeHtml(item.brand || 'Marca não informada')} ${escapeHtml(item.model || '')}</p>
+                            <p class="cart-item-meta">🛵 Entrega: ${escapeHtml(item.shippingServiceLabel || getShippingServiceLabel(item.shippingServiceType) || 'Não informado')}</p>
                             <p class="cart-item-meta">Valor da peça: ${formatMoney(item.baseCost)}</p>
                             <p class="cart-item-meta">Mão de obra: ${formatMoney(item.mao_de_obra ?? item.laborCost)}</p>
                             <p class="cart-item-meta">Total: ${formatMoney(item.totalPrice)}</p>
@@ -2791,6 +2837,8 @@
                         valor_peca: valorPeca,
                         mao_de_obra: maoObra,
                         valor_frete: valorFrete,
+                        tipo_envio: item.shippingServiceType || null,
+                        tipo_envio_label: item.shippingServiceLabel || getShippingServiceLabel(item.shippingServiceType),
                         valor_total: valorTotal,
                         valor: valorTotal
                     };
@@ -2972,6 +3020,7 @@
             const valorParcela = Number(financeiro.valor_parcela || (parcelas > 0 ? valorTotalComJuros / parcelas : valorTotalComJuros));
             const customer = getCartCustomerData();
             const mainDevice = items.find(item => item.tipo === 'orcamento');
+            const mainQuoteItem = cart.find(item => item.itemType === 'quote');
             const formaPagamento = checkoutData?.metodo || '';
             const normalizedPayment = normalizePaymentMethod(formaPagamento);
             const pedido = {
@@ -2996,12 +3045,13 @@
                 endereco: customer.address.formatted,
                 modelo_dispositivo: mainDevice ? `${mainDevice.marca || ''} ${mainDevice.modelo || ''}`.trim() : 'Pedido de acessórios',
                 servico: mainDevice?.servico || 'Pedido via carrinho',
+                tipo_envio: mainQuoteItem?.shippingServiceType || null,
                 status: ORDER_STATUS.PENDENTE,
                 previsao_entrega: pedido.data
                 },
                 financial: financeiro,
                 payment: { metodo: formaPagamento },
-                observacoes: `Pedido via carrinho | itens: ${JSON.stringify(items)} | cliente: ${JSON.stringify({ email: customer.email, endereco: customer.address })} | pagamento: ${JSON.stringify(pedido)} | financeiro: ${JSON.stringify(financeiro)}`
+                observacoes: `Pedido via carrinho | entrega: ${mainQuoteItem?.shippingServiceLabel || 'Não informado'} | itens: ${JSON.stringify(items)} | cliente: ${JSON.stringify({ email: customer.email, endereco: customer.address })} | pagamento: ${JSON.stringify(pedido)} | financeiro: ${JSON.stringify(financeiro)}`
             });
             const insertPayload = { ...payload };
             const { data, error } = await client.from('pedidos').insert([insertPayload]).select().single();
@@ -3054,7 +3104,7 @@
                 percentualJuros,
                 valorTotalComJuros,
                 valorParcela,
-                delivery: quoteItem?.shippingLabel || 'Retirada e entrega a combinar'
+                delivery: quoteItem?.shippingServiceLabel || quoteItem?.shippingLabel || 'Retirada e entrega a combinar'
             });
             abrirWhatsApp(mensagemPedido);
 
@@ -3150,6 +3200,7 @@
                     return {
                         aparelho: `${item.brand || item.marca || ''} ${item.model || item.modelo || ''}`.trim() || 'Não informado',
                         servico: item.serviceLabel || item.servico || getServiceLabel(item.service) || 'Não informado',
+                        entrega: item.shippingServiceLabel || item.tipo_envio_label || getShippingServiceLabel(item.shippingServiceType || item.tipo_envio),
                         peca,
                         maoObra,
                         frete,
@@ -3157,7 +3208,7 @@
                     };
                 }
 
-                const subtotal = Number(item.subtotal ?? item.valor_total ?? ((Number(item.price || 0) * Number(item.quantity || 1))) || 0);
+                const subtotal = Number((item.subtotal ?? item.valor_total ?? (Number(item.price || 0) * Number(item.quantity || 1))) || 0);
                 return {
                     aparelho: item.name || item.nome || 'Acessório',
                     servico: `Acessório (${Number(item.quantity || item.quantidade || 1)}x)`,
@@ -3210,7 +3261,8 @@
                     '',
                     `⚙️ Peça: ${monetary(item.peca)}`,
                     `👨‍🔧 Mão de obra: ${monetary(item.maoObra)}`,
-                    `🚚 Frete: ${monetary(item.frete)}`,
+                    `🛵 Entrega: ${item.entrega || 'Não informado'}`,
+                    `🛵 Frete: ${monetary(item.frete)}`,
                     '',
                     `➡️ *Total do serviço:* ${monetary(item.totalItem)}`,
                     ''
@@ -3222,7 +3274,8 @@
                         `   🔧 *Serviço:* ${item.servico}`,
                         `   ⚙️ Peça: ${monetary(item.peca)}`,
                         `   👨‍🔧 Mão de obra: ${monetary(item.maoObra)}`,
-                        `   🚚 Frete: ${monetary(item.frete)}`,
+                        `   🛵 Entrega: ${item.entrega || 'Não informado'}`,
+                        `   🛵 Frete: ${monetary(item.frete)}`,
                         `   ➡️ Total do item: ${monetary(item.totalItem)}`,
                         ''
                     );
@@ -3250,7 +3303,7 @@
                 '',
                 separator,
                 '',
-                '🚚 *Entrega:*',
+                '🛵 *Entrega:*',
                 order.delivery || 'Retirada e entrega a combinar',
                 '',
                 separator,
@@ -3323,6 +3376,13 @@
             cancelado: 'Cancelado'
         });
 
+        const SHIPPING_SERVICE_TYPES = Object.freeze({
+            retirada_entrega: { label: 'Retirada e entrega', multiplier: 1 },
+            so_retirada: { label: 'Só retirada', multiplier: 0.5 },
+            so_entrega: { label: 'Só entrega', multiplier: 0.5 }
+        });
+        const DEFAULT_SHIPPING_SERVICE_TYPE = 'retirada_entrega';
+
         function formatStatus(status) {
             return STATUS_LABELS[status] || status || 'Não informado';
         }
@@ -3333,6 +3393,25 @@
 
         function getServiceLabel(service) {
             return SERVICE_LABELS[service] || service || 'Serviço não informado';
+        }
+
+        function normalizeShippingServiceType(type) {
+            return SHIPPING_SERVICE_TYPES[type] ? type : DEFAULT_SHIPPING_SERVICE_TYPE;
+        }
+
+        function getShippingServiceConfig(type) {
+            return SHIPPING_SERVICE_TYPES[normalizeShippingServiceType(type)];
+        }
+
+        function getShippingServiceLabel(type) {
+            if (!type || !SHIPPING_SERVICE_TYPES[type]) return 'Não informado';
+            return getShippingServiceConfig(type).label;
+        }
+
+        function calculateShippingByServiceType(baseFreight, serviceType) {
+            const config = getShippingServiceConfig(serviceType);
+            const base = Number(baseFreight || 0);
+            return Number((base * Number(config.multiplier || 0)).toFixed(2));
         }
 
         function getNormalizedWhatsApp(value) {
@@ -3355,6 +3434,10 @@
 
             if (!quote.shippingType) {
                 showAlert('Selecione uma opção de frete antes de continuar.', 'error');
+                return false;
+            }
+            if (!quote.shippingServiceType) {
+                showAlert('Selecione a modalidade de deslocamento (retirada/entrega) antes de continuar.', 'error');
                 return false;
             }
             return true;
@@ -3452,6 +3535,7 @@
             mao_de_obra: 0,
             mao_de_obra_label: formatMoney(0),
             freightCost: 0,
+            shippingBaseCost: 0,
             totalPrice: 0,
             total_label: formatMoney(0),
             customerName: '',
@@ -3464,6 +3548,8 @@
             savedOrderId: null,
             shippingType: '',
             shippingLabel: '',
+            shippingServiceType: '',
+            shippingServiceLabel: '',
             shippingEtaText: '',
             shippingCarrier: '',
             shippingDistanceKm: 0,
@@ -4174,7 +4260,66 @@ function renderShippingOptions(options) {
     `).join('');
 }
 
+function renderShippingServiceTypeOptions() {
+    const container = document.getElementById('shippingServiceOptions');
+    if (!container) return;
+
+    if (!currentQuote.shippingType) {
+        container.className = 'shipping-options shipping-options-empty';
+        container.innerHTML = '<p>Selecione uma opção de frete para escolher a modalidade de atendimento.</p>';
+        return;
+    }
+
+    const selectedType = normalizeShippingServiceType(currentQuote.shippingServiceType || DEFAULT_SHIPPING_SERVICE_TYPE);
+    const baseFreight = Number(currentQuote.shippingBaseCost || 0);
+    container.className = 'shipping-service-options';
+    container.innerHTML = `
+        <h4>Como será o deslocamento do aparelho?</h4>
+        ${Object.entries(SHIPPING_SERVICE_TYPES).map(([type, config]) => `
+            <label class="shipping-service-option">
+                <input type="radio" name="shippingServiceType" value="${type}" ${selectedType === type ? 'checked' : ''} onchange="setShippingServiceType('${type}')">
+                <div style="flex:1;">
+                    <div class="shipping-service-option-main">
+                        <strong>${config.label}</strong>
+                        <span class="shipping-service-price">${formatCurrencyBRL(calculateShippingByServiceType(baseFreight, type))}</span>
+                    </div>
+                    <small class="summary-shipping-label" style="margin-top:0.25rem;text-align:left;">
+                        ${type === 'retirada_entrega'
+                            ? 'A loja busca e devolve seu aparelho.'
+                            : type === 'so_retirada'
+                                ? 'A loja busca o aparelho, e você retira na loja depois.'
+                                : 'Você leva o aparelho na loja, e a loja devolve para você.'}
+                    </small>
+                </div>
+            </label>
+        `).join('')}
+    `;
+}
+
+function setShippingServiceType(type, options = {}) {
+    if (!currentQuote.shippingType) {
+        if (!options.silent) showAlert('Selecione primeiro uma opção de frete.', 'warning');
+        return;
+    }
+
+    const normalizedType = normalizeShippingServiceType(type);
+    const config = getShippingServiceConfig(normalizedType);
+    const baseFreight = Number(currentQuote.shippingBaseCost || currentQuote.freightCost || 0);
+    const adjustedFreight = calculateShippingByServiceType(baseFreight, normalizedType);
+
+    currentQuote.shippingServiceType = normalizedType;
+    currentQuote.shippingServiceLabel = config.label;
+    currentQuote.freightCost = adjustedFreight;
+    updatePriceDisplay();
+    renderShippingServiceTypeOptions();
+
+    if (!options.silent) {
+        showAlert(`${config.label} selecionado: ${formatCurrencyBRL(adjustedFreight)}`, 'success');
+    }
+}
+
 function updateShippingSelection(option) {
+    currentQuote.shippingBaseCost = Number(option.price || 0);
     currentQuote.freightCost = Number(option.price || 0);
     currentQuote.shippingType = option.id;
     currentQuote.shippingLabel = option.title;
@@ -4186,9 +4331,11 @@ function updateShippingSelection(option) {
     currentQuote.shippingTechnicalMessage = option.technicalMessage || '';
     currentQuote.shippingUserMessage = option.userMessage || '';
     currentQuote.distance = currentQuote.shippingDistanceKm;
+    currentQuote.shippingServiceType = normalizeShippingServiceType(currentQuote.shippingServiceType || DEFAULT_SHIPPING_SERVICE_TYPE);
+    currentQuote.shippingServiceLabel = getShippingServiceLabel(currentQuote.shippingServiceType);
 
-    updatePriceDisplay();
     renderShippingOptions(currentShippingOptions);
+    setShippingServiceType(currentQuote.shippingServiceType, { silent: true });
 }
 
 function selectShippingOption(index) {
@@ -4201,8 +4348,11 @@ function selectShippingOption(index) {
 function resetShippingSelection(message = 'Digite o CEP para ver as opções de envio via Motoboy, SEDEX e PAC.') {
     currentShippingOptions = [];
     currentQuote.freightCost = 0;
+    currentQuote.shippingBaseCost = 0;
     currentQuote.shippingType = '';
     currentQuote.shippingLabel = '';
+    currentQuote.shippingServiceType = '';
+    currentQuote.shippingServiceLabel = '';
     currentQuote.shippingEtaText = '';
     currentQuote.shippingCarrier = '';
     currentQuote.shippingDistanceKm = 0;
@@ -4216,6 +4366,7 @@ function resetShippingSelection(message = 'Digite o CEP para ver as opções de 
         container.className = 'shipping-options shipping-options-empty';
         container.innerHTML = `<p>${message}</p>`;
     }
+    renderShippingServiceTypeOptions();
     updatePriceDisplay();
 }
 
@@ -4257,7 +4408,7 @@ async function calculateFreight() {
             id: 'motoboy',
             badgeClass: 'local',
             badgeLabel: 'Local',
-            icon: '🚚',
+            icon: '🛵',
             title: motoboyResult.label,
             description: context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM
                 ? 'Prioridade para entrega local em São Bernardo do Campo.'
@@ -4349,6 +4500,7 @@ async function calculateFreight() {
 
         currentQuote.cep = cep;
         renderShippingOptions(options);
+        renderShippingServiceTypeOptions();
 
         if (options.length) {
             updateShippingSelection(options[0]);
@@ -4390,7 +4542,7 @@ async function calcularFrete(cep) {
             const shippingLabel = document.getElementById('freightChoiceLabel');
             if (shippingLabel) {
                 shippingLabel.textContent = currentQuote.shippingLabel
-                    ? `${currentQuote.shippingLabel} • ${currentQuote.shippingEtaText || 'Retirada e entrega a combinar'}`
+                    ? `${currentQuote.shippingLabel} • ${currentQuote.shippingServiceLabel || 'Modalidade não selecionada'}${currentQuote.shippingEtaText ? ` • ${currentQuote.shippingEtaText}` : ''}`
                     : 'Selecione uma opção de frete.';
             }
         }
@@ -4575,13 +4727,14 @@ async function calcularFrete(cep) {
                         servico: quote.serviceLabel || getServiceLabel(quote.service),
                         status: ORDER_STATUS.PENDENTE,
                         distancia_km: quote.distance,
-                        tipo_envio: quote.shippingType || null,
+                        tipo_envio: quote.shippingServiceType || null,
                         previsao_entrega: getDeliveryDate()
                     },
                     financial,
                     payment: { metodo: quote.paymentMethod },
                     observacoes: [
                         quote.shippingLabel ? `Frete escolhido: ${quote.shippingLabel}` : '',
+                        quote.shippingServiceLabel ? `Modalidade logística: ${quote.shippingServiceLabel}` : '',
                         quote.shippingSource ? `Origem do frete: ${quote.shippingSource}` : '',
                         quote.shippingUserMessage ? `Contexto frete: ${quote.shippingUserMessage}` : '',
                         quote.shippingTechnicalMessage ? `Frete técnico: ${quote.shippingTechnicalMessage}` : '',
@@ -4729,7 +4882,7 @@ async function calcularFrete(cep) {
                 percentualJuros: Number(financial.percentual_juros || 0),
                 valorTotalComJuros,
                 valorParcela,
-                delivery: currentQuote.shippingUserMessage || currentQuote.shippingLabel || currentQuote.shippingEtaText || 'Retirada e entrega a combinar'
+                delivery: currentQuote.shippingServiceLabel || currentQuote.shippingUserMessage || currentQuote.shippingLabel || currentQuote.shippingEtaText || 'Retirada e entrega a combinar'
             });
             const whatsappUrl = `https://wa.me/55${getNormalizedWhatsApp(currentQuote.customerWhatsApp)}?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
@@ -4981,7 +5134,10 @@ async function calcularFrete(cep) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${escapeHtml(order.cliente_nome || 'Não informado')}</td>
-                        <td>${escapeHtml(order.modelo_dispositivo || 'Não informado')}</td>
+                        <td>
+                            <div>${escapeHtml(order.modelo_dispositivo || 'Não informado')}</div>
+                            <small style="color: var(--text-secondary);">🛵 ${escapeHtml(getShippingServiceLabel(order.tipo_envio))}</small>
+                        </td>
                         <td>R$ ${Number((order.valor_servico ?? order.valor_total) || 0).toFixed(2)}</td>
                         <td>R$ ${Number(order.custo_peca || 0).toFixed(2)}</td>
                         <td>R$ ${Number(order.custo_mao_obra || 0).toFixed(2)}</td>
@@ -5731,6 +5887,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 mao_de_obra: 0,
                 mao_de_obra_label: formatMoney(0),
                 freightCost: 0,
+                shippingBaseCost: 0,
                 totalPrice: 0,
                 total_label: formatMoney(0),
                 customerName: '',
@@ -5743,6 +5900,8 @@ async function getMelhorEnvioShipping(cep, type) {
                 savedOrderId: null,
                 shippingType: '',
                 shippingLabel: '',
+                shippingServiceType: '',
+                shippingServiceLabel: '',
                 shippingEtaText: '',
                 shippingCarrier: '',
                 shippingDistanceKm: 0,
