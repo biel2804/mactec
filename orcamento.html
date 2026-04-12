@@ -3468,6 +3468,9 @@
             shippingCarrier: '',
             shippingDistanceKm: 0,
             shippingServiceCode: '',
+            shippingSource: '',
+            shippingTechnicalMessage: '',
+            shippingUserMessage: '',
             paymentMethod: '',
             paymentLabel: ''
         };
@@ -4023,35 +4026,94 @@ async function getShippingContext(cep) {
 }
 
 async function getMelhorEnvioShippingQuotes(cep) {
+    const buildFallback = (technicalMessage, warning = 'Frete online indisponível no momento.') => ({
+        sedex: null,
+        pac: null,
+        warning,
+        fallback: true,
+        technicalMessage
+    });
+
     if (!SHIPPING_API_URL) {
-        return { sedex: null, pac: null, warning: 'Frete online não configurado.', fallback: true };
+        const technicalMessage = 'Frete online não configurado (SHIPPING_API_URL ausente).';
+        console.warn('[Frete Online] Configuração ausente. Aplicando fallback seguro.');
+        return buildFallback(technicalMessage, 'Frete online não configurado.');
     }
 
-    const response = await fetch(`${SHIPPING_API_URL}?cep=${encodeURIComponent(cep)}`);
-
-    if (!response.ok) {
-        if (response.status === 404) {
-            console.warn('Endpoint de frete online não encontrado (404). Usando fallback local.');
-            return {
-                sedex: null,
-                pac: null,
-                warning: 'Frete online indisponível no momento.',
-                fallback: true
-            };
+    try {
+        const response = await fetch(`${SHIPPING_API_URL}?cep=${encodeURIComponent(cep)}`);
+        if (!response.ok) {
+            if (response.status === 404) {
+                const technicalMessage = `Endpoint de frete online não encontrado (404) em ${SHIPPING_API_URL}.`;
+                console.warn('[Frete Online] 404 no endpoint. Aplicando fallback seguro.', { cep, endpoint: SHIPPING_API_URL });
+                return buildFallback(technicalMessage);
+            }
+            const errorPayload = await response.json().catch(() => ({}));
+            const technicalMessage = errorPayload.error || `Falha no frete online (status ${response.status}).`;
+            console.warn('[Frete Online] Resposta não OK. Aplicando fallback seguro.', { cep, status: response.status, technicalMessage });
+            await logClientError({
+                message: technicalMessage,
+                origin: 'getMelhorEnvioShippingQuotes'
+            });
+            return buildFallback(technicalMessage);
         }
-        const errorPayload = await response.json().catch(() => ({}));
-        throw new Error(errorPayload.error || `Não foi possível consultar o frete online (status ${response.status}).`);
-    }
 
-    const result = await response.json();
-    const services = Array.isArray(result.services) ? result.services : [];
-    const pickQuote = (matcher) => services.find((service) => matcher(String(service.name || '').toUpperCase()));
+        const result = await response.json().catch(() => ({}));
+        const services = Array.isArray(result.services) ? result.services : null;
+        if (!services) {
+            const technicalMessage = 'Resposta de frete online inválida: "services" ausente ou fora do formato esperado.';
+            console.warn('[Frete Online] Payload inválido. Aplicando fallback seguro.', { cep, payload: result });
+            await logClientError({
+                message: technicalMessage,
+                origin: 'getMelhorEnvioShippingQuotes'
+            });
+            return buildFallback(technicalMessage);
+        }
+
+        const pickQuote = (matcher) => services.find((service) => matcher(String(service.name || '').toUpperCase()));
+
+        return {
+            sedex: pickQuote((name) => name.includes('SEDEX')),
+            pac: pickQuote((name) => name.includes('PAC')),
+            warning: result.warning || '',
+            fallback: false,
+            technicalMessage: result.warning || ''
+        };
+    } catch (error) {
+        const technicalMessage = error?.message || 'Erro de rede ao consultar frete online.';
+        console.error('[Frete Online] Erro de rede/execução. Aplicando fallback seguro.', { cep, error });
+        await logClientError({
+            message: technicalMessage,
+            stack: error?.stack || '',
+            origin: 'getMelhorEnvioShippingQuotes'
+        });
+        return buildFallback(technicalMessage);
+    }
+}
+
+function normalizeShippingResult(input = {}) {
+    const source = ['online', 'fallback', 'manual', 'retirada'].includes(input.source) ? input.source : 'fallback';
+    const value = Number(input.value || 0);
+    const eta = String(input.eta || '').trim();
+    const technicalMessage = String(input.technicalMessage || '').trim();
 
     return {
-        sedex: pickQuote((name) => name.includes('SEDEX')),
-        pac: pickQuote((name) => name.includes('PAC')),
-        warning: result.warning || '',
-        fallback: false
+        success: Boolean(input.success),
+        source,
+        value,
+        label: String(input.label || 'Envio').trim(),
+        eta,
+        technicalMessage,
+        userMessage: String(
+            input.userMessage
+            || (source === 'online'
+                ? `Frete online calculado com sucesso${eta ? ` (${eta})` : ''}.`
+                : source === 'retirada'
+                    ? 'Retirada e entrega a combinar.'
+                    : source === 'manual'
+                        ? 'Frete manual aplicado conforme configuração.'
+                        : 'Frete online indisponível, aplicado fallback seguro.')
+        ).trim()
     };
 }
 
@@ -4070,7 +4132,10 @@ function buildShippingOption({ id, badgeClass, badgeLabel, icon, title, descript
         distanceKm,
         distanceSource,
         serviceCode,
-        applyPackagingFee
+        applyPackagingFee,
+        shippingSource: 'fallback',
+        technicalMessage: '',
+        userMessage: ''
     };
 }
 
@@ -4117,6 +4182,9 @@ function updateShippingSelection(option) {
     currentQuote.shippingCarrier = option.badgeLabel;
     currentQuote.shippingDistanceKm = Number(option.distanceKm || 0);
     currentQuote.shippingServiceCode = option.serviceCode || '';
+    currentQuote.shippingSource = option.shippingSource || '';
+    currentQuote.shippingTechnicalMessage = option.technicalMessage || '';
+    currentQuote.shippingUserMessage = option.userMessage || '';
     currentQuote.distance = currentQuote.shippingDistanceKm;
 
     updatePriceDisplay();
@@ -4139,6 +4207,9 @@ function resetShippingSelection(message = 'Digite o CEP para ver as opções de 
     currentQuote.shippingCarrier = '';
     currentQuote.shippingDistanceKm = 0;
     currentQuote.shippingServiceCode = '';
+    currentQuote.shippingSource = '';
+    currentQuote.shippingTechnicalMessage = '';
+    currentQuote.shippingUserMessage = '';
     currentQuote.distance = 0;
     const container = document.getElementById('shippingOptions');
     if (container) {
@@ -4163,33 +4234,44 @@ async function calculateFreight() {
 
     try {
         const context = await calcularFrete(cep);
+        const melhorEnvio = await getMelhorEnvioShippingQuotes(cep);
+        if (melhorEnvio.warning) {
+            console.warn('[Frete] Aviso operacional:', melhorEnvio.warning, { cep, technicalMessage: melhorEnvio.technicalMessage || '' });
+        }
+
+        const motoboyResult = normalizeShippingResult({
+            success: true,
+            source: (context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM) ? 'manual' : (melhorEnvio.fallback ? 'fallback' : 'retirada'),
+            value: Number(context.freteCalculado || calculateMotoboyCost(context.distanceKm)),
+            label: context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM ? 'Entrega Local (Motoboy)' : 'Motoboy - retirada e entrega a combinar',
+            eta: buildArrivalText(context.distanceKm < LOCAL_DELIVERY_RADIUS_KM ? 1 : 2),
+            technicalMessage: melhorEnvio.technicalMessage || '',
+            userMessage: context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM
+                ? 'Entrega local via motoboy.'
+                : (melhorEnvio.fallback
+                    ? 'Frete online indisponível, seguindo com motoboy/retirada.'
+                    : 'Retirada e entrega a combinar com atendimento.')
+        });
+
         const motoboyOption = buildShippingOption({
             id: 'motoboy',
             badgeClass: 'local',
             badgeLabel: 'Local',
             icon: '🚚',
-            title: context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM ? 'Entrega Local (Motoboy)' : 'Motoboy - retirada e entrega a combinar',
+            title: motoboyResult.label,
             description: context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM
                 ? 'Prioridade para entrega local em São Bernardo do Campo.'
                 : 'Entrega via motoboy com alinhamento final no atendimento.',
-            price: Number(context.freteCalculado || calculateMotoboyCost(context.distanceKm)),
+            price: motoboyResult.value,
             deliveryDays: context.distanceKm < LOCAL_DELIVERY_RADIUS_KM ? 1 : 2,
             note: context.distanceKm < LOCAL_DELIVERY_RADIUS_KM ? 'Atendimento local com priorização de rota.' : 'Entrega sujeita à disponibilidade da rota.',
             distanceKm: context.distanceKm,
             distanceSource: context.distanceSource,
             serviceCode: 'motoboy'
         });
-
-        let melhorEnvio = { sedex: null, pac: null, warning: '' };
-        try {
-            melhorEnvio = await getMelhorEnvioShippingQuotes(cep);
-            if (melhorEnvio.warning) {
-                console.warn('Frete online indisponível:', melhorEnvio.warning);
-            }
-        } catch (shippingError) {
-            console.warn('Frete online indisponível:', shippingError);
-            melhorEnvio.warning = shippingError.message;
-        }
+        motoboyOption.shippingSource = motoboyResult.source;
+        motoboyOption.technicalMessage = motoboyResult.technicalMessage;
+        motoboyOption.userMessage = motoboyResult.userMessage;
 
         const options = [];
 
@@ -4198,39 +4280,67 @@ async function calculateFreight() {
         }
 
         if (melhorEnvio.sedex) {
+            const sedexPrice = Number(melhorEnvio.sedex.custom_price || melhorEnvio.sedex.price || 0) + PACKAGING_FEE;
+            const sedexDays = Number(melhorEnvio.sedex.custom_delivery_time || melhorEnvio.sedex.delivery_time || 1);
+            const sedexResult = normalizeShippingResult({
+                success: true,
+                source: 'online',
+                value: sedexPrice,
+                label: 'SEDEX Nacional',
+                eta: buildArrivalText(sedexDays),
+                userMessage: 'Frete online calculado com sucesso via SEDEX.'
+            });
             options.push(buildShippingOption({
                 id: 'sedex',
                 badgeClass: 'correios',
                 badgeLabel: 'Correios',
                 icon: '📦',
-                title: 'SEDEX Nacional',
+                title: sedexResult.label,
                 description: 'Envio expresso pelos Correios.',
-                price: Number(melhorEnvio.sedex.custom_price || melhorEnvio.sedex.price || 0) + PACKAGING_FEE,
-                deliveryDays: Number(melhorEnvio.sedex.custom_delivery_time || melhorEnvio.sedex.delivery_time || 1),
+                price: sedexResult.value,
+                deliveryDays: sedexDays,
                 note: 'Inclui R$ 5,00 de taxa fixa de embalagem e seguro.',
                 distanceKm: context.distanceKm,
                 distanceSource: context.distanceSource,
                 serviceCode: String(melhorEnvio.sedex.id || 'sedex'),
                 applyPackagingFee: true
             }));
+            const sedexOption = options[options.length - 1];
+            sedexOption.shippingSource = sedexResult.source;
+            sedexOption.technicalMessage = sedexResult.technicalMessage;
+            sedexOption.userMessage = sedexResult.userMessage;
         }
 
         if (melhorEnvio.pac) {
+            const pacPrice = Number(melhorEnvio.pac.custom_price || melhorEnvio.pac.price || 0) + PACKAGING_FEE;
+            const pacDays = Number(melhorEnvio.pac.custom_delivery_time || melhorEnvio.pac.delivery_time || 3);
+            const pacResult = normalizeShippingResult({
+                success: true,
+                source: 'online',
+                value: pacPrice,
+                label: 'PAC Nacional',
+                eta: buildArrivalText(pacDays),
+                userMessage: 'Frete online calculado com sucesso via PAC.'
+            });
             options.push(buildShippingOption({
                 id: 'pac',
                 badgeClass: 'correios',
                 badgeLabel: 'Correios',
                 icon: '📦',
-                title: 'PAC Nacional',
+                title: pacResult.label,
                 description: 'Envio econômico pelos Correios.',
-                price: Number(melhorEnvio.pac.custom_price || melhorEnvio.pac.price || 0) + PACKAGING_FEE,
-                deliveryDays: Number(melhorEnvio.pac.custom_delivery_time || melhorEnvio.pac.delivery_time || 3),
+                price: pacResult.value,
+                deliveryDays: pacDays,
                 note: 'Inclui R$ 5,00 de taxa fixa de embalagem e seguro.',
                 distanceKm: context.distanceKm,
                 distanceSource: context.distanceSource,
                 serviceCode: String(melhorEnvio.pac.id || 'pac'),
                 applyPackagingFee: true
             }));
+            const pacOption = options[options.length - 1];
+            pacOption.shippingSource = pacResult.source;
+            pacOption.technicalMessage = pacResult.technicalMessage;
+            pacOption.userMessage = pacResult.userMessage;
         }
 
         if (!(context.isSBC && context.distanceKm < LOCAL_DELIVERY_RADIUS_KM)) {
@@ -4472,6 +4582,9 @@ async function calcularFrete(cep) {
                     payment: { metodo: quote.paymentMethod },
                     observacoes: [
                         quote.shippingLabel ? `Frete escolhido: ${quote.shippingLabel}` : '',
+                        quote.shippingSource ? `Origem do frete: ${quote.shippingSource}` : '',
+                        quote.shippingUserMessage ? `Contexto frete: ${quote.shippingUserMessage}` : '',
+                        quote.shippingTechnicalMessage ? `Frete técnico: ${quote.shippingTechnicalMessage}` : '',
                         quote.shippingEtaText || '',
                         quote.shippingCarrier ? `Transportadora: ${quote.shippingCarrier}` : '',
                         quote.paymentLabel ? `Forma de pagamento: ${quote.paymentLabel}` : '',
@@ -4616,7 +4729,7 @@ async function calcularFrete(cep) {
                 percentualJuros: Number(financial.percentual_juros || 0),
                 valorTotalComJuros,
                 valorParcela,
-                delivery: currentQuote.shippingLabel || currentQuote.shippingEtaText || 'Retirada e entrega a combinar'
+                delivery: currentQuote.shippingUserMessage || currentQuote.shippingLabel || currentQuote.shippingEtaText || 'Retirada e entrega a combinar'
             });
             const whatsappUrl = `https://wa.me/55${getNormalizedWhatsApp(currentQuote.customerWhatsApp)}?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
@@ -5634,6 +5747,9 @@ async function getMelhorEnvioShipping(cep, type) {
                 shippingCarrier: '',
                 shippingDistanceKm: 0,
                 shippingServiceCode: '',
+                shippingSource: '',
+                shippingTechnicalMessage: '',
+                shippingUserMessage: '',
                 paymentMethod: '',
                 paymentLabel: ''
             };
@@ -5813,6 +5929,8 @@ async function getMelhorEnvioShipping(cep, type) {
                     observacoes: [
                         orderCode ? `Pedido ${orderCode} criado pelo site.` : '',
                         quote.shippingLabel ? `Envio: ${quote.shippingLabel}` : '',
+                        quote.shippingSource ? `Origem frete: ${quote.shippingSource}` : '',
+                        quote.shippingUserMessage ? `Contexto frete: ${quote.shippingUserMessage}` : '',
                         quote.shippingEtaText || '',
                         quote.customerEmail ? `E-mail: ${quote.customerEmail}` : ''
                     ].filter(Boolean).join(' | '),
