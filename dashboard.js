@@ -18,10 +18,18 @@
 
   function aggregateMonthlyProfit(orders) {
     const map = {};
+    const calculateFinancial = window.FinanceiroModule?.calculateOrderFinancials
+      || ((order) => {
+        const valorServico = Number((order?.valor_servico ?? order?.valor_total) || 0);
+        const custoPeca = Number(order?.custo_peca || 0);
+        const lucroBruto = valorServico - custoPeca;
+        const margem = valorServico > 0 ? (lucroBruto / valorServico) * 100 : 0;
+        return { lucro_bruto: lucroBruto, margem };
+      });
     orders.forEach((order) => {
       const date = order.created_at ? new Date(order.created_at) : new Date();
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const fin = window.FinanceiroModule.calculateOrderFinancials(order);
+      const fin = calculateFinancial(order);
       map[key] = (map[key] || 0) + fin.lucro_bruto;
     });
     const labels = Object.keys(map).sort();
