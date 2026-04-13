@@ -2762,7 +2762,9 @@
 
             const payload = {
                 nome: profile.nome,
+                nome_completo: profile.nome,
                 telefone: profile.telefone,
+                whatsapp: profile.telefone,
                 telefone_normalizado: profile.telefone_normalizado,
                 email: profile.email,
                 cep: profile.cep || null,
@@ -2838,9 +2840,9 @@
 
         async function fetchAddressByCep(cepDigits) {
             const response = await fetch(`https://viacep.com.br/ws/${cepDigits}/json/`);
-            if (!response.ok) throw new Error('Falha ao consultar ViaCEP');
+            if (!response.ok) throw new Error('Não foi possível consultar o CEP no momento.');
             const data = await response.json();
-            if (data.erro) throw new Error('CEP não encontrado');
+            if (data.erro) throw new Error('CEP não encontrado.');
             return data;
         }
 
@@ -2996,12 +2998,12 @@
             }
 
             if (!cliente.nome || !cliente.telefone || !cliente.endereco.cep || !cliente.endereco.rua || !cliente.endereco.numero || !cliente.endereco.bairro || !cliente.endereco.cidade || !cliente.endereco.estado) {
-                showAlert('Por favor, preencha todos os dados', 'error');
+                showAlert('Preencha os dados obrigatórios do cliente para continuar.', 'error');
                 return;
             }
 
             if (Number(currentQuote.baseCost || 0) <= 0) {
-                showAlert('Por favor, selecione uma peca e calcule o frete', 'error');
+                showAlert('Selecione uma peça e calcule o frete antes de adicionar ao carrinho.', 'error');
                 return;
             }
 
@@ -3024,7 +3026,7 @@
             cart.push({...currentQuote});
             updateCartDisplay();
             closeQuoteModal();
-            showAlert('Orcamento adicionado ao carrinho!', 'success');
+            showAlert('Orçamento adicionado ao carrinho com sucesso.', 'success');
         }
 
         function addAccessoryToCart({ id, name, price, stock, quantity }) {
@@ -4479,8 +4481,8 @@
 
             const serviceMessages = {
                 'reparo_conector': 'Reparo Conector do Carregador - Entre em contato via WhatsApp e passe o modelo para verificar disponibilidade',
-                'reparo_botoes': 'Reparo Botoes - Entre em contato via WhatsApp e passe o modelo para verificar disponibilidade',
-                'outros': 'Outros Servicos - Entre em contato via WhatsApp para mais informacoes'
+                'reparo_botoes': 'Reparo de Botões - Entre em contato via WhatsApp e informe o modelo para verificar disponibilidade',
+                'outros': 'Outros serviços - Entre em contato via WhatsApp para mais informações'
             };
 
             if (serviceMessages[service]) {
@@ -4496,7 +4498,7 @@
             const brand = document.getElementById('brandSelect').value;
             const model = document.getElementById('modelSelect').value;
 
-            let message = 'Ola! Gostaria de saber mais sobre o servico: ' + service.replace(/_/g, ' ');
+            let message = 'Olá! Gostaria de saber mais sobre o serviço: ' + service.replace(/_/g, ' ');
             if (brand && model) {
                 message += ' para ' + brand + ' ' + model;
             }
@@ -4584,7 +4586,7 @@
                 console.log('Modelos recebidos:', data);
 
                 if (!data || data.length === 0) {
-                    showAlert('Nenhum modelo encontrado para esta marca', 'warning');
+                    showAlert('Nenhum modelo encontrado para esta marca.', 'warning');
                     return;
                 }
 
@@ -4630,7 +4632,7 @@
                 console.log('Pecas recebidas:', data);
 
                 if (!data || data.length === 0) {
-                    showAlert('Nenhuma peca disponivel para este modelo', 'warning');
+                    showAlert('Nenhuma peça disponível para este modelo.', 'warning');
                     return;
                 }
 
@@ -4816,7 +4818,8 @@ async function getShippingContext(cep) {
     }
 
     const address = payload?.address || {};
-    const distanceKm = Number(payload?.distancia || 0);
+    const distanceKmRaw = Number(payload?.distancia || 0);
+    const distanceKm = Number.isFinite(distanceKmRaw) && distanceKmRaw >= 0 ? distanceKmRaw : 0;
     const isSBC = (address.localidade || '').trim().toLowerCase() === LOCAL_ORIGIN.city.toLowerCase();
 
     return {
@@ -5094,7 +5097,7 @@ async function calculateFreight() {
 
     if (cep.length !== 8) {
         resetShippingSelection('Digite um CEP válido para consultar o frete.');
-        showAlert('CEP inválido', 'error');
+        showAlert('CEP inválido. Digite 8 números para calcular o frete.', 'error');
         return;
     }
 
@@ -5278,12 +5281,12 @@ async function calcularFrete(cep) {
             }
 
             if (!cliente.nome || !cliente.telefone || !cliente.endereco.cep || !cliente.endereco.rua || !cliente.endereco.numero || !cliente.endereco.bairro || !cliente.endereco.cidade || !cliente.endereco.estado) {
-                showAlert('Por favor, preencha todos os dados', 'error');
+                showAlert('Preencha os dados obrigatórios do cliente para continuar.', 'error');
                 return;
             }
 
             if (Number(currentQuote.baseCost || 0) <= 0) {
-                showAlert('Por favor, selecione uma peça e calcule o frete', 'error');
+                showAlert('Selecione uma peça e calcule o frete antes de continuar.', 'error');
                 return;
             }
 
@@ -5304,29 +5307,26 @@ async function calcularFrete(cep) {
                 return;
             }
 
-            // Save customer to Supabase
+            // Salva/atualiza cliente com contrato canônico de dados
             try {
-                const { data: customerData, error: customerError } = await client
-                    .from('clientes')
-                    .insert([{
-                        nome_completo: cliente.nome,
-                        whatsapp: cliente.telefone,
-                        cep: cliente.endereco.cep,
-                        logradouro: cliente.endereco.rua,
-                        numero: cliente.endereco.numero,
-                        bairro: cliente.endereco.bairro,
-                        cidade: cliente.endereco.cidade,
-                        estado: cliente.endereco.estado
-                    }])
-                    .select();
+                const savedCustomer = await saveCustomerProfile({
+                    nome: cliente.nome,
+                    telefone: cliente.telefone,
+                    email: cliente.email,
+                    cep: cliente.endereco.cep,
+                    rua: cliente.endereco.rua,
+                    numero: cliente.endereco.numero,
+                    bairro: cliente.endereco.bairro,
+                    cidade: cliente.endereco.cidade,
+                    estado: cliente.endereco.estado,
+                    endereco: cliente.enderecoFormatado
+                });
 
-                if (customerError && !customerError.message.includes('duplicate')) {
-                    throw customerError;
-                }
-
+                currentQuote.customerId = savedCustomer?.id || currentQuote.customerId || null;
                 await showPaymentOptions();
             } catch (error) {
-                showAlert('Erro ao processar: ' + error.message, 'error');
+                console.error('Falha ao salvar cliente antes do pagamento:', error);
+                showAlert('Não foi possível validar o cadastro do cliente. Revise os dados e tente novamente.', 'error');
             }
         }
 
@@ -5604,7 +5604,12 @@ async function calcularFrete(cep) {
                 valorParcela,
                 delivery: currentQuote.shippingServiceLabel || currentQuote.shippingUserMessage || currentQuote.shippingLabel || currentQuote.shippingEtaText || 'Retirada e entrega a combinar'
             });
-            const whatsappUrl = `https://wa.me/55${getNormalizedWhatsApp(currentQuote.customerWhatsApp)}?text=${encodeURIComponent(message)}`;
+            const targetPhone = getNormalizedWhatsApp(currentQuote.customerWhatsApp);
+            if (!targetPhone) {
+                showAlert('WhatsApp do cliente não informado. Atualize o telefone para continuar.', 'warning');
+                return;
+            }
+            const whatsappUrl = `https://wa.me/55${targetPhone}?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
         }
 
@@ -5850,7 +5855,7 @@ async function calcularFrete(cep) {
                 tbody.innerHTML = '';
 
                 if (!orders || orders.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">Nenhum pedido</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">Nenhum pedido encontrado.</td></tr>';
                     return;
                 }
 
@@ -6024,7 +6029,9 @@ async function calcularFrete(cep) {
 
                 const updatePayload = {
                     nome: payload.nome,
+                    nome_completo: payload.nome,
                     telefone: payload.telefone,
+                    whatsapp: payload.telefone,
                     telefone_normalizado: payload.telefone_normalizado,
                     email: payload.email,
                     cep: payload.cep || null,
@@ -6680,8 +6687,6 @@ async function calcularFrete(cep) {
                     throwPedidosColumnMismatch(error, payload, 'update_admin');
                     throw error;
                 }
-                await atualizarStatusPagamento(orderId, paymentStatus, client);
-
                 showAlert('Pedido atualizado com sucesso!', 'success');
                 closeOrderModal();
                 await loadOrdersTable();
@@ -6692,17 +6697,6 @@ async function calcularFrete(cep) {
                 setButtonLoading(saveBtn, false);
             }
         }
-
-        async function atualizarStatusPagamento(orderId, novoStatus, clientRef = null) {
-            const client = clientRef || ensureSupabaseClient(true);
-            if (!client) return;
-            const { error } = await client
-                .from('pedidos')
-                .update({ status_pagamento: novoStatus })
-                .eq('id', orderId);
-            if (error) throw error;
-        }
-
         async function deleteOrder(orderId) {
             if (!confirm('Tem certeza que deseja deletar este pedido?')) return;
 
@@ -7210,6 +7204,10 @@ async function getMelhorEnvioShipping(cep, type) {
         // Alert Function
         function showAlert(message, type = 'info') {
             const container = document.getElementById('alertContainer');
+            if (!container) {
+                console.warn('[UI] Container de alertas não encontrado:', { message, type });
+                return;
+            }
             const alert = document.createElement('div');
             alert.className = `alert alert-${type} show`;
             alert.textContent = message;
