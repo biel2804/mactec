@@ -2095,8 +2095,8 @@
                             <label for="newQuality">Qualidade:</label>
                             <select id="newQuality">
                                 <option value="original">Original</option>
-                                <option value="compativel">Compatível</option>
-                                <option value="refurbished">Refurbished</option>
+                                <option value="incell">Incell</option>
+                                <option value="oled">OLED</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -4627,6 +4627,33 @@
             }
         }
 
+        function normalizePartQuality(rawQuality) {
+            return String(rawQuality || '').trim().toLowerCase();
+        }
+
+        function mapLegacyPartQuality(rawQuality) {
+            const normalized = normalizePartQuality(rawQuality);
+            if (normalized === 'compativel' || normalized === 'refurbished') {
+                return 'incell';
+            }
+            return normalized;
+        }
+
+        function formatPartQuality(rawQuality) {
+            const normalized = normalizePartQuality(rawQuality);
+            if (normalized === 'original') return 'Original';
+            if (normalized === 'incell') return 'Incell';
+            if (normalized === 'oled') return 'OLED';
+            if (normalized === 'compativel') return 'Compatível (legado)';
+            if (normalized === 'refurbished') return 'Refurbished (legado)';
+            return String(rawQuality || '-');
+        }
+
+        function isAllowedPartQuality(rawQuality) {
+            const normalized = normalizePartQuality(rawQuality);
+            return normalized === 'original' || normalized === 'incell' || normalized === 'oled';
+        }
+
         // Load Parts based on selected model
         async function loadParts() {
             const brand = document.getElementById('brandSelect').value;
@@ -4661,7 +4688,7 @@
                 data.forEach(part => {
                     const option = document.createElement('option');
                     option.value = JSON.stringify(part);
-                    option.textContent = `${part.qualidade}`;
+                    option.textContent = formatPartQuality(part.qualidade);
                     partSelect.appendChild(option);
                 });
             } catch (error) {
@@ -5750,7 +5777,7 @@ async function calcularFrete(cep) {
                     row.innerHTML = `
                         <td>${escapeHtml(part.marca)}</td>
                         <td>${escapeHtml(part.modelo)}</td>
-                        <td>${escapeHtml(part.qualidade)}</td>
+                        <td>${escapeHtml(formatPartQuality(part.qualidade))}</td>
                         <td>R$ ${Number(part.preco_custo || 0).toFixed(2)}</td>
                         <td>${part.preco_venda != null ? `R$ ${Number(part.preco_venda).toFixed(2)}` : '-'}</td>
                         <td>${part.estoque ?? 0}</td>
@@ -5782,7 +5809,7 @@ async function calcularFrete(cep) {
         function getPartFormData() {
             const brand = document.getElementById('newBrand').value.trim();
             const model = document.getElementById('newModel').value.trim();
-            const quality = document.getElementById('newQuality').value;
+            const quality = mapLegacyPartQuality(document.getElementById('newQuality').value);
             const costPrice = Number(document.getElementById('newPrice').value);
             const sellPriceRaw = document.getElementById('newSellPrice').value;
             const stock = Number(document.getElementById('newPartStock').value);
@@ -5790,6 +5817,7 @@ async function calcularFrete(cep) {
             if (!brand) throw new Error('Marca é obrigatória.');
             if (!model) throw new Error('Modelo é obrigatório.');
             if (!quality) throw new Error('Qualidade é obrigatória.');
+            if (!isAllowedPartQuality(quality)) throw new Error('Qualidade inválida.');
             if (!Number.isFinite(costPrice) || costPrice < 0) throw new Error('Preço de custo inválido.');
             if (!Number.isInteger(stock) || stock < 0) throw new Error('Estoque inválido.');
 
@@ -5864,7 +5892,7 @@ async function calcularFrete(cep) {
                 document.getElementById('editingPartId').value = String(data.id);
                 document.getElementById('newBrand').value = data.marca || '';
                 document.getElementById('newModel').value = data.modelo || '';
-                document.getElementById('newQuality').value = data.qualidade || 'original';
+                document.getElementById('newQuality').value = mapLegacyPartQuality(data.qualidade || 'original');
                 document.getElementById('newPrice').value = Number(data.preco_custo || 0);
                 document.getElementById('newSellPrice').value = data.preco_venda != null ? Number(data.preco_venda) : '';
                 document.getElementById('newPartStock').value = Number(data.estoque || 0);
