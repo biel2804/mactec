@@ -1,7 +1,4 @@
 (function () {
-  let profitChart;
-  let expenseChart;
-
   function money(v) {
     return `R$ ${Number(v || 0).toFixed(2)}`;
   }
@@ -51,50 +48,6 @@
 
   function getNetResult(grossProfit, expensesTotal) {
     return toMoneyNumber(grossProfit) - toMoneyNumber(expensesTotal);
-  }
-
-  function aggregateMonthlyProfit(orders) {
-    const map = {};
-    asArray(orders).forEach((order) => {
-      const date = order?.created_at ? new Date(order.created_at) : new Date();
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      map[key] = (map[key] || 0) + getOperationalProfit(order);
-    });
-    const labels = Object.keys(map).sort();
-    return { labels, values: labels.map((k) => map[k]) };
-  }
-
-  function aggregateExpenseCategory(expenses) {
-    const map = {};
-    asArray(expenses).forEach((e) => {
-      map[e?.tipo || 'outros'] = (map[e?.tipo || 'outros'] || 0) + toMoneyNumber(e?.valor);
-    });
-    return { labels: Object.keys(map), values: Object.values(map) };
-  }
-
-  function renderCharts(orders, expenses) {
-    if (typeof Chart === 'undefined') return;
-    const profitCtx = document.getElementById('profitChart');
-    const expenseCtx = document.getElementById('expenseChart');
-    if (!profitCtx || !expenseCtx) return;
-
-    const monthly = aggregateMonthlyProfit(orders);
-    const byCategory = aggregateExpenseCategory(expenses);
-
-    profitChart?.destroy();
-    expenseChart?.destroy();
-
-    profitChart = new Chart(profitCtx, {
-      type: 'line',
-      data: { labels: monthly.labels, datasets: [{ label: 'Lucro', data: monthly.values, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.2)' }] },
-      options: { responsive: true, maintainAspectRatio: false }
-    });
-
-    expenseChart = new Chart(expenseCtx, {
-      type: 'doughnut',
-      data: { labels: byCategory.labels, datasets: [{ data: byCategory.values, backgroundColor: ['#2563eb','#dc2626','#f59e0b','#16a34a'] }] },
-      options: { responsive: true, maintainAspectRatio: false }
-    });
   }
 
   function setTextById(id, value) {
@@ -153,7 +106,6 @@
     setTextById('totalRevenue', money(serviceRevenue));
     setTextById('netProfit', money(netResult));
 
-    renderCharts(financialOrders, filteredExpenses);
   }
 
   function applyDashboardRange(range) {
