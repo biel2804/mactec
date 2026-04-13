@@ -4,43 +4,292 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MacTec • Login Admin</title>
+  <script>
+    (function () {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light' || saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', saved);
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/app-config.js"></script>
   <style>
-    :root { --bg:#f3f4f6; --card:#0f1f32; --card2:#13263d; --input:#1f324a; --line:#2a3f59; --text:#e5e7eb; --muted:#9ca3af; --accent:#22c55e; --danger:#ef4444; }
     * { box-sizing: border-box; }
-    body { margin:0; min-height:100vh; font-family: Inter, system-ui, -apple-system, sans-serif; background: var(--bg); display:grid; place-items:center; padding:1rem; }
-    .card { width:min(100%, 460px); background: linear-gradient(150deg, var(--card), var(--card2)); border:1px solid #334155; border-radius:16px; box-shadow:0 16px 40px rgba(2,6,23,.35); padding:2rem; color:var(--text); }
-    .logo { text-align:center; font-size:2.2rem; font-weight:800; margin-bottom:.25rem; letter-spacing:.5px; }
-    .logo span { color:#2dd4bf; }
-    h1 { margin:.2rem 0 1.6rem; text-align:center; color:var(--accent); font-size:1.8rem; }
-    label { display:block; margin:.8rem 0 .35rem; font-weight:600; }
-    input { width:100%; background:var(--input); border:1px solid var(--line); color:var(--text); border-radius:10px; padding:.8rem .9rem; font-size:1rem; }
-    input:focus { outline:none; border-color:#34d399; box-shadow:0 0 0 3px rgba(52,211,153,.2); }
-    button { width:100%; margin-top:1rem; background:var(--accent); color:#052e16; font-weight:700; border:none; border-radius:10px; padding:.85rem; font-size:1rem; cursor:pointer; }
-    button:disabled { opacity:.7; cursor:wait; }
-    .msg { margin-top:1rem; font-size:.95rem; }
-    .msg.error { color: #fecaca; }
-    .msg.info { color: var(--muted); }
-    .helper { margin-top:1.2rem; color:var(--muted); font-size:.92rem; text-align:center; }
+
+    :root[data-theme="dark"] {
+      --bg-main: #0b0f1a;
+      --bg-secondary: #111827;
+      --text-main: #ffffff;
+      --text-secondary: #9ca3af;
+      --accent: #22c55e;
+      --card-bg: rgba(17, 24, 39, 0.78);
+      --border: #374151;
+      --accent-contrast: #052e16;
+      --accent-hover: #16a34a;
+      --focus-ring: rgba(34, 197, 94, 0.28);
+      --card-shadow: 0 18px 45px rgba(2, 6, 23, 0.45);
+      --field-bg: rgba(31, 41, 55, 0.7);
+    }
+
+    :root[data-theme="light"] {
+      --bg-main: #F8F9FA;
+      --bg-secondary: #E7F1FF;
+      --text-main: #111827;
+      --text-secondary: #4b5563;
+      --accent: #001F3F;
+      --card-bg: rgba(255, 255, 255, 0.82);
+      --border: #d1d5db;
+      --accent-contrast: #ffffff;
+      --accent-hover: #001735;
+      --focus-ring: rgba(0, 31, 63, 0.22);
+      --card-shadow: 0 20px 42px rgba(15, 23, 42, 0.14);
+      --field-bg: rgba(248, 250, 252, 0.92);
+    }
+
+    :root {
+      --radius-card: 18px;
+      --radius-input: 12px;
+    }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text-main);
+      background: radial-gradient(circle at 20% 15%, color-mix(in srgb, var(--bg-secondary) 70%, transparent), transparent 45%), linear-gradient(160deg, var(--bg-main), var(--bg-secondary));
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      transition: background 0.35s ease, color 0.3s ease;
+    }
+
+    .login-shell {
+      width: min(100%, 400px);
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 1.1rem;
+      user-select: none;
+    }
+
+    .brand-mark {
+      width: 78px;
+      height: 78px;
+      border-radius: 999px;
+      background: conic-gradient(from 160deg, #1976d2, #1976d2 36%, #39b54a 36%, #39b54a 68%, #1976d2);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.25);
+      position: relative;
+    }
+
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: inherit;
+      background: linear-gradient(160deg, #f8fafc, #d1d5db);
+      mask: radial-gradient(circle at center, transparent 38%, #000 39%);
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 2.25rem;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      color: #1976d2;
+      text-shadow: 0 4px 18px rgba(15, 23, 42, 0.12);
+    }
+
+    .brand-title span { color: #22a06b; }
+
+    .card {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      box-shadow: var(--card-shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 1.6rem;
+      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    h1 {
+      margin: 0 0 1.4rem;
+      text-align: center;
+      color: var(--accent);
+      font-size: 2rem;
+      line-height: 1.1;
+      font-weight: 800;
+    }
+
+    .field-group { margin-bottom: 0.95rem; }
+
+    label {
+      display: block;
+      margin-bottom: 0.42rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: color-mix(in srgb, var(--text-main) 85%, var(--text-secondary));
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .field-icon {
+      position: absolute;
+      left: 0.85rem;
+      display: inline-flex;
+      color: var(--text-secondary);
+      pointer-events: none;
+    }
+
+    input {
+      width: 100%;
+      background: var(--field-bg);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      border-radius: var(--radius-input);
+      min-height: 3rem;
+      font-size: 1.05rem;
+      padding: 0.78rem 2.9rem 0.78rem 2.55rem;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.3s ease, color 0.3s ease;
+    }
+
+    input::placeholder { color: color-mix(in srgb, var(--text-secondary) 90%, transparent); }
+
+    input:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--focus-ring);
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 0.6rem;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .toggle-password:hover { background: color-mix(in srgb, var(--border) 60%, transparent); }
+    .toggle-password:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      margin-top: 0.75rem;
+      min-height: 3.05rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.9rem;
+      line-height: 1;
+      font-weight: 800;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 90%, #ffffff 10%), var(--accent));
+      color: var(--accent-contrast);
+      cursor: pointer;
+      box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 34%, transparent);
+      transition: filter 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+    }
+
+    .submit-btn:hover { filter: brightness(1.08); }
+    .submit-btn:active { transform: translateY(1px); }
+    .submit-btn:disabled { opacity: 0.72; cursor: wait; }
+
+    .msg {
+      margin: 0.9rem 0 0;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      min-height: 1.2rem;
+    }
+
+    .msg.error { color: #ef4444; }
+    .msg.info { color: var(--text-secondary); }
+
+    .helper {
+      margin: 1.1rem 0 0;
+      padding-top: 1rem;
+      border-top: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+      color: var(--text-secondary);
+      font-size: 0.98rem;
+      text-align: left;
+    }
+
+    @media (max-width: 520px) {
+      .brand-mark {
+        width: 72px;
+        height: 72px;
+      }
+
+      .brand-title { font-size: 2rem; }
+      .card { padding: 1.2rem; border-radius: 16px; }
+      h1 { font-size: 1.8rem; }
+      label { font-size: 1.02rem; }
+    }
   </style>
 </head>
 <body>
-  <main class="card">
-    <div class="logo">Mac<span>Tec</span></div>
-    <h1>Acesso Admin</h1>
-    <form id="adminLoginForm">
-      <label for="adminIdentifier">Usuário ou Email</label>
-      <input id="adminIdentifier" type="text" autocomplete="username" placeholder="Seu usuário ou email" required />
+  <section class="login-shell" aria-label="Acesso administrativo MacTec">
+    <header class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <p class="brand-title">Mac<span>Tec</span></p>
+    </header>
 
-      <label for="adminPassword">Senha</label>
-      <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Sua senha" required />
+    <main class="card">
+      <h1>Acesso Admin</h1>
+      <form id="adminLoginForm">
+        <div class="field-group">
+          <label for="adminIdentifier">Usuário ou Email</label>
+          <div class="input-wrap">
+            <span class="field-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"/></svg>
+            </span>
+            <input id="adminIdentifier" type="text" autocomplete="username" placeholder="Seu usuário ou email" required />
+          </div>
+        </div>
 
-      <button id="submitBtn" type="submit">Entrar</button>
-      <p id="feedback" class="msg info"></p>
-    </form>
-    <p class="helper">Sua sessão expira após 40 minutos sem interação.</p>
-  </main>
+        <div class="field-group">
+          <label for="adminPassword">Senha</label>
+          <div class="input-wrap">
+            <span class="field-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 9h-1V7a4 4 0 1 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2ZM10 7a2 2 0 1 1 4 0v2h-4Z"/></svg>
+            </span>
+            <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Sua senha" required />
+            <button id="togglePasswordBtn" class="toggle-password" type="button" aria-label="Mostrar senha" aria-pressed="false">
+              <svg id="eyeOpenIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5c-5.59 0-10 5.17-10 7s4.41 7 10 7 10-5.17 10-7-4.41-7-10-7Zm0 11a4 4 0 1 1 4-4 4 4 0 0 1-4 4Z"/></svg>
+              <svg id="eyeOffIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" hidden><path d="m2.1 3.51 1.41-1.41L21.9 20.49l-1.41 1.41-3.1-3.1A11.7 11.7 0 0 1 12 20c-5.59 0-10-5.17-10-7a8.8 8.8 0 0 1 3.22-4.8L2.1 3.51ZM12 8a4 4 0 0 1 4 4 3.87 3.87 0 0 1-.36 1.64l-5.28-5.28A3.87 3.87 0 0 1 12 8Zm10-1c0 .95-1.27 2.82-3.33 4.29l-1.46-1.46A8.88 8.88 0 0 0 20 7s-3.17-4-8-4a7.79 7.79 0 0 0-2.94.58L7.45 1.97A10.92 10.92 0 0 1 12 1c5.59 0 10 5.17 10 7Z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <button id="submitBtn" class="submit-btn" type="submit">Entrar</button>
+        <p id="feedback" class="msg info"></p>
+      </form>
+      <p class="helper">Sua sessão expira após 40 minutos sem interação.</p>
+    </main>
+  </section>
 
   <script>
     const ADMIN_INACTIVITY_TIMEOUT_MS = 40 * 60 * 1000;
@@ -68,7 +317,25 @@
       return (Date.now() - last) > ADMIN_INACTIVITY_TIMEOUT_MS;
     }
 
+    function bindPasswordToggle() {
+      const passwordInput = document.getElementById('adminPassword');
+      const toggleBtn = document.getElementById('togglePasswordBtn');
+      const eyeOpenIcon = document.getElementById('eyeOpenIcon');
+      const eyeOffIcon = document.getElementById('eyeOffIcon');
+
+      toggleBtn.addEventListener('click', () => {
+        const shouldShow = passwordInput.type === 'password';
+        passwordInput.type = shouldShow ? 'text' : 'password';
+        toggleBtn.setAttribute('aria-pressed', String(shouldShow));
+        toggleBtn.setAttribute('aria-label', shouldShow ? 'Ocultar senha' : 'Mostrar senha');
+        eyeOpenIcon.hidden = shouldShow;
+        eyeOffIcon.hidden = !shouldShow;
+      });
+    }
+
     async function bootstrapLogin() {
+      bindPasswordToggle();
+
       if (!SUPABASE_URL || !SUPABASE_KEY || !window.supabase?.createClient) {
         setFeedback('Configuração de autenticação indisponível. Verifique o app-config.js.', 'error');
         return;
