@@ -73,42 +73,20 @@
 
     .brand {
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      gap: 0.35rem;
-      margin-bottom: 1.1rem;
+      margin-bottom: 0.95rem;
       user-select: none;
     }
 
-    .brand-mark {
-      width: 78px;
-      height: 78px;
-      border-radius: 999px;
-      background: conic-gradient(from 160deg, #1976d2, #1976d2 36%, #39b54a 36%, #39b54a 68%, #1976d2);
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.25);
-      position: relative;
+    .brand-logo {
+      height: clamp(70px, 18vw, 100px);
+      width: auto;
+      display: block;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.24));
+      image-rendering: auto;
     }
-
-    .brand-mark::after {
-      content: "";
-      position: absolute;
-      inset: 8px;
-      border-radius: inherit;
-      background: linear-gradient(160deg, #f8fafc, #d1d5db);
-      mask: radial-gradient(circle at center, transparent 38%, #000 39%);
-    }
-
-    .brand-title {
-      margin: 0;
-      font-size: 2.25rem;
-      line-height: 1;
-      font-weight: 800;
-      letter-spacing: 0.2px;
-      color: #1976d2;
-      text-shadow: 0 4px 18px rgba(15, 23, 42, 0.12);
-    }
-
-    .brand-title span { color: #22a06b; }
 
     .card {
       width: 100%;
@@ -118,7 +96,7 @@
       box-shadow: var(--card-shadow);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      padding: 1.6rem;
+      padding: 1.6rem 1.6rem 1.35rem;
       transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     }
 
@@ -228,23 +206,10 @@
     .msg.error { color: #ef4444; }
     .msg.info { color: var(--text-secondary); }
 
-    .helper {
-      margin: 1.1rem 0 0;
-      padding-top: 1rem;
-      border-top: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
-      color: var(--text-secondary);
-      font-size: 0.98rem;
-      text-align: left;
-    }
 
     @media (max-width: 520px) {
-      .brand-mark {
-        width: 72px;
-        height: 72px;
-      }
-
-      .brand-title { font-size: 2rem; }
-      .card { padding: 1.2rem; border-radius: 16px; }
+      .brand-logo { height: clamp(68px, 24vw, 88px); }
+      .card { padding: 1.2rem 1.2rem 1.1rem; border-radius: 16px; }
       h1 { font-size: 1.8rem; }
       label { font-size: 1.02rem; }
     }
@@ -253,8 +218,7 @@
 <body>
   <section class="login-shell" aria-label="Acesso administrativo MacTec">
     <header class="brand">
-      <div class="brand-mark" aria-hidden="true"></div>
-      <p class="brand-title">Mac<span>Tec</span></p>
+      <img class="brand-logo" src="/assets/mactec-logo.svg" alt="MacTec" width="320" height="250" fetchpriority="high" decoding="async" />
     </header>
 
     <main class="card">
@@ -287,7 +251,6 @@
         <button id="submitBtn" class="submit-btn" type="submit">Entrar</button>
         <p id="feedback" class="msg info"></p>
       </form>
-      <p class="helper">Sua sessão expira após 40 minutos sem interação.</p>
     </main>
   </section>
 
