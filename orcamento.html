@@ -1671,7 +1671,7 @@
         </div>
         <div class="nav-search">
             <button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()" title="Alternar tema">🌙</button>
-            <button class="admin-access-btn" onclick="handleAdminSearch()" title="Entrar no painel administrativo">Admin</button>
+            <button class="admin-access-btn" onclick="goToAdmin()" title="Entrar no painel administrativo">Admin</button>
             <button class="cart-icon-btn" onclick="openCartModal()" title="Carrinho de Compras" style="margin-left: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; position: relative;">
                 🛒
                 <span id="cartCount" class="cart-count" style="position: absolute; top: -5px; right: -10px; background: var(--accent-green); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">0</span>
@@ -2030,7 +2030,7 @@
             <h1>Painel Administrativo</h1>
             <div class="admin-header-actions">
                 <button id="adminMobileMenuButton" class="admin-mobile-nav-btn" onclick="toggleAdminSidebar()" aria-controls="adminSidebar" aria-expanded="false">☰ Menu</button>
-                <button class="btn btn-secondary" onclick="closeAdminPanel()">Fechar</button>
+                <button class="btn btn-secondary" onclick="logoutAdmin()">Sair</button>
             </div>
         </div>
 
@@ -4267,6 +4267,8 @@
                 setAccessoryFormMode('create');
             });
             safeRun('loadCompanySettings', () => loadCompanySettings());
+            safeRun('bind admin auth state', () => bindAdminAuthState());
+            safeRun('restore admin route', () => restoreAdminRouteState());
 
             window.addEventListener('error', (event) => {
                 logClientError({
@@ -5674,32 +5676,156 @@ async function calcularFrete(cep) {
             window.open(whatsappUrl, '_blank');
         }
 
-        // Admin Functions
-        function handleAdminSearch() {
-            const accessCode = prompt('Digite o código de acesso admin:');
-            if (accessCode !== '2804') {
-                showAlert('Código de acesso incorreto', 'error');
+        // Admin Auth + Session/Inatividade
+        const ADMIN_LOGIN_PATH = '/admin-login.html';
+        const ADMIN_INACTIVITY_TIMEOUT_MS = 40 * 60 * 1000;
+        const ADMIN_LAST_ACTIVITY_KEY = 'admin_last_activity_at';
+        const ADMIN_ACTIVITY_EVENTS = ['click', 'touchstart', 'keydown', 'scroll', 'mousemove'];
+        let adminInactivityInterval = null;
+        let adminActivityListenerBound = false;
+        let adminMouseMoveThrottle = false;
+
+        function getAdminLoginUrl(reason = '') {
+            const params = new URLSearchParams();
+            if (reason) params.set('reason', reason);
+            params.set('redirect', '/orcamento.html?admin=1');
+            const queryString = params.toString();
+            return queryString ? `${ADMIN_LOGIN_PATH}?${queryString}` : ADMIN_LOGIN_PATH;
+        }
+
+        function touchAdminActivity() {
+            localStorage.setItem(ADMIN_LAST_ACTIVITY_KEY, String(Date.now()));
+        }
+
+        function getAdminLastActivity() {
+            const raw = Number(localStorage.getItem(ADMIN_LAST_ACTIVITY_KEY) || 0);
+            return Number.isFinite(raw) ? raw : 0;
+        }
+
+        function isAdminInactivityExpired() {
+            const lastActivity = getAdminLastActivity();
+            if (!lastActivity) return false;
+            return (Date.now() - lastActivity) > ADMIN_INACTIVITY_TIMEOUT_MS;
+        }
+
+        async function getAdminSession() {
+            const client = ensureSupabaseClient(true);
+            if (!client) return null;
+            const { data, error } = await client.auth.getSession();
+            if (error) {
+                console.warn('Falha ao validar sessão admin:', error.message || error);
+                return null;
+            }
+            return data?.session || null;
+        }
+
+        async function goToAdmin() {
+            const session = await getAdminSession();
+            if (session && !isAdminInactivityExpired()) {
+                openAdminPanel();
                 return;
             }
+            window.location.href = getAdminLoginUrl();
+        }
 
-            const password = prompt('Digite a senha:');
-            if (password === 'admin123') {
-                openAdminPanel();
-            } else {
-                showAlert('Senha incorreta', 'error');
+        async function handleAdminSearch() {
+            await goToAdmin();
+        }
+
+        function bindAdminActivityListeners() {
+            if (adminActivityListenerBound) return;
+            const onActivity = (event) => {
+                if (event.type === 'mousemove') {
+                    if (adminMouseMoveThrottle) return;
+                    adminMouseMoveThrottle = true;
+                    setTimeout(() => { adminMouseMoveThrottle = false; }, 1000);
+                }
+                touchAdminActivity();
+            };
+            ADMIN_ACTIVITY_EVENTS.forEach((eventName) => {
+                window.addEventListener(eventName, onActivity, { passive: true });
+            });
+            adminActivityListenerBound = true;
+        }
+
+        function startAdminInactivityMonitor() {
+            bindAdminActivityListeners();
+            touchAdminActivity();
+            if (adminInactivityInterval) clearInterval(adminInactivityInterval);
+            adminInactivityInterval = window.setInterval(async () => {
+                if (!document.getElementById('adminPanel')?.classList.contains('active')) return;
+                if (isAdminInactivityExpired()) {
+                    await logoutAdmin({ dueToInactivity: true });
+                }
+            }, 30 * 1000);
+        }
+
+        function stopAdminInactivityMonitor() {
+            if (adminInactivityInterval) {
+                clearInterval(adminInactivityInterval);
+                adminInactivityInterval = null;
             }
         }
 
-        function openAdminPanel() {
+        async function openAdminPanel() {
+            const session = await getAdminSession();
+            if (!session) {
+                window.location.href = getAdminLoginUrl();
+                return;
+            }
+            if (isAdminInactivityExpired()) {
+                await logoutAdmin({ dueToInactivity: true });
+                return;
+            }
+            touchAdminActivity();
             document.getElementById('adminPanel').classList.add('active');
             document.getElementById('mainContent').style.display = 'none';
             if (window.SidebarModule?.init) window.SidebarModule.init();
+            startAdminInactivityMonitor();
             loadAdminData();
         }
 
         function closeAdminPanel() {
             document.getElementById('adminPanel').classList.remove('active');
             document.getElementById('mainContent').style.display = 'block';
+            stopAdminInactivityMonitor();
+        }
+
+        async function logoutAdmin({ dueToInactivity = false } = {}) {
+            const client = ensureSupabaseClient(true);
+            stopAdminInactivityMonitor();
+            localStorage.removeItem(ADMIN_LAST_ACTIVITY_KEY);
+            if (client) {
+                try {
+                    await client.auth.signOut();
+                } catch (error) {
+                    console.warn('Falha ao encerrar sessão admin:', error.message || error);
+                }
+            }
+            closeAdminPanel();
+            window.location.href = getAdminLoginUrl(dueToInactivity ? 'expired' : 'logout');
+        }
+
+        function bindAdminAuthState() {
+            const client = ensureSupabaseClient(false);
+            if (!client || window.__adminAuthBound) return;
+            client.auth.onAuthStateChange((event) => {
+                const isAdminVisible = document.getElementById('adminPanel')?.classList.contains('active');
+                if (event === 'SIGNED_IN') {
+                    touchAdminActivity();
+                }
+                if ((event === 'SIGNED_OUT' || event === 'USER_DELETED') && isAdminVisible) {
+                    closeAdminPanel();
+                }
+            });
+            window.__adminAuthBound = true;
+        }
+
+        function restoreAdminRouteState() {
+            const params = new URLSearchParams(window.location.search);
+            const wantsAdmin = params.get('admin') === '1';
+            if (!wantsAdmin) return;
+            openAdminPanel();
         }
 
         function switchAdminTab(tabName, ev = null) {

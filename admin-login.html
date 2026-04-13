@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MacTec • Login Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/app-config.js"></script>
+  <style>
+    :root { --bg:#f3f4f6; --card:#0f1f32; --card2:#13263d; --input:#1f324a; --line:#2a3f59; --text:#e5e7eb; --muted:#9ca3af; --accent:#22c55e; --danger:#ef4444; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; font-family: Inter, system-ui, -apple-system, sans-serif; background: var(--bg); display:grid; place-items:center; padding:1rem; }
+    .card { width:min(100%, 460px); background: linear-gradient(150deg, var(--card), var(--card2)); border:1px solid #334155; border-radius:16px; box-shadow:0 16px 40px rgba(2,6,23,.35); padding:2rem; color:var(--text); }
+    .logo { text-align:center; font-size:2.2rem; font-weight:800; margin-bottom:.25rem; letter-spacing:.5px; }
+    .logo span { color:#2dd4bf; }
+    h1 { margin:.2rem 0 1.6rem; text-align:center; color:var(--accent); font-size:1.8rem; }
+    label { display:block; margin:.8rem 0 .35rem; font-weight:600; }
+    input { width:100%; background:var(--input); border:1px solid var(--line); color:var(--text); border-radius:10px; padding:.8rem .9rem; font-size:1rem; }
+    input:focus { outline:none; border-color:#34d399; box-shadow:0 0 0 3px rgba(52,211,153,.2); }
+    button { width:100%; margin-top:1rem; background:var(--accent); color:#052e16; font-weight:700; border:none; border-radius:10px; padding:.85rem; font-size:1rem; cursor:pointer; }
+    button:disabled { opacity:.7; cursor:wait; }
+    .msg { margin-top:1rem; font-size:.95rem; }
+    .msg.error { color: #fecaca; }
+    .msg.info { color: var(--muted); }
+    .helper { margin-top:1.2rem; color:var(--muted); font-size:.92rem; text-align:center; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="logo">Mac<span>Tec</span></div>
+    <h1>Acesso Admin</h1>
+    <form id="adminLoginForm">
+      <label for="adminIdentifier">Usuário ou Email</label>
+      <input id="adminIdentifier" type="text" autocomplete="username" placeholder="Seu usuário ou email" required />
+
+      <label for="adminPassword">Senha</label>
+      <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Sua senha" required />
+
+      <button id="submitBtn" type="submit">Entrar</button>
+      <p id="feedback" class="msg info"></p>
+    </form>
+    <p class="helper">Sua sessão expira após 40 minutos sem interação.</p>
+  </main>
+
+  <script>
+    const ADMIN_INACTIVITY_TIMEOUT_MS = 40 * 60 * 1000;
+    const ADMIN_LAST_ACTIVITY_KEY = 'admin_last_activity_at';
+
+    const config = window.APP_CONFIG || {};
+    const SUPABASE_URL = config.SUPABASE_URL || '';
+    const SUPABASE_KEY = config.SUPABASE_KEY || '';
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get('redirect') || '/orcamento.html?admin=1';
+
+    function setFeedback(message, type = 'info') {
+      const feedback = document.getElementById('feedback');
+      feedback.textContent = message;
+      feedback.className = `msg ${type}`;
+    }
+
+    function touchAdminActivity() {
+      localStorage.setItem(ADMIN_LAST_ACTIVITY_KEY, String(Date.now()));
+    }
+
+    function isInactivityExpired() {
+      const last = Number(localStorage.getItem(ADMIN_LAST_ACTIVITY_KEY) || 0);
+      if (!last) return false;
+      return (Date.now() - last) > ADMIN_INACTIVITY_TIMEOUT_MS;
+    }
+
+    async function bootstrapLogin() {
+      if (!SUPABASE_URL || !SUPABASE_KEY || !window.supabase?.createClient) {
+        setFeedback('Configuração de autenticação indisponível. Verifique o app-config.js.', 'error');
+        return;
+      }
+
+      const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data } = await client.auth.getSession();
+
+      if (data?.session && isInactivityExpired()) {
+        await client.auth.signOut();
+        localStorage.removeItem(ADMIN_LAST_ACTIVITY_KEY);
+      } else if (data?.session) {
+        touchAdminActivity();
+        window.location.replace(redirectTo);
+        return;
+      }
+
+      const reason = params.get('reason');
+      if (reason === 'expired') {
+        setFeedback('Sua sessão expirou por inatividade. Faça login novamente.', 'info');
+      } else if (reason === 'logout') {
+        setFeedback('Logout realizado com sucesso.', 'info');
+      }
+
+      document.getElementById('adminLoginForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+
+        const identifier = String(document.getElementById('adminIdentifier').value || '').trim();
+        const password = String(document.getElementById('adminPassword').value || '');
+
+        if (!identifier || !password) {
+          setFeedback('Informe usuário/email e senha.', 'error');
+          submitBtn.disabled = false;
+          return;
+        }
+
+        const { error } = await client.auth.signInWithPassword({
+          email: identifier,
+          password
+        });
+
+        if (error) {
+          setFeedback('Login inválido. Verifique usuário/email e senha.', 'error');
+          submitBtn.disabled = false;
+          return;
+        }
+
+        touchAdminActivity();
+        setFeedback('Acesso liberado. Redirecionando...', 'info');
+        window.location.replace(redirectTo);
+      });
+    }
+
+    bootstrapLogin();
+  </script>
+</body>
+</html>
