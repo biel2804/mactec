@@ -1564,11 +1564,14 @@
 
     <div id="customerIdentificationModal" class="modal-overlay" style="display:none;">
         <div class="modal-content" style="max-width: 520px;">
-            <h2>👤 Já é cliente da MacTec?</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem;">
+                <h2 style="margin:0;">👤 Já é cliente da MacTec?</h2>
+                <button id="closeIdentificationModalBtn" type="button" class="btn btn-secondary" style="min-width:36px; width:36px; height:36px; padding:0; border-radius:999px; line-height:1;" aria-label="Fechar identificação">×</button>
+            </div>
             <p style="color: var(--text-secondary);">Informe seu telefone para localizar seu cadastro e acelerar o orçamento.</p>
             <div class="form-group">
                 <label for="identificationPhone">Telefone/WhatsApp:</label>
-                <input type="tel" id="identificationPhone" placeholder="(11) 99999-9999">
+                <input type="tel" id="identificationPhone" inputmode="tel" maxlength="15" placeholder="(11) 99999-9999">
             </div>
             <small id="identificationStatus" style="display:block; margin-bottom: 1rem; color: var(--text-secondary);"></small>
             <div id="existingCustomerCard" style="display:none; padding: 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;"></div>
@@ -1586,7 +1589,7 @@
             <h2>📝 Novo cliente</h2>
             <p style="color: var(--text-secondary);">Preencha seu cadastro para continuar no orçamento com dados já carregados.</p>
             <div class="form-group"><label for="newCustomerName">Nome completo:</label><input type="text" id="newCustomerName" placeholder="Seu nome"></div>
-            <div class="form-group"><label for="newCustomerPhone">Telefone/WhatsApp:</label><input type="tel" id="newCustomerPhone" placeholder="(11) 99999-9999"></div>
+            <div class="form-group"><label for="newCustomerPhone">Telefone/WhatsApp:</label><input type="tel" id="newCustomerPhone" inputmode="tel" maxlength="15" placeholder="(11) 99999-9999"></div>
             <div class="form-group"><label for="newCustomerEmail">E-mail (opcional):</label><input type="email" id="newCustomerEmail" placeholder="cliente@email.com"></div>
             <div class="form-group"><label for="newCustomerCep">CEP:</label><input type="text" id="newCustomerCep" maxlength="8" inputmode="numeric" placeholder="00000000" onblur="buscarCepCadastroNovo()"></div>
             <small id="newCustomerCepStatus" style="display:block; margin-bottom:0.7rem; color: var(--text-secondary);"></small>
@@ -1881,7 +1884,7 @@
                     </div>
                     <div class="form-group">
                         <label for="customerWhatsApp">WhatsApp:</label>
-                        <input type="tel" id="customerWhatsApp" placeholder="(11) 99999-9999">
+                        <input type="tel" id="customerWhatsApp" inputmode="tel" maxlength="15" placeholder="(11) 99999-9999">
                     </div>
                     <div class="form-group">
                         <label for="customerCep">CEP:</label>
@@ -2011,6 +2014,7 @@
                 <nav class="sidebar-nav">
                     <button class="admin-tab active" data-tab="dashboard" onclick="switchAdminTab('dashboard', event)" title="Dashboard"><span class="tab-icon">📊</span><span class="tab-label">Dashboard</span></button>
                     <button class="admin-tab" data-tab="orders" onclick="switchAdminTab('orders', event)" title="Pedidos"><span class="tab-icon">🧾</span><span class="tab-label">Pedidos</span></button>
+                    <button class="admin-tab" data-tab="customers" onclick="switchAdminTab('customers', event)" title="Clientes"><span class="tab-icon">👥</span><span class="tab-label">Clientes</span></button>
                     <button class="admin-tab" data-tab="service-orders" onclick="switchAdminTab('service-orders', event)" title="Ordem de Serviço"><span class="tab-icon">🛠️</span><span class="tab-label">Ordem de Serviço</span></button>
                     <button class="admin-tab" data-tab="parts" onclick="switchAdminTab('parts', event)" title="Gerenciar Peças"><span class="tab-icon">📦</span><span class="tab-label">Gerenciar Peças</span></button>
                     <button class="admin-tab" data-tab="despesas" onclick="switchAdminTab('despesas', event)" title="Despesas"><span class="tab-icon">💸</span><span class="tab-label">Despesas</span></button>
@@ -2137,6 +2141,66 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div id="customers" class="tab-content">
+                <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Clientes</h2>
+                <div style="background: var(--secondary-dark); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border-color);">
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+                        <div class="form-group" style="margin-bottom:0;"><label for="adminCustomerSearchName">Buscar por nome</label><input type="text" id="adminCustomerSearchName" placeholder="Nome do cliente"></div>
+                        <div class="form-group" style="margin-bottom:0;"><label for="adminCustomerSearchPhone">Buscar por telefone</label><input type="tel" id="adminCustomerSearchPhone" inputmode="tel" maxlength="15" placeholder="(11) 99999-9999"></div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap;">
+                        <button class="btn btn-primary" type="button" onclick="applyCustomerSearch()">Buscar</button>
+                        <button class="btn btn-secondary" type="button" onclick="resetCustomerSearch()">Limpar</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Telefone</th>
+                                <th>CEP</th>
+                                <th>Cidade</th>
+                                <th>Estado</th>
+                                <th>Data de cadastro</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersTable">
+                            <tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">Carregando clientes...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p id="customersStatus" style="margin-top:0.75rem; color:var(--text-secondary);"></p>
+            </div>
+
+            <div id="customerAdminModal" class="modal">
+                <div class="modal-content" style="max-width: 760px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3 style="color:var(--accent-green); margin:0;">Editar cliente</h3>
+                        <button type="button" class="btn btn-secondary" onclick="closeAdminCustomerModal()">Fechar</button>
+                    </div>
+                    <form id="adminCustomerForm">
+                        <input type="hidden" id="editingCustomerId" value="">
+                        <div class="form-group"><label for="adminCustomerName">Nome</label><input type="text" id="adminCustomerName" required></div>
+                        <div class="quote-address-grid cols-2">
+                            <div class="form-group" style="margin-bottom:0;"><label for="adminCustomerPhone">Telefone</label><input type="tel" id="adminCustomerPhone" inputmode="tel" maxlength="15" required></div>
+                            <div class="form-group" style="margin-bottom:0;"><label for="adminCustomerEmail">Email</label><input type="email" id="adminCustomerEmail"></div>
+                        </div>
+                        <div class="form-group"><label for="adminCustomerCep">CEP</label><input type="text" id="adminCustomerCep" maxlength="8" inputmode="numeric"></div>
+                        <div class="form-group"><label for="adminCustomerStreet">Rua</label><input type="text" id="adminCustomerStreet"></div>
+                        <div class="quote-address-grid cols-2"><div class="form-group" style="margin-bottom:0;"><label for="adminCustomerNumber">Número</label><input type="text" id="adminCustomerNumber"></div><div class="form-group" style="margin-bottom:0;"><label for="adminCustomerDistrict">Bairro</label><input type="text" id="adminCustomerDistrict"></div></div>
+                        <div class="quote-address-grid cols-2-1"><div class="form-group" style="margin-bottom:0;"><label for="adminCustomerCity">Cidade</label><input type="text" id="adminCustomerCity"></div><div class="form-group" style="margin-bottom:0;"><label for="adminCustomerState">Estado</label><input type="text" id="adminCustomerState" maxlength="2"></div></div>
+                        <div class="form-group"><label for="adminCustomerAddress">Endereço</label><input type="text" id="adminCustomerAddress"></div>
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <button type="submit" class="btn btn-primary" id="saveCustomerBtn">Salvar alterações</button>
+                            <button type="button" class="btn btn-secondary" onclick="closeAdminCustomerModal()">Cancelar</button>
+                        </div>
+                        <p id="adminCustomerStatus" style="margin-top:0.75rem; color:var(--text-secondary);"></p>
+                    </form>
                 </div>
             </div>
 
@@ -2506,6 +2570,7 @@
         let accessoriesStockById = {};
         let identifiedCustomerProfile = null;
         let pendingExistingCustomer = null;
+        let adminCustomerFilters = { name: '', phone: '' };
         let shouldShowHowItWorksOnQuoteEntry = false;
 
         function applyTheme(theme) {
@@ -2618,13 +2683,29 @@
         }
 
         function normalizePhone(value) {
-            return String(value || '').replace(/\D/g, '');
+            const digits = String(value || '').replace(/\D/g, '');
+            if (digits.length === 13 && digits.startsWith('55')) {
+                return digits.slice(2);
+            }
+            return digits;
+        }
+
+        function formatPhoneForDisplay(value) {
+            const digits = normalizePhone(value).slice(0, 11);
+            if (digits.length <= 2) return digits;
+            if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+            if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+            return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+        }
+
+        function isValidBrazilMobilePhone(value) {
+            return normalizePhone(value).length === 11;
         }
 
         async function findCustomerByPhone(rawPhone) {
             const telefoneNormalizado = normalizePhone(rawPhone);
-            if (telefoneNormalizado.length < 10) {
-                throw new Error('Informe um telefone válido com DDD.');
+            if (!isValidBrazilMobilePhone(telefoneNormalizado)) {
+                throw new Error('Informe um celular/WhatsApp válido com 11 dígitos (DDD + número).');
             }
 
             const client = ensureSupabaseClient(true);
@@ -2652,7 +2733,7 @@
             return {
                 id: profile.id || null,
                 nome: String(profile.nome || '').trim(),
-                telefone: String(profile.telefone || '').trim(),
+                telefone: formatPhoneForDisplay(profile.telefone || profile.telefone_normalizado || ''),
                 telefone_normalizado: normalizePhone(profile.telefone_normalizado || profile.telefone || ''),
                 email: String(profile.email || '').trim() || null,
                 cep,
@@ -2669,6 +2750,9 @@
             const profile = normalizeCustomerProfileForQuote(inputProfile);
             if (!profile.nome || !profile.telefone_normalizado) {
                 throw new Error('Nome e telefone são obrigatórios para salvar o cadastro.');
+            }
+            if (!isValidBrazilMobilePhone(profile.telefone_normalizado)) {
+                throw new Error('Informe um celular/WhatsApp válido com 11 dígitos (DDD + número).');
             }
 
             const client = ensureSupabaseClient(true);
@@ -2846,6 +2930,9 @@
             if (!nome || !telefone || !rua || !numero || !bairro || !cidade || !estado || cep.length !== 8) {
                 throw new Error('Preencha todos os campos obrigatórios do cadastro.');
             }
+            if (!isValidBrazilMobilePhone(telefone)) {
+                throw new Error('Informe um celular/WhatsApp válido com 11 dígitos (DDD + número).');
+            }
             if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 throw new Error('Informe um e-mail válido ou deixe em branco.');
             }
@@ -2882,6 +2969,9 @@
             const cepDigits = sanitizeCepInputValue(cep);
             if (cepDigits.length !== 8) {
                 throw new Error('Informe um CEP válido para continuar.');
+            }
+            if (!isValidBrazilMobilePhone(telefone)) {
+                throw new Error('Informe um celular/WhatsApp válido com 11 dígitos (DDD + número).');
             }
             if (!numero) {
                 throw new Error('Informe o número do endereço.');
@@ -4096,8 +4186,22 @@
                     }
                 });
             });
+            safeRun('bind customersTable click', () => {
+                document.getElementById('customersTable')?.addEventListener('click', (event) => {
+                    const button = event.target.closest('.js-admin-customer-action');
+                    if (!button) return;
+                    const id = getActionItemId(button);
+                    if (!id) return;
+                    if (button.dataset.action === 'edit') {
+                        openAdminCustomerEditor(id);
+                    }
+                });
+            });
             safeRun('bind orderForm submit', () => {
                 document.getElementById('orderForm')?.addEventListener('submit', saveOrderFromAdmin);
+            });
+            safeRun('bind adminCustomerForm submit', () => {
+                document.getElementById('adminCustomerForm')?.addEventListener('submit', handleAdminCustomerFormSubmit);
             });
             safeRun('bind serviceOrderForm', () => {
                 document.getElementById('serviceOrderForm')?.addEventListener('submit', handleServiceOrderFormSubmit);
@@ -4124,10 +4228,15 @@
             safeRun('bind CEP fields sanitization', () => {
                 bindCepField('cepInput');
                 bindCepField('customerCep');
-                bindCepField('identificationPhone');
-                bindCepField('customerWhatsApp');
                 bindCepField('newCustomerCep');
-                bindCepField('newCustomerPhone');
+                bindCepField('adminCustomerCep');
+            });
+            safeRun('bind phone fields formatting', () => {
+                bindPhoneField('identificationPhone');
+                bindPhoneField('customerWhatsApp');
+                bindPhoneField('newCustomerPhone');
+                bindPhoneField('adminCustomerSearchPhone');
+                bindPhoneField('adminCustomerPhone');
             });
             safeRun('set initial form modes', () => {
                 setPartFormMode('create');
@@ -4210,6 +4319,14 @@
         function closeCustomerIdentificationModal() {
             const modal = document.getElementById('customerIdentificationModal');
             if (modal) modal.style.display = 'none';
+            resetIdentificationModalState();
+            const input = document.getElementById('identificationPhone');
+            const status = document.getElementById('identificationStatus');
+            if (input) input.value = '';
+            if (status) {
+                status.textContent = '';
+                status.style.color = 'var(--text-secondary)';
+            }
         }
 
         function renderExistingCustomerCard(profile) {
@@ -4314,6 +4431,12 @@
 
         function bindCustomerIdentificationEvents() {
             document.getElementById('searchCustomerBtn')?.addEventListener('click', handleSearchCustomerByPhone);
+            document.getElementById('closeIdentificationModalBtn')?.addEventListener('click', closeCustomerIdentificationModal);
+            document.getElementById('customerIdentificationModal')?.addEventListener('click', (event) => {
+                if (event.target?.id === 'customerIdentificationModal') {
+                    closeCustomerIdentificationModal();
+                }
+            });
             document.getElementById('confirmExistingCustomerBtn')?.addEventListener('click', confirmExistingCustomerAndContinue);
             document.getElementById('retryIdentificationBtn')?.addEventListener('click', () => {
                 resetIdentificationModalState();
@@ -4625,6 +4748,24 @@ function bindCepField(inputId, options = {}) {
     runSanitization();
     input.addEventListener('input', runSanitization);
 
+    if (typeof options.onBlur === 'function') {
+        input.addEventListener('blur', options.onBlur);
+    }
+}
+
+function bindPhoneField(inputId, options = {}) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const runSanitization = () => {
+        const formatted = formatPhoneForDisplay(input.value);
+        if (input.value !== formatted) {
+            input.value = formatted;
+        }
+    };
+
+    runSanitization();
+    input.addEventListener('input', runSanitization);
     if (typeof options.onBlur === 'function') {
         input.addEventListener('blur', options.onBlur);
     }
@@ -5519,6 +5660,8 @@ async function calcularFrete(cep) {
                 loadOrdersTable();
             } else if (tabName === 'service-orders') {
                 loadServiceOrdersTable();
+            } else if (tabName === 'customers') {
+                loadCustomersTable();
             } else if (tabName === 'despesas') {
                 loadExpensesTable();
             }
@@ -5741,6 +5884,174 @@ async function calcularFrete(cep) {
                 const tbody = document.getElementById('ordersTable');
                 tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--error);">Erro ao carregar pedidos: ${escapeHtml(error.message || 'desconhecido')}</td></tr>`;
                 showAlert('Erro ao carregar pedidos no admin.', 'error');
+            }
+        }
+
+        function formatCustomerCreatedAt(value) {
+            if (!value) return '-';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '-';
+            return date.toLocaleString('pt-BR');
+        }
+
+        async function loadCustomersTable() {
+            const tbody = document.getElementById('customersTable');
+            const status = document.getElementById('customersStatus');
+            try {
+                const client = ensureSupabaseClient(true);
+                if (!client || !tbody) return;
+                if (status) status.textContent = 'Carregando clientes...';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">Carregando clientes...</td></tr>';
+
+                let query = client.from('clientes').select('*').order('created_at', { ascending: false }).limit(200);
+                if (adminCustomerFilters.name) {
+                    query = query.ilike('nome', `%${adminCustomerFilters.name}%`);
+                }
+                if (adminCustomerFilters.phone) {
+                    query = query.eq('telefone_normalizado', adminCustomerFilters.phone);
+                }
+
+                const { data: customers, error } = await query;
+                if (error) throw error;
+
+                tbody.innerHTML = '';
+                if (!customers || customers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">Nenhum cliente encontrado.</td></tr>';
+                    if (status) status.textContent = 'Nenhum cliente encontrado para os filtros atuais.';
+                    return;
+                }
+
+                customers.forEach((customer) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${escapeHtml(customer.nome || '-')}</td>
+                        <td>${escapeHtml(formatPhoneForDisplay(customer.telefone || customer.telefone_normalizado || ''))}</td>
+                        <td>${escapeHtml(customer.cep || '-')}</td>
+                        <td>${escapeHtml(customer.cidade || '-')}</td>
+                        <td>${escapeHtml(customer.estado || '-')}</td>
+                        <td>${escapeHtml(formatCustomerCreatedAt(customer.created_at || customer.criado_em))}</td>
+                        <td><button class="btn-small btn-edit js-admin-customer-action" data-action="edit" data-id="${customer.id}">Editar</button></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                if (status) status.textContent = `${customers.length} cliente(s) listado(s).`;
+            } catch (error) {
+                if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--error);">Erro ao carregar clientes: ${escapeHtml(error.message || 'desconhecido')}</td></tr>`;
+                if (status) status.textContent = 'Não foi possível carregar os clientes.';
+            }
+        }
+
+        function applyCustomerSearch() {
+            adminCustomerFilters = {
+                name: String(document.getElementById('adminCustomerSearchName')?.value || '').trim(),
+                phone: normalizePhone(document.getElementById('adminCustomerSearchPhone')?.value || '')
+            };
+            loadCustomersTable();
+        }
+
+        function resetCustomerSearch() {
+            adminCustomerFilters = { name: '', phone: '' };
+            const nameInput = document.getElementById('adminCustomerSearchName');
+            const phoneInput = document.getElementById('adminCustomerSearchPhone');
+            if (nameInput) nameInput.value = '';
+            if (phoneInput) phoneInput.value = '';
+            loadCustomersTable();
+        }
+
+        async function openAdminCustomerEditor(id) {
+            try {
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { data, error } = await client.from('clientes').select('*').eq('id', id).single();
+                if (error) throw error;
+                if (!data) throw new Error('Cliente não encontrado.');
+
+                document.getElementById('editingCustomerId').value = String(data.id || '');
+                document.getElementById('adminCustomerName').value = data.nome || '';
+                document.getElementById('adminCustomerPhone').value = formatPhoneForDisplay(data.telefone || data.telefone_normalizado || '');
+                document.getElementById('adminCustomerEmail').value = data.email || '';
+                document.getElementById('adminCustomerCep').value = sanitizeCepInputValue(data.cep || '');
+                document.getElementById('adminCustomerStreet').value = data.rua || '';
+                document.getElementById('adminCustomerNumber').value = data.numero || '';
+                document.getElementById('adminCustomerDistrict').value = data.bairro || '';
+                document.getElementById('adminCustomerCity').value = data.cidade || '';
+                document.getElementById('adminCustomerState').value = data.estado || '';
+                document.getElementById('adminCustomerAddress').value = data.endereco || '';
+                const status = document.getElementById('adminCustomerStatus');
+                if (status) status.textContent = '';
+                document.getElementById('customerAdminModal').style.display = 'block';
+            } catch (error) {
+                showAlert(error.message || 'Erro ao carregar cliente.', 'error');
+            }
+        }
+
+        function closeAdminCustomerModal() {
+            const modal = document.getElementById('customerAdminModal');
+            if (modal) modal.style.display = 'none';
+            const form = document.getElementById('adminCustomerForm');
+            if (form) form.reset();
+            const status = document.getElementById('adminCustomerStatus');
+            if (status) status.textContent = '';
+        }
+
+        async function handleAdminCustomerFormSubmit(event) {
+            event.preventDefault();
+            const status = document.getElementById('adminCustomerStatus');
+            const saveBtn = document.getElementById('saveCustomerBtn');
+            setButtonLoading(saveBtn, true, 'Salvando...');
+            try {
+                const id = String(document.getElementById('editingCustomerId').value || '').trim();
+                if (!id) throw new Error('Cliente inválido para edição.');
+                const payload = normalizeCustomerProfileForQuote({
+                    id,
+                    nome: document.getElementById('adminCustomerName').value,
+                    telefone: document.getElementById('adminCustomerPhone').value,
+                    email: document.getElementById('adminCustomerEmail').value,
+                    cep: document.getElementById('adminCustomerCep').value,
+                    rua: document.getElementById('adminCustomerStreet').value,
+                    numero: document.getElementById('adminCustomerNumber').value,
+                    bairro: document.getElementById('adminCustomerDistrict').value,
+                    cidade: document.getElementById('adminCustomerCity').value,
+                    estado: document.getElementById('adminCustomerState').value,
+                    endereco: document.getElementById('adminCustomerAddress').value
+                });
+                if (!payload.nome) throw new Error('Nome é obrigatório.');
+                if (!isValidBrazilMobilePhone(payload.telefone_normalizado)) {
+                    throw new Error('Informe um celular/WhatsApp válido com 11 dígitos (DDD + número).');
+                }
+                const client = ensureSupabaseClient(true);
+                if (!client) throw new Error('Supabase não configurado.');
+
+                const updatePayload = {
+                    nome: payload.nome,
+                    telefone: payload.telefone,
+                    telefone_normalizado: payload.telefone_normalizado,
+                    email: payload.email,
+                    cep: payload.cep || null,
+                    rua: payload.rua || null,
+                    numero: payload.numero || null,
+                    bairro: payload.bairro || null,
+                    cidade: payload.cidade || null,
+                    estado: payload.estado || null,
+                    endereco: payload.endereco || null
+                };
+
+                const { error } = await client.from('clientes').update(updatePayload).eq('id', id);
+                if (error) throw error;
+                if (status) {
+                    status.textContent = 'Cliente atualizado com sucesso.';
+                    status.style.color = 'var(--success)';
+                }
+                await loadCustomersTable();
+                closeAdminCustomerModal();
+                showAlert('Cadastro de cliente atualizado.', 'success');
+            } catch (error) {
+                if (status) {
+                    status.textContent = error.message || 'Erro ao atualizar cliente.';
+                    status.style.color = 'var(--error)';
+                }
+            } finally {
+                setButtonLoading(saveBtn, false);
             }
         }
 
@@ -6913,11 +7224,15 @@ async function getMelhorEnvioShipping(cep, type) {
         window.onclick = function(event) {
             const quoteModal = document.getElementById('quoteModal');
             const orderModal = document.getElementById('orderModal');
+            const customerAdminModal = document.getElementById('customerAdminModal');
             if (event.target == quoteModal) {
                 closeQuoteModal();
             }
             if (event.target == orderModal) {
                 closeOrderModal();
+            }
+            if (event.target == customerAdminModal) {
+                closeAdminCustomerModal();
             }
         }
 </script> <!-- 🔥 FECHAR AQUI -->
