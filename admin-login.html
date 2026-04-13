@@ -58,33 +58,43 @@
 
     body {
       margin: 0;
+      min-height: 100vh;
       font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
       color: var(--text-main);
       background: radial-gradient(circle at 20% 15%, color-mix(in srgb, var(--bg-secondary) 70%, transparent), transparent 45%), linear-gradient(160deg, var(--bg-main), var(--bg-secondary));
-      display: grid;
-      place-items: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding: 1rem;
       transition: background 0.35s ease, color 0.3s ease;
     }
 
     .login-shell {
       width: min(100%, 400px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
     .brand {
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-bottom: 0.95rem;
+      margin: 0 0 0.85rem;
       user-select: none;
     }
 
+    .brand picture {
+      display: block;
+    }
+
     .brand-logo {
-      height: clamp(70px, 18vw, 100px);
+      height: clamp(80px, 16vw, 108px);
       width: auto;
       display: block;
       object-fit: contain;
-      filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.24));
+      filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.15));
       image-rendering: auto;
     }
 
@@ -208,7 +218,7 @@
 
 
     @media (max-width: 520px) {
-      .brand-logo { height: clamp(68px, 24vw, 88px); }
+      .brand-logo { height: clamp(78px, 24vw, 96px); }
       .card { padding: 1.2rem 1.2rem 1.1rem; border-radius: 16px; }
       h1 { font-size: 1.8rem; }
       label { font-size: 1.02rem; }
@@ -218,7 +228,10 @@
 <body>
   <section class="login-shell" aria-label="Acesso administrativo MacTec">
     <header class="brand">
-      <img class="brand-logo" src="/assets/mactec-logo.svg" alt="MacTec" width="320" height="250" fetchpriority="high" decoding="async" />
+      <picture>
+        <source srcset="/assets/mactec-logo.png" type="image/png" />
+        <img class="brand-logo" src="/assets/mactec-logo.svg" alt="MacTec" width="320" height="250" fetchpriority="high" decoding="async" />
+      </picture>
     </header>
 
     <main class="card">
