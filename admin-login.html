@@ -50,8 +50,8 @@
     }
 
     :root {
-      --radius-card: 18px;
-      --radius-input: 12px;
+      --radius-card: 20px;
+      --radius-input: 16px;
     }
 
     html, body { min-height: 100%; }
@@ -65,23 +65,25 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
+      padding: 16px;
       transition: background 0.35s ease, color 0.3s ease;
     }
 
     .login-shell {
-      width: min(100%, 400px);
+      width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      min-height: 100vh;
     }
 
     .brand {
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
-      margin: 0 0 0.85rem;
+      margin: 0;
       user-select: none;
     }
 
@@ -90,42 +92,53 @@
     }
 
     .brand-logo {
-      height: clamp(80px, 16vw, 108px);
-      width: auto;
+      width: 140px;
+      height: auto;
       display: block;
       object-fit: contain;
       filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.15));
       image-rendering: auto;
+      margin-bottom: 8px;
+    }
+
+    .brand-name {
+      margin: 0 0 22px;
+      font-size: 40px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: color-mix(in srgb, var(--text-main) 92%, var(--accent));
     }
 
     .card {
-      width: 100%;
+      width: 480px;
+      max-width: 480px;
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius-card);
       box-shadow: var(--card-shadow);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      padding: 1.6rem 1.6rem 1.35rem;
+      padding: 36px 40px 32px;
       transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     }
 
     h1 {
-      margin: 0 0 1.4rem;
+      margin: 0 0 28px;
       text-align: center;
       color: var(--accent);
-      font-size: 2rem;
-      line-height: 1.1;
-      font-weight: 800;
+      font-size: 34px;
+      line-height: 1.15;
+      font-weight: 700;
     }
 
-    .field-group { margin-bottom: 0.95rem; }
+    .field-group { margin-bottom: 16px; }
 
     label {
       display: block;
-      margin-bottom: 0.42rem;
-      font-size: 1.05rem;
-      font-weight: 700;
+      margin-bottom: 8px;
+      font-size: 15px;
+      font-weight: 600;
       color: color-mix(in srgb, var(--text-main) 85%, var(--text-secondary));
     }
 
@@ -133,11 +146,12 @@
       position: relative;
       display: flex;
       align-items: center;
+      padding-left: 30px;
     }
 
     .field-icon {
       position: absolute;
-      left: 0.85rem;
+      left: 10px;
       display: inline-flex;
       color: var(--text-secondary);
       pointer-events: none;
@@ -149,9 +163,9 @@
       border: 1px solid var(--border);
       color: var(--text-main);
       border-radius: var(--radius-input);
-      min-height: 3rem;
-      font-size: 1.05rem;
-      padding: 0.78rem 2.9rem 0.78rem 2.55rem;
+      height: 58px;
+      font-size: 16px;
+      padding: 0 52px 0 18px;
       transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.3s ease, color 0.3s ease;
     }
 
@@ -188,13 +202,13 @@
 
     .submit-btn {
       width: 100%;
-      margin-top: 0.75rem;
-      min-height: 3.05rem;
+      margin-top: 14px;
+      height: 60px;
       border: none;
-      border-radius: 12px;
-      font-size: 1.9rem;
+      border-radius: 16px;
+      font-size: 24px;
       line-height: 1;
-      font-weight: 800;
+      font-weight: 700;
       background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 90%, #ffffff 10%), var(--accent));
       color: var(--accent-contrast);
       cursor: pointer;
@@ -207,21 +221,62 @@
     .submit-btn:disabled { opacity: 0.72; cursor: wait; }
 
     .msg {
-      margin: 0.9rem 0 0;
-      font-size: 0.95rem;
+      margin: 14px 0 0;
+      font-size: 14px;
       color: var(--text-secondary);
-      min-height: 1.2rem;
+      min-height: 20px;
+    }
+
+    .helper-text,
+    .session-text {
+      margin: 14px 0 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .session-text {
+      padding-top: 12px;
+      border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
     }
 
     .msg.error { color: #ef4444; }
     .msg.info { color: var(--text-secondary); }
 
 
-    @media (max-width: 520px) {
-      .brand-logo { height: clamp(78px, 24vw, 96px); }
-      .card { padding: 1.2rem 1.2rem 1.1rem; border-radius: 16px; }
-      h1 { font-size: 1.8rem; }
-      label { font-size: 1.02rem; }
+    @media (max-width: 768px) {
+      .brand-logo {
+        width: 95px;
+        margin-bottom: 6px;
+      }
+
+      .brand-name {
+        font-size: 24px;
+        margin-bottom: 16px;
+      }
+
+      .card {
+        width: min(92vw, 420px);
+        max-width: 420px;
+        padding: 26px 22px 24px;
+        border-radius: 18px;
+      }
+
+      h1 {
+        font-size: 28px;
+        margin-bottom: 22px;
+      }
+
+      input {
+        height: 54px;
+        font-size: 15px;
+        border-radius: 14px;
+      }
+
+      .submit-btn {
+        height: 56px;
+        font-size: 22px;
+        border-radius: 14px;
+      }
     }
   </style>
 </head>
@@ -232,6 +287,7 @@
         <source srcset="/assets/mactec-logo.png" type="image/png" />
         <img class="brand-logo" src="/assets/mactec-logo.svg" alt="MacTec" width="320" height="250" fetchpriority="high" decoding="async" />
       </picture>
+      <p class="brand-name">MacTec</p>
     </header>
 
     <main class="card">
@@ -263,6 +319,8 @@
 
         <button id="submitBtn" class="submit-btn" type="submit">Entrar</button>
         <p id="feedback" class="msg info"></p>
+        <p class="helper-text">Esqueceu sua senha?</p>
+        <p class="session-text">Sua sessão expira após 40 minutos sem interação.</p>
       </form>
     </main>
   </section>
