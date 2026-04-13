@@ -6,7 +6,6 @@
     <title>MacTec Support - Assistência Técnica de Celulares</title>
     <script src="/app-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/sidebar.js" defer></script>
     <script src="/financeiro.js" defer></script>
     <script src="/dashboard.js" defer></script>
@@ -867,12 +866,30 @@
             justify-content: space-between;
             align-items: center;
         }
+        .admin-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .admin-mobile-nav-btn {
+            display: none;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 0.45rem 0.8rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
 
         .admin-header h1 {
             color: var(--accent-green);
         }
 
         .admin-layout { display: flex; min-height: calc(100vh - 94px); }
+        .admin-sidebar-overlay {
+            display: none;
+        }
         .admin-sidebar {
             position: fixed;
             top: 94px;
@@ -952,9 +969,6 @@
         .text-profit { color:#16a34a !important; }
         .text-expense { color:#dc2626 !important; }
         .text-warn { color:#f59e0b !important; }
-        .chart-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap:1rem; margin-bottom:1.5rem; }
-        .chart-card { background: var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:1rem; }
-
         .action-buttons {
             display: flex;
             gap: 0.5rem;
@@ -1428,6 +1442,15 @@
                 box-shadow: 8px 0 24px rgba(0, 0, 0, 0.25);
                 z-index: 40;
             }
+            .admin-sidebar-overlay {
+                position: fixed;
+                inset: 84px 0 0 0;
+                z-index: 35;
+                background: rgba(0, 0, 0, 0.45);
+            }
+            .admin-sidebar-overlay.active {
+                display: block;
+            }
 
             .admin-sidebar.mobile-open {
                 transform: translateX(0);
@@ -1451,9 +1474,8 @@
             .finance-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
-
-            .chart-grid {
-                grid-template-columns: 1fr;
+            .admin-mobile-nav-btn {
+                display: inline-flex;
             }
         }
 
@@ -1519,6 +1541,9 @@
             .admin-sidebar {
                 top: 74px;
                 width: 86vw;
+            }
+            .admin-sidebar-overlay {
+                inset: 74px 0 0 0;
             }
 
             .finance-grid {
@@ -2003,10 +2028,14 @@
     <div id="adminPanel" class="admin-panel">
         <div class="admin-header">
             <h1>Painel Administrativo</h1>
-            <button class="btn btn-secondary" onclick="closeAdminPanel()">Fechar</button>
+            <div class="admin-header-actions">
+                <button id="adminMobileMenuButton" class="admin-mobile-nav-btn" onclick="toggleAdminSidebar()" aria-controls="adminSidebar" aria-expanded="false">☰ Menu</button>
+                <button class="btn btn-secondary" onclick="closeAdminPanel()">Fechar</button>
+            </div>
         </div>
 
         <div class="admin-layout">
+            <div id="adminSidebarOverlay" class="admin-sidebar-overlay" onclick="toggleAdminSidebar(false)"></div>
             <aside id="adminSidebar" class="admin-sidebar">
                 <div class="sidebar-header">
                     <button class="sidebar-toggle" onclick="toggleAdminSidebar()" title="Expandir/Minimizar menu">☰</button>
@@ -2043,10 +2072,6 @@
                     <button class="btn btn-secondary" onclick="applyDashboardRange('today')">Hoje</button>
                     <button class="btn btn-secondary" onclick="applyDashboardRange('week')">Semana</button>
                     <button class="btn btn-secondary" onclick="applyDashboardRange('month')">Mês</button>
-                </div>
-                <div class="chart-grid">
-                    <div class="chart-card"><h3 style="margin-bottom:0.5rem;">Lucro Mensal</h3><canvas id="profitChart" height="120"></canvas></div>
-                    <div class="chart-card"><h3 style="margin-bottom:0.5rem;">Despesas por Categoria</h3><canvas id="expenseChart" height="120"></canvas></div>
                 </div>
             </div>
 

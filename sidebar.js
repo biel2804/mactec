@@ -6,29 +6,42 @@
     return window.innerWidth <= MOBILE_BREAKPOINT;
   }
 
+  function setMobileOpenState(isOpen) {
+    const sidebar = document.getElementById('adminSidebar');
+    const overlay = document.getElementById('adminSidebarOverlay');
+    const menuButton = document.getElementById('adminMobileMenuButton');
+    if (!sidebar) return;
+    sidebar.classList.toggle('mobile-open', Boolean(isOpen));
+    overlay?.classList.toggle('active', Boolean(isOpen));
+    menuButton?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+
   function applyState(collapsed) {
     const sidebar = document.getElementById('adminSidebar');
     const content = document.getElementById('adminContent');
     if (!sidebar || !content) return;
 
     if (isMobileViewport()) {
-      sidebar.classList.remove('mobile-open');
+      setMobileOpenState(false);
       sidebar.classList.remove('collapsed');
       content.classList.remove('sidebar-collapsed');
       return;
     }
 
-    sidebar.classList.remove('mobile-open');
+    setMobileOpenState(false);
     sidebar.classList.toggle('collapsed', collapsed);
     content.classList.toggle('sidebar-collapsed', collapsed);
   }
 
-  function toggle() {
+  function toggle(forceState) {
     const sidebar = document.getElementById('adminSidebar');
     if (!sidebar) return;
 
     if (isMobileViewport()) {
-      sidebar.classList.toggle('mobile-open');
+      const nextState = typeof forceState === 'boolean'
+        ? forceState
+        : !sidebar.classList.contains('mobile-open');
+      setMobileOpenState(nextState);
       return;
     }
 
@@ -38,9 +51,7 @@
   }
 
   function closeMobile() {
-    const sidebar = document.getElementById('adminSidebar');
-    if (!sidebar) return;
-    sidebar.classList.remove('mobile-open');
+    setMobileOpenState(false);
   }
 
   function init() {
@@ -52,6 +63,15 @@
         if (isMobileViewport()) closeMobile();
       });
       adminContent.dataset.mobileSidebarBound = '1';
+    }
+
+    if (!window.__adminSidebarEscapeBound) {
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && isMobileViewport()) {
+          closeMobile();
+        }
+      });
+      window.__adminSidebarEscapeBound = true;
     }
 
     if (!window.__adminSidebarResizeBound) {
