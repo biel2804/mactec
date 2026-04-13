@@ -2762,7 +2762,9 @@
 
             const payload = {
                 nome: profile.nome,
+                nome_completo: profile.nome,
                 telefone: profile.telefone,
+                whatsapp: profile.telefone,
                 telefone_normalizado: profile.telefone_normalizado,
                 email: profile.email,
                 cep: profile.cep || null,
@@ -6027,7 +6029,9 @@ async function calcularFrete(cep) {
 
                 const updatePayload = {
                     nome: payload.nome,
+                    nome_completo: payload.nome,
                     telefone: payload.telefone,
+                    whatsapp: payload.telefone,
                     telefone_normalizado: payload.telefone_normalizado,
                     email: payload.email,
                     cep: payload.cep || null,
