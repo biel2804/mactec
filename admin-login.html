@@ -87,18 +87,14 @@
       user-select: none;
     }
 
-    .brand picture {
-      display: block;
-    }
-
     .brand-logo {
       width: 140px;
       height: auto;
       display: block;
+      margin: 0 auto 8px;
       object-fit: contain;
       filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.15));
       image-rendering: auto;
-      margin-bottom: 8px;
     }
 
     .brand-name {
@@ -283,10 +279,13 @@
 <body>
   <section class="login-shell" aria-label="Acesso administrativo MacTec">
     <header class="brand">
-      <picture>
-        <source srcset="/assets/mactec-logo.png" type="image/png" />
-        <img class="brand-logo" src="/assets/mactec-logo.svg" alt="MacTec" width="320" height="250" fetchpriority="high" decoding="async" />
-      </picture>
+      <img class="brand-logo"
+           src="/assets/mactec-logo.svg"
+           alt="MacTec"
+           width="140"
+           height="140"
+           fetchpriority="high"
+           decoding="async" />
       <p class="brand-name">MacTec</p>
     </header>
 
