@@ -2795,12 +2795,31 @@
         }
 
         async function callVerificationFunction(payload) {
+            const client = ensureSupabaseClient(false);
+
+            if (client?.functions?.invoke) {
+                const { data, error } = await client.functions.invoke('customer-verification', {
+                    body: payload,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        apikey: SUPABASE_ANON_KEY,
+                        Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (error) {
+                    throw new Error(error.message || 'Falha ao processar verificação.');
+                }
+
+                return data || {};
+            }
+
             const response = await fetch(OTP_FUNCTION_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    apikey: SUPABASE_KEY,
-                    Authorization: `Bearer ${SUPABASE_KEY}`
+                    apikey: SUPABASE_ANON_KEY,
+                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`
                 },
                 body: JSON.stringify(payload)
             });
@@ -3749,6 +3768,7 @@
         // Supabase Configuration
         let SUPABASE_URL = APP_CONFIG.SUPABASE_URL || '';
         let SUPABASE_KEY = APP_CONFIG.SUPABASE_KEY || '';
+        const SUPABASE_ANON_KEY = APP_CONFIG.SUPABASE_ANON_KEY || SUPABASE_KEY;
         let supabaseClient = null;
         const SHIPPING_API_URL = APP_CONFIG.SHIPPING_API_URL || '';
         const FREIGHT_FUNCTION_URL = APP_CONFIG.FREIGHT_FUNCTION_URL || (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/calcular-frete` : '/functions/v1/calcular-frete');
