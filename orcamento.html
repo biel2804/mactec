@@ -1600,8 +1600,25 @@
             </div>
             <small id="identificationStatus" style="display:block; margin-bottom: 1rem; color: var(--text-secondary);"></small>
             <div id="existingCustomerCard" style="display:none; padding: 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;"></div>
+            <div id="otpSection" style="display:none; margin-bottom:1rem; border:1px dashed var(--border-color); border-radius:8px; padding:0.85rem;">
+                <div class="form-group" style="margin-bottom:0.6rem;">
+                    <label for="verificationChannel">Canal de envio:</label>
+                    <select id="verificationChannel">
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="sms">SMS</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0.6rem;">
+                    <label for="verificationCodeInput">Código de verificação:</label>
+                    <input type="text" id="verificationCodeInput" maxlength="6" inputmode="numeric" placeholder="Digite os 6 dígitos">
+                </div>
+                <small id="otpStatus" style="display:block; color:var(--text-secondary);"></small>
+            </div>
             <div class="modal-actions" style="justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap;">
                 <button id="searchCustomerBtn" type="button" class="btn btn-primary">Buscar cadastro</button>
+                <button id="sendVerificationCodeBtn" type="button" class="btn btn-secondary" style="display:none;">Enviar código</button>
+                <button id="verifyCodeBtn" type="button" class="btn btn-secondary" style="display:none;">Confirmar código</button>
+                <button id="resendCodeBtn" type="button" class="btn btn-secondary" style="display:none;">Reenviar código</button>
                 <button id="confirmExistingCustomerBtn" type="button" class="btn btn-secondary" style="display:none;">Confirmar e continuar</button>
                 <button id="retryIdentificationBtn" type="button" class="btn btn-secondary" style="display:none;">Usar outro número</button>
                 <button id="newCustomerBtn" type="button" class="btn btn-secondary">Sou novo cliente</button>
@@ -2595,6 +2612,13 @@
         let accessoriesStockById = {};
         let identifiedCustomerProfile = null;
         let pendingExistingCustomer = null;
+        let pendingExistingCustomerVerification = {
+            phone: '',
+            canResendAt: 0,
+            verified: false,
+            sessionToken: '',
+            sessionExpiresAt: ''
+        };
         let adminCustomerFilters = { name: '', phone: '' };
         let shouldShowHowItWorksOnQuoteEntry = false;
 
@@ -2727,6 +2751,45 @@
             return normalizePhone(value).length === 11;
         }
 
+        function maskNameForPreview(nome) {
+            const tokens = String(nome || '').trim().split(/\s+/).filter(Boolean);
+            if (!tokens.length) return 'Cliente encontrado';
+            return tokens.map((token, index) => {
+                if (token.length <= 1) return token;
+                const keep = index === 0 ? Math.min(3, token.length - 1) : 1;
+                return token.slice(0, keep) + '*'.repeat(Math.max(1, token.length - keep));
+            }).join(' ');
+        }
+
+        function maskPhoneForPreview(phone) {
+            const formatted = formatPhoneForDisplay(phone);
+            if (!formatted) return '';
+            return formatted.replace(/(\d{1,4})$/, (chunk) => '*'.repeat(chunk.length));
+        }
+
+        function getPreviewLocation(profile = {}) {
+            const cidade = String(profile.cidade || '').trim();
+            const estado = String(profile.estado || '').trim().toUpperCase();
+            return [cidade, estado].filter(Boolean).join(' - ');
+        }
+
+        async function callVerificationFunction(payload) {
+            const response = await fetch(OTP_FUNCTION_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: SUPABASE_KEY,
+                    Authorization: `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify(payload)
+            });
+            const body = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(body.error || 'Falha ao processar verificação.');
+            }
+            return body;
+        }
+
         async function findCustomerByPhone(rawPhone) {
             const telefoneNormalizado = normalizePhone(rawPhone);
             if (!isValidBrazilMobilePhone(telefoneNormalizado)) {
@@ -2740,7 +2803,7 @@
 
             const { data, error } = await client
                 .from('clientes')
-                .select('*')
+                .select('id, nome, telefone, telefone_normalizado, cidade, estado')
                 .eq('telefone_normalizado', telefoneNormalizado)
                 .maybeSingle();
 
@@ -3668,6 +3731,7 @@
         let supabaseClient = null;
         const SHIPPING_API_URL = APP_CONFIG.SHIPPING_API_URL || '';
         const FREIGHT_FUNCTION_URL = APP_CONFIG.FREIGHT_FUNCTION_URL || (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/calcular-frete` : '/functions/v1/calcular-frete');
+        const OTP_FUNCTION_URL = APP_CONFIG.OTP_FUNCTION_URL || (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/customer-verification` : '/functions/v1/customer-verification');
         const ERROR_LOG_TABLE = APP_CONFIG.ERROR_LOG_TABLE || 'logs_erros';
         const COMPANY_SETTINGS_TABLE = APP_CONFIG.COMPANY_SETTINGS_TABLE || 'configuracoes_empresa';
         const COMPANY_SETTINGS_ID = 1;
@@ -4321,15 +4385,34 @@
 
         function resetIdentificationModalState() {
             pendingExistingCustomer = null;
+            pendingExistingCustomerVerification = {
+                phone: '',
+                canResendAt: 0,
+                verified: false,
+                sessionToken: '',
+                sessionExpiresAt: ''
+            };
             const card = document.getElementById('existingCustomerCard');
             const confirmBtn = document.getElementById('confirmExistingCustomerBtn');
             const retryBtn = document.getElementById('retryIdentificationBtn');
+            const sendBtn = document.getElementById('sendVerificationCodeBtn');
+            const verifyBtn = document.getElementById('verifyCodeBtn');
+            const resendBtn = document.getElementById('resendCodeBtn');
+            const otpSection = document.getElementById('otpSection');
+            const otpStatus = document.getElementById('otpStatus');
+            const otpInput = document.getElementById('verificationCodeInput');
             if (card) {
                 card.style.display = 'none';
                 card.innerHTML = '';
             }
+            if (otpSection) otpSection.style.display = 'none';
+            if (otpInput) otpInput.value = '';
+            if (otpStatus) otpStatus.textContent = '';
             if (confirmBtn) confirmBtn.style.display = 'none';
             if (retryBtn) retryBtn.style.display = 'none';
+            if (sendBtn) sendBtn.style.display = 'none';
+            if (verifyBtn) verifyBtn.style.display = 'none';
+            if (resendBtn) resendBtn.style.display = 'none';
         }
 
         function openCustomerIdentificationModal() {
@@ -4357,23 +4440,38 @@
 
         function renderExistingCustomerCard(profile) {
             const card = document.getElementById('existingCustomerCard');
-            const confirmBtn = document.getElementById('confirmExistingCustomerBtn');
+            const sendBtn = document.getElementById('sendVerificationCodeBtn');
+            const verifyBtn = document.getElementById('verifyCodeBtn');
             const retryBtn = document.getElementById('retryIdentificationBtn');
-            if (!card || !confirmBtn || !retryBtn) return;
+            const resendBtn = document.getElementById('resendCodeBtn');
+            const otpSection = document.getElementById('otpSection');
+            if (!card || !sendBtn || !verifyBtn || !retryBtn || !resendBtn || !otpSection) return;
             const normalized = normalizeCustomerProfileForQuote(profile || {});
+            const isVerified = Boolean(pendingExistingCustomerVerification.verified);
+            const nome = isVerified ? (normalized.nome || 'Cliente encontrado') : maskNameForPreview(normalized.nome || '');
+            const telefone = isVerified
+                ? formatPhoneForDisplay(normalized.telefone_normalizado || normalized.telefone || '')
+                : maskPhoneForPreview(normalized.telefone_normalizado || normalized.telefone || '');
+            const localizacao = getPreviewLocation(profile);
+            const enderecoCompleto = isVerified ? normalized.endereco : '';
             card.innerHTML = [
-                normalized.nome ? `<strong>${escapeHtml(normalized.nome)}</strong>` : '<strong>Cliente encontrado</strong>',
-                normalized.telefone ? `<div>📞 ${escapeHtml(normalized.telefone)}</div>` : '',
-                normalized.endereco ? `<div style="white-space: pre-line;">📍 ${escapeHtml(normalized.endereco)}</div>` : ''
+                `<strong>${escapeHtml(nome)}</strong>`,
+                telefone ? `<div>📞 ${escapeHtml(telefone)}</div>` : '',
+                localizacao ? `<div>📍 ${escapeHtml(localizacao)}</div>` : '',
+                enderecoCompleto ? `<div style="white-space: pre-line;">🏠 ${escapeHtml(enderecoCompleto)}</div>` : ''
             ].filter(Boolean).join('');
             card.style.display = 'block';
-            confirmBtn.style.display = 'inline-flex';
+            otpSection.style.display = 'block';
+            sendBtn.style.display = 'inline-flex';
+            verifyBtn.style.display = 'inline-flex';
             retryBtn.style.display = 'inline-flex';
+            resendBtn.style.display = 'inline-flex';
         }
 
         async function handleSearchCustomerByPhone() {
             const input = document.getElementById('identificationPhone');
             const status = document.getElementById('identificationStatus');
+            const otpStatus = document.getElementById('otpStatus');
             if (!input || !status) return;
             try {
                 const customer = await findCustomerByPhone(input.value);
@@ -4384,13 +4482,108 @@
                     return;
                 }
                 pendingExistingCustomer = customer;
+                pendingExistingCustomerVerification.phone = normalizePhone(customer.telefone_normalizado || customer.telefone || input.value);
                 renderExistingCustomerCard(customer);
-                status.textContent = 'Cadastro encontrado. Confirme para continuar.';
+                status.textContent = 'Cadastro encontrado. Envie e valide o código para liberar os dados completos.';
                 status.style.color = 'var(--success)';
+                if (otpStatus) {
+                    otpStatus.textContent = 'NUNCA exibimos o cadastro completo antes da validação do código.';
+                    otpStatus.style.color = 'var(--text-secondary)';
+                }
             } catch (error) {
                 status.textContent = error.message || 'Erro ao buscar cadastro.';
                 status.style.color = 'var(--error)';
             }
+        }
+
+        async function handleSendVerificationCode() {
+            const status = document.getElementById('identificationStatus');
+            const otpStatus = document.getElementById('otpStatus');
+            const channelField = document.getElementById('verificationChannel');
+            const resendBtn = document.getElementById('resendCodeBtn');
+            if (!pendingExistingCustomer) {
+                showAlert('Busque um cadastro antes de enviar o código.', 'warning');
+                return;
+            }
+            try {
+                const channel = channelField?.value === 'sms' ? 'sms' : 'whatsapp';
+                const response = await callVerificationFunction({
+                    action: 'send',
+                    phone: pendingExistingCustomerVerification.phone,
+                    channel
+                });
+                pendingExistingCustomerVerification.canResendAt = Date.now() + ((response.cooldown_seconds || 60) * 1000);
+                pendingExistingCustomerVerification.verified = false;
+                if (status) {
+                    status.textContent = response.message || 'Enviamos um código para seu telefone.';
+                    status.style.color = 'var(--success)';
+                }
+                if (otpStatus) {
+                    otpStatus.textContent = 'Enviamos um código para seu telefone.';
+                    otpStatus.style.color = 'var(--success)';
+                }
+                if (resendBtn) resendBtn.style.display = 'inline-flex';
+            } catch (error) {
+                if (otpStatus) {
+                    otpStatus.textContent = error.message || 'Não foi possível enviar o código.';
+                    otpStatus.style.color = 'var(--error)';
+                }
+            }
+        }
+
+        async function handleVerifyCode() {
+            const codeInput = document.getElementById('verificationCodeInput');
+            const otpStatus = document.getElementById('otpStatus');
+            const status = document.getElementById('identificationStatus');
+            const confirmBtn = document.getElementById('confirmExistingCustomerBtn');
+            if (!pendingExistingCustomer || !codeInput) {
+                showAlert('Busque um cadastro antes de validar o código.', 'warning');
+                return;
+            }
+            try {
+                const response = await callVerificationFunction({
+                    action: 'verify',
+                    phone: pendingExistingCustomerVerification.phone,
+                    code: codeInput.value
+                });
+                pendingExistingCustomerVerification.verified = true;
+                pendingExistingCustomerVerification.sessionToken = response.verified_session_token || '';
+                pendingExistingCustomerVerification.sessionExpiresAt = response.verified_session_expires_at || '';
+                pendingExistingCustomer = response.customer || pendingExistingCustomer;
+                renderExistingCustomerCard(pendingExistingCustomer);
+                if (confirmBtn) confirmBtn.style.display = 'inline-flex';
+                if (status) {
+                    status.textContent = 'Código validado! Dados completos liberados.';
+                    status.style.color = 'var(--success)';
+                }
+                if (otpStatus) {
+                    otpStatus.textContent = 'Código validado com sucesso.';
+                    otpStatus.style.color = 'var(--success)';
+                }
+            } catch (error) {
+                if (status) {
+                    status.textContent = error.message || 'Falha ao validar código.';
+                    status.style.color = 'var(--error)';
+                }
+                if (otpStatus) {
+                    otpStatus.textContent = error.message || 'Código inválido.';
+                    otpStatus.style.color = 'var(--error)';
+                }
+            }
+        }
+
+        async function handleResendVerificationCode() {
+            const otpStatus = document.getElementById('otpStatus');
+            const remainingMs = pendingExistingCustomerVerification.canResendAt - Date.now();
+            if (remainingMs > 0) {
+                const seconds = Math.ceil(remainingMs / 1000);
+                if (otpStatus) {
+                    otpStatus.textContent = `Aguarde ${seconds}s para reenviar o código.`;
+                    otpStatus.style.color = 'var(--warning)';
+                }
+                return;
+            }
+            await handleSendVerificationCode();
         }
 
         function enterBudgetFlowAfterCustomerIdentification() {
@@ -4410,6 +4603,10 @@
         async function confirmExistingCustomerAndContinue() {
             if (!pendingExistingCustomer) {
                 showAlert('Busque um cadastro antes de confirmar.', 'warning');
+                return;
+            }
+            if (!pendingExistingCustomerVerification.verified) {
+                showAlert('Valide o código para liberar os dados completos do cadastro.', 'warning');
                 return;
             }
             populateCustomerDataIntoBudget(pendingExistingCustomer);
@@ -4457,6 +4654,12 @@
 
         function bindCustomerIdentificationEvents() {
             document.getElementById('searchCustomerBtn')?.addEventListener('click', handleSearchCustomerByPhone);
+            document.getElementById('sendVerificationCodeBtn')?.addEventListener('click', handleSendVerificationCode);
+            document.getElementById('verifyCodeBtn')?.addEventListener('click', handleVerifyCode);
+            document.getElementById('resendCodeBtn')?.addEventListener('click', handleResendVerificationCode);
+            document.getElementById('verificationCodeInput')?.addEventListener('input', (event) => {
+                event.target.value = String(event.target.value || '').replace(/\D/g, '').slice(0, 6);
+            });
             document.getElementById('closeIdentificationModalBtn')?.addEventListener('click', closeCustomerIdentificationModal);
             document.getElementById('customerIdentificationModal')?.addEventListener('click', (event) => {
                 if (event.target?.id === 'customerIdentificationModal') {
