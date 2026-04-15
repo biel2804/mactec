@@ -1206,57 +1206,67 @@
         }
         #adminPanel #service-orders .os-layout {
             display: grid;
-            grid-template-columns: minmax(0, 1.3fr) minmax(320px, 1fr);
-            gap: 1rem;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 16px;
             align-items: start;
         }
         #adminPanel #service-orders .os-preview-panel {
-            background: var(--primary-dark);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 0.9rem;
             min-height: 100%;
         }
-        #adminPanel #service-orders .service-order-preview-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
+        #adminPanel #service-orders .os-preview {
+            background: #ffffff;
+            color: #000;
             border-radius: 8px;
-            padding: 0.9rem;
+            padding: 16px;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
             min-height: 460px;
             font-size: 12px;
             line-height: 1.4;
         }
-        #adminPanel #service-orders .service-order-preview-card .preview-header {
-            border-bottom: 1px solid var(--border-color);
+        #adminPanel #service-orders .os-preview .preview-header {
+            border-bottom: 1px solid rgba(0,0,0,0.2);
             margin-bottom: 0.7rem;
             padding-bottom: 0.5rem;
         }
-        #adminPanel #service-orders .service-order-preview-card .preview-section {
+        #adminPanel #service-orders .os-preview .preview-section {
             margin-bottom: 0.7rem;
         }
-        #adminPanel #service-orders .service-order-preview-card .preview-title {
+        #adminPanel #service-orders .os-preview .preview-title {
             margin: 0 0 0.4rem;
             font-size: 12px;
-            color: var(--accent-green);
+            color: #000;
             font-weight: 700;
+            text-transform: uppercase;
         }
-        #adminPanel #service-orders .service-order-preview-card .preview-row {
+        #adminPanel #service-orders .os-preview .preview-row {
             display: flex;
             justify-content: space-between;
             gap: 0.8rem;
             margin-bottom: 0.35rem;
             flex-wrap: wrap;
         }
-        #adminPanel #service-orders .service-order-preview-card .preview-label {
-            color: var(--text-secondary);
+        #adminPanel #service-orders .os-preview .preview-label {
+            color: #222;
             margin-right: 0.3rem;
+            font-weight: 600;
         }
-        #adminPanel #service-orders .service-order-preview-card .preview-status-pill {
+        #adminPanel #service-orders .os-preview .preview-status-pill {
             display: inline-flex;
             padding: 0.15rem 0.45rem;
             border-radius: 999px;
             color: #fff;
             font-size: 11px;
+        }
+        #adminPanel #service-orders .os-preview-actions {
+            display:flex;
+            gap:0.5rem;
+            margin-top: 0.75rem;
+            flex-wrap: wrap;
+        }
+        #adminPanel #service-orders .os-preview-actions .btn {
+            padding: 0.3rem 0.55rem;
+            font-size: 0.82rem;
+            min-height: 30px;
         }
 
         #adminPanel #service-orders .form-group {
@@ -1293,14 +1303,6 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-        }
-        @media (max-width: 1280px) {
-            #adminPanel #service-orders .os-layout {
-                grid-template-columns: 1fr;
-            }
-            #adminPanel #service-orders .service-order-preview-card {
-                min-height: 280px;
-            }
         }
 
         .tab-content {
@@ -2811,14 +2813,13 @@
                         </div>
                         <aside class="os-preview-panel">
                             <h3 style="color: var(--accent-green); margin-bottom: 0.75rem;">Pré-visualização da O.S.</h3>
-                            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom: 0.75rem;">
-                                <button type="button" class="btn btn-secondary" onclick="refreshServiceOrderPreviewFromForm()">Atualizar prévia</button>
+                            <div id="serviceOrderPreviewCard" class="os-preview">
+                                <p style="margin:0; color:#333;">Salve ou edite uma O.S. para carregar a pré-visualização.</p>
+                            </div>
+                            <div class="os-preview-actions">
+                                <button type="button" class="btn btn-secondary" onclick="refreshServiceOrderPreviewFromForm()">Atualizar Prévia</button>
                                 <button type="button" class="btn btn-primary" onclick="printServiceOrderFromPreview()">Imprimir</button>
                                 <button type="button" class="btn btn-secondary" onclick="downloadServiceOrderPdfFromPreview()">Baixar PDF</button>
-                                <button type="button" class="btn btn-secondary" onclick="openServiceOrderPreviewInNewTab()">Abrir em nova aba</button>
-                            </div>
-                            <div id="serviceOrderPreviewCard" class="service-order-preview-card">
-                                <p style="margin:0; color: var(--text-secondary);">Salve ou edite uma O.S. para carregar a pré-visualização.</p>
                             </div>
                         </aside>
                     </div>
@@ -7518,7 +7519,7 @@ async function getMelhorEnvioShipping(cep, type) {
 
         function getServiceOrderPreviewHtml(data) {
             if (!data) {
-                return '<p style="margin:0; color: var(--text-secondary);">Salve ou edite uma O.S. para carregar a pré-visualização.</p>';
+                return '<p style="margin:0; color:#333;">Salve ou edite uma O.S. para carregar a pré-visualização.</p>';
             }
             const total = Number(data.valor_total || 0);
             const createdAt = data.data_criacao ? new Date(data.data_criacao) : new Date();
@@ -7526,34 +7527,29 @@ async function getMelhorEnvioShipping(cep, type) {
             const safe = (value, fallback = '-') => escapeHtml(value || fallback);
             return `
                 <div class="preview-header">
-                    <div style="font-weight:700; font-size:16px; color: var(--accent-green);">MacTec Support</div>
-                    <div style="font-size:13px; font-weight:600;">Ordem de Serviço ${safe(data.numero_os, '(não gerado)')}</div>
+                    <div style="font-weight:700; font-size:17px; color:#000;">MacTec Support</div>
+                    <div style="font-size:14px; font-weight:700; color:#000;">Ordem de Serviço</div>
+                    <div style="font-size:12px; color:#111;">O.S. #${safe(data.numero_os, '(não gerado)')}</div>
                 </div>
                 <div class="preview-section">
-                    <p class="preview-title">Cliente</p>
+                    <p class="preview-title">Informações do Cliente</p>
                     <div class="preview-row"><div><span class="preview-label">Nome:</span>${safe(data.cliente_nome, 'Não informado')}</div></div>
-                    <div class="preview-row">
-                        <div><span class="preview-label">Telefone:</span>${safe(data.cliente_telefone)}</div>
-                        <div><span class="preview-label">Endereço:</span>${safe(data.cliente_endereco)}</div>
-                    </div>
+                    <div class="preview-row"><div><span class="preview-label">Telefone:</span>${safe(data.cliente_telefone)}</div></div>
+                    <div class="preview-row"><div><span class="preview-label">Endereço:</span>${safe(data.cliente_endereco)}</div></div>
                 </div>
                 <div class="preview-section">
-                    <p class="preview-title">Aparelho e Serviço</p>
-                    <div class="preview-row">
-                        <div><span class="preview-label">Aparelho:</span>${safe([data.marca, data.modelo].filter(Boolean).join(' '), 'Não informado')}</div>
-                        <div><span class="preview-label">Peça:</span>${safe(data.peca)}</div>
-                    </div>
-                    <div class="preview-row"><div><span class="preview-label">Serviço:</span>${safe(data.servico, 'Não informado')}</div></div>
+                    <p class="preview-title">Informações do Dispositivo</p>
+                    <div class="preview-row"><div><span class="preview-label">Marca:</span>${safe(data.marca)}</div></div>
+                    <div class="preview-row"><div><span class="preview-label">Modelo:</span>${safe(data.modelo)}</div></div>
+                    <div class="preview-row"><div><span class="preview-label">Peça:</span>${safe(data.peca)}</div></div>
                 </div>
                 <div class="preview-section">
-                    <p class="preview-title">Resumo</p>
-                    <div class="preview-row">
-                        <div><span class="preview-label">Status:</span><span class="preview-status-pill" style="background:${getStatusColor(status)}">${escapeHtml(formatStatus(status))}</span></div>
-                        <div><span class="preview-label">Valor Total:</span>R$ ${total.toFixed(2)}</div>
-                    </div>
+                    <p class="preview-title">Detalhes do Serviço</p>
+                    <div class="preview-row"><div><span class="preview-label">Defeito:</span>${safe(data.servico, 'Não informado')}</div></div>
+                    <div class="preview-row"><div><span class="preview-label">Status:</span><span class="preview-status-pill" style="background:${getStatusColor(status)}">${escapeHtml(formatStatus(status))}</span></div></div>
+                    <div class="preview-row"><div><span class="preview-label">Valor:</span>R$ ${total.toFixed(2)}</div></div>
                     <div class="preview-row"><div><span class="preview-label">Data:</span>${createdAt.toLocaleDateString('pt-BR')}</div></div>
                 </div>
-                ${data.observacoes ? `<div class="preview-section"><p class="preview-title">Observações</p><div>${safe(data.observacoes)}</div></div>` : ''}
             `;
         }
 
