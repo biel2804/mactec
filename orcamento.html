@@ -1149,6 +1149,60 @@
         #adminPanel #service-orders .os-container {
             max-width: 1000px;
         }
+        #adminPanel #service-orders .os-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.3fr) minmax(320px, 1fr);
+            gap: 1rem;
+            align-items: start;
+        }
+        #adminPanel #service-orders .os-preview-panel {
+            background: var(--primary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.9rem;
+            min-height: 100%;
+        }
+        #adminPanel #service-orders .service-order-preview-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.9rem;
+            min-height: 460px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        #adminPanel #service-orders .service-order-preview-card .preview-header {
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 0.7rem;
+            padding-bottom: 0.5rem;
+        }
+        #adminPanel #service-orders .service-order-preview-card .preview-section {
+            margin-bottom: 0.7rem;
+        }
+        #adminPanel #service-orders .service-order-preview-card .preview-title {
+            margin: 0 0 0.4rem;
+            font-size: 12px;
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+        #adminPanel #service-orders .service-order-preview-card .preview-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.8rem;
+            margin-bottom: 0.35rem;
+            flex-wrap: wrap;
+        }
+        #adminPanel #service-orders .service-order-preview-card .preview-label {
+            color: var(--text-secondary);
+            margin-right: 0.3rem;
+        }
+        #adminPanel #service-orders .service-order-preview-card .preview-status-pill {
+            display: inline-flex;
+            padding: 0.15rem 0.45rem;
+            border-radius: 999px;
+            color: #fff;
+            font-size: 11px;
+        }
 
         #adminPanel #service-orders .form-group {
             margin-bottom: 10px;
@@ -1184,6 +1238,14 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
+        }
+        @media (max-width: 1280px) {
+            #adminPanel #service-orders .os-layout {
+                grid-template-columns: 1fr;
+            }
+            #adminPanel #service-orders .service-order-preview-card {
+                min-height: 280px;
+            }
         }
 
         .tab-content {
@@ -2621,74 +2683,90 @@
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Ordem de Serviço</h2>
 
                 <div class="os-container" style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color);">
-                    <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Criar / Editar O.S.</h3>
-                    <form id="serviceOrderForm">
-                        <input type="hidden" id="editingServiceOrderId" value="">
-                        <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
-                            <div class="form-group">
-                                <label for="osOrderId">Número do Pedido:</label>
-                                <input type="text" id="osOrderId" placeholder="Ex: 123">
-                                <input type="hidden" id="osInternalOrderId" value="">
-                            </div>
-                            <div class="form-group" style="align-self: end;">
-                                <button type="button" class="btn btn-secondary" style="width:100%;" onclick="buscarPedidoPorId()">Carregar Pedido</button>
-                            </div>
+                    <div class="os-layout">
+                        <div>
+                            <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Criar / Editar O.S.</h3>
+                            <form id="serviceOrderForm">
+                                <input type="hidden" id="editingServiceOrderId" value="">
+                                <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
+                                    <div class="form-group">
+                                        <label for="osOrderId">Número do Pedido:</label>
+                                        <input type="text" id="osOrderId" placeholder="Ex: 123">
+                                        <input type="hidden" id="osInternalOrderId" value="">
+                                    </div>
+                                    <div class="form-group" style="align-self: end;">
+                                        <button type="button" class="btn btn-secondary" style="width:100%;" onclick="buscarPedidoPorId()">Carregar Pedido</button>
+                                    </div>
+                                </div>
+                                <div class="os-grid-2">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="osClientName">Cliente:</label>
+                                        <input type="text" id="osClientName" placeholder="Nome do cliente">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="osPhone">Telefone (opcional):</label>
+                                        <input type="tel" id="osPhone" placeholder="(11) 99999-9999">
+                                    </div>
+                                </div>
+                                <div class="os-grid">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="osBrand">Marca:</label>
+                                        <input type="text" id="osBrand" placeholder="Ex: Apple">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="osModel">Modelo:</label>
+                                        <input type="text" id="osModel" placeholder="Ex: iPhone 11">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="osPartUsed">Peça utilizada:</label>
+                                        <input type="text" id="osPartUsed" placeholder="Ex: Tela OLED iPhone 11">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="osAddress">Endereço do Cliente:</label>
+                                    <input type="text" id="osAddress" placeholder="Rua, número - bairro">
+                                </div>
+                                <div class="os-grid-2">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="osTotalValue">Valor Total (R$):</label>
+                                        <input type="number" id="osTotalValue" placeholder="0,00" step="0.01" min="0">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="osStatusInline">Status:</label>
+                                        <select id="osStatusInline">
+                                            <option value="pendente">Pendente</option>
+                                            <option value="em_andamento">Em andamento</option>
+                                            <option value="concluido">Concluído</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="osDefect">Defeito:</label>
+                                    <textarea id="osDefect" placeholder="Descreva o defeito"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="osNotes">Observações (opcional):</label>
+                                    <textarea id="osNotes" placeholder="Observações adicionais"></textarea>
+                                </div>
+                                <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                                    <button type="submit" class="btn btn-primary" id="saveServiceOrderBtn">Salvar O.S.</button>
+                                    <button type="button" class="btn btn-secondary" id="cancelServiceOrderEditBtn" onclick="resetServiceOrderForm()" style="display:none;">Cancelar edição</button>
+                                </div>
+                            </form>
                         </div>
-                        <div class="os-grid-2">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="osClientName">Cliente:</label>
-                                <input type="text" id="osClientName" placeholder="Nome do cliente">
+                        <aside class="os-preview-panel">
+                            <h3 style="color: var(--accent-green); margin-bottom: 0.75rem;">Pré-visualização da O.S.</h3>
+                            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom: 0.75rem;">
+                                <button type="button" class="btn btn-secondary" onclick="refreshServiceOrderPreviewFromForm()">Atualizar prévia</button>
+                                <button type="button" class="btn btn-primary" onclick="printServiceOrderFromPreview()">Imprimir</button>
+                                <button type="button" class="btn btn-secondary" onclick="downloadServiceOrderPdfFromPreview()">Baixar PDF</button>
+                                <button type="button" class="btn btn-secondary" onclick="openServiceOrderPreviewInNewTab()">Abrir em nova aba</button>
                             </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="osPhone">Telefone (opcional):</label>
-                                <input type="tel" id="osPhone" placeholder="(11) 99999-9999">
+                            <div id="serviceOrderPreviewCard" class="service-order-preview-card">
+                                <p style="margin:0; color: var(--text-secondary);">Salve ou edite uma O.S. para carregar a pré-visualização.</p>
                             </div>
-                        </div>
-                        <div class="os-grid">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="osBrand">Marca:</label>
-                                <input type="text" id="osBrand" placeholder="Ex: Apple">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="osModel">Modelo:</label>
-                                <input type="text" id="osModel" placeholder="Ex: iPhone 11">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="osPartUsed">Peça utilizada:</label>
-                                <input type="text" id="osPartUsed" placeholder="Ex: Tela OLED iPhone 11">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="osAddress">Endereço do Cliente:</label>
-                            <input type="text" id="osAddress" placeholder="Rua, número - bairro">
-                        </div>
-                        <div class="os-grid-2">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="osTotalValue">Valor Total (R$):</label>
-                                <input type="number" id="osTotalValue" placeholder="0,00" step="0.01" min="0">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="osStatusInline">Status:</label>
-                                <select id="osStatusInline">
-                                    <option value="pendente">Pendente</option>
-                                    <option value="em_andamento">Em andamento</option>
-                                    <option value="concluido">Concluído</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="osDefect">Defeito:</label>
-                            <textarea id="osDefect" placeholder="Descreva o defeito"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="osNotes">Observações (opcional):</label>
-                            <textarea id="osNotes" placeholder="Observações adicionais"></textarea>
-                        </div>
-                        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
-                            <button type="submit" class="btn btn-primary" id="saveServiceOrderBtn">Salvar O.S.</button>
-                            <button type="button" class="btn btn-secondary" id="cancelServiceOrderEditBtn" onclick="resetServiceOrderForm()" style="display:none;">Cancelar edição</button>
-                        </div>
-                    </form>
+                        </aside>
+                    </div>
                 </div>
 
                 <div style="margin-bottom: 2rem;">
@@ -7381,6 +7459,102 @@ async function getMelhorEnvioShipping(cep, type) {
 
         // Service Order Functions
         let currentServiceOrderId = null;
+        let currentServiceOrderPreviewData = null;
+
+        function getServiceOrderPreviewHtml(data) {
+            if (!data) {
+                return '<p style="margin:0; color: var(--text-secondary);">Salve ou edite uma O.S. para carregar a pré-visualização.</p>';
+            }
+            const total = Number(data.valor_total || 0);
+            const createdAt = data.data_criacao ? new Date(data.data_criacao) : new Date();
+            const status = data.status || ORDER_STATUS.PENDENTE;
+            const safe = (value, fallback = '-') => escapeHtml(value || fallback);
+            return `
+                <div class="preview-header">
+                    <div style="font-weight:700; font-size:16px; color: var(--accent-green);">MacTec Support</div>
+                    <div style="font-size:13px; font-weight:600;">Ordem de Serviço ${safe(data.numero_os, '(não gerado)')}</div>
+                </div>
+                <div class="preview-section">
+                    <p class="preview-title">Cliente</p>
+                    <div class="preview-row"><div><span class="preview-label">Nome:</span>${safe(data.cliente_nome, 'Não informado')}</div></div>
+                    <div class="preview-row">
+                        <div><span class="preview-label">Telefone:</span>${safe(data.cliente_telefone)}</div>
+                        <div><span class="preview-label">Endereço:</span>${safe(data.cliente_endereco)}</div>
+                    </div>
+                </div>
+                <div class="preview-section">
+                    <p class="preview-title">Aparelho e Serviço</p>
+                    <div class="preview-row">
+                        <div><span class="preview-label">Aparelho:</span>${safe([data.marca, data.modelo].filter(Boolean).join(' '), 'Não informado')}</div>
+                        <div><span class="preview-label">Peça:</span>${safe(data.peca)}</div>
+                    </div>
+                    <div class="preview-row"><div><span class="preview-label">Serviço:</span>${safe(data.servico, 'Não informado')}</div></div>
+                </div>
+                <div class="preview-section">
+                    <p class="preview-title">Resumo</p>
+                    <div class="preview-row">
+                        <div><span class="preview-label">Status:</span><span class="preview-status-pill" style="background:${getStatusColor(status)}">${escapeHtml(formatStatus(status))}</span></div>
+                        <div><span class="preview-label">Valor Total:</span>R$ ${total.toFixed(2)}</div>
+                    </div>
+                    <div class="preview-row"><div><span class="preview-label">Data:</span>${createdAt.toLocaleDateString('pt-BR')}</div></div>
+                </div>
+                ${data.observacoes ? `<div class="preview-section"><p class="preview-title">Observações</p><div>${safe(data.observacoes)}</div></div>` : ''}
+            `;
+        }
+
+        function renderServiceOrderPreview(data) {
+            const container = document.getElementById('serviceOrderPreviewCard');
+            if (!container) return;
+            container.innerHTML = getServiceOrderPreviewHtml(data);
+            currentServiceOrderPreviewData = data || null;
+            if (data?.id) currentServiceOrderId = String(data.id);
+        }
+
+        function getServiceOrderPreviewPayloadFromForm() {
+            const statusValue = document.getElementById('osStatusInline').value || ORDER_STATUS.PENDENTE;
+            const editingId = document.getElementById('editingServiceOrderId').value.trim();
+            return {
+                id: editingId || currentServiceOrderId || null,
+                numero_os: editingId ? '(edição em andamento)' : '(prévia local)',
+                cliente_nome: document.getElementById('osClientName').value.trim() || null,
+                cliente_telefone: document.getElementById('osPhone').value.trim() || null,
+                cliente_endereco: document.getElementById('osAddress').value.trim() || null,
+                marca: document.getElementById('osBrand').value.trim() || null,
+                modelo: document.getElementById('osModel').value.trim() || null,
+                servico: document.getElementById('osDefect').value.trim() || null,
+                peca: document.getElementById('osPartUsed').value.trim() || null,
+                status: statusValue,
+                valor_total: Number(document.getElementById('osTotalValue').value || 0),
+                observacoes: document.getElementById('osNotes').value.trim() || null,
+                data_criacao: new Date().toISOString()
+            };
+        }
+
+        async function fetchServiceOrderById(serviceOrderId) {
+            const client = ensureSupabaseClient(true);
+            if (!client) return null;
+            const { data, error } = await client
+                .from('ordens_servico')
+                .select('*')
+                .eq('id', serviceOrderId)
+                .single();
+            if (error) throw error;
+            return data;
+        }
+
+        async function refreshServiceOrderPreviewFromForm() {
+            try {
+                const editingId = document.getElementById('editingServiceOrderId').value.trim();
+                if (editingId) {
+                    const data = await fetchServiceOrderById(editingId);
+                    renderServiceOrderPreview(data);
+                    return;
+                }
+                renderServiceOrderPreview(getServiceOrderPreviewPayloadFromForm());
+            } catch (error) {
+                showAlert('Não foi possível atualizar a pré-visualização.', 'error');
+            }
+        }
 
         function resetServiceOrderForm() {
             document.getElementById('serviceOrderForm')?.reset();
@@ -7457,17 +7631,23 @@ async function getMelhorEnvioShipping(cep, type) {
             if (!client) throw new Error('Supabase não configurado.');
 
             if (serviceOrderId) {
-                const { error } = await client
+                const { data, error } = await client
                     .from('ordens_servico')
                     .update(payload)
-                    .eq('id', serviceOrderId);
+                    .eq('id', serviceOrderId)
+                    .select('*')
+                    .single();
                 if (error) throw error;
-            } else {
-                const { error } = await client
-                    .from('ordens_servico')
-                    .insert([payload]);
-                if (error) throw error;
+                return data || null;
             }
+
+            const { data, error } = await client
+                .from('ordens_servico')
+                .insert([payload])
+                .select('*')
+                .single();
+            if (error) throw error;
+            return data || null;
         }
 
         async function handleServiceOrderFormSubmit(event) {
@@ -7512,8 +7692,9 @@ async function getMelhorEnvioShipping(cep, type) {
                     payload.data_criacao = new Date().toISOString();
                 }
 
-                await saveServiceOrderRecord(payload, editingId || null);
+                const savedRecord = await saveServiceOrderRecord(payload, editingId || null);
                 showAlert(editingId ? 'O.S. atualizada com sucesso!' : 'O.S. criada com sucesso!', 'success');
+                renderServiceOrderPreview(savedRecord || payload);
                 resetServiceOrderForm();
                 await loadServiceOrdersTable();
             } catch (error) {
@@ -7623,15 +7804,7 @@ async function getMelhorEnvioShipping(cep, type) {
 
         async function editServiceOrder(osId) {
             try {
-                const client = ensureSupabaseClient(true);
-                if (!client) return;
-                const { data, error } = await client
-                    .from('ordens_servico')
-                    .select('*')
-                    .eq('id', osId)
-                    .single();
-
-                if (error) throw error;
+                const data = await fetchServiceOrderById(osId);
 
                 currentServiceOrderId = osId;
                 document.getElementById('editingServiceOrderId').value = String(data.id);
@@ -7655,6 +7828,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 document.getElementById('osNotes').value = data.observacoes || '';
                 document.getElementById('saveServiceOrderBtn').textContent = 'Atualizar O.S.';
                 document.getElementById('cancelServiceOrderEditBtn').style.display = 'inline-flex';
+                renderServiceOrderPreview(data);
                 showAlert('O.S. carregada para edição.', 'info');
             } catch (error) {
                 showAlert('Erro ao carregar ordem de serviço', 'error');
@@ -7669,23 +7843,8 @@ async function getMelhorEnvioShipping(cep, type) {
             resetServiceOrderForm();
         }
 
-        async function printServiceOrder(serviceOrderId = null) {
-            const targetId = serviceOrderId || currentServiceOrderId;
-            if (!targetId) return;
-
-            try {
-                const client = ensureSupabaseClient(true);
-                if (!client) return;
-                const { data, error } = await client
-                    .from('ordens_servico')
-                    .select('*')
-                    .eq('id', targetId)
-                    .single();
-
-                if (error) throw error;
-
-                const printWindow = window.open('', '', 'width=800,height=600');
-                const html = `
+        function buildServiceOrderPrintableHtml(data) {
+            return `
                     <!DOCTYPE html>
                     <html>
                     <head>
@@ -7696,7 +7855,7 @@ async function getMelhorEnvioShipping(cep, type) {
                             .header h1 { margin: 0; color: #22c55e; }
                             .section { margin-bottom: 20px; }
                             .section h3 { color: #22c55e; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-                            .row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+                            .row { display: flex; justify-content: space-between; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
                             .label { font-weight: bold; }
                             .status { padding: 5px 10px; border-radius: 4px; display: inline-block; color: white; }
                             .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
@@ -7751,11 +7910,64 @@ async function getMelhorEnvioShipping(cep, type) {
                     </body>
                     </html>
                 `;
+        }
+
+        function buildServiceOrderPdfBlob(data) {
+            return new Blob([buildServiceOrderPrintableHtml(data)], { type: 'text/html;charset=utf-8' });
+        }
+
+        async function resolveServiceOrderForActions(serviceOrderId = null) {
+            if (serviceOrderId) return fetchServiceOrderById(serviceOrderId);
+            if (currentServiceOrderPreviewData?.id) return fetchServiceOrderById(currentServiceOrderPreviewData.id);
+            if (currentServiceOrderPreviewData) return currentServiceOrderPreviewData;
+            throw new Error('Nenhuma O.S. em pré-visualização.');
+        }
+
+        async function printServiceOrder(serviceOrderId = null) {
+            try {
+                const data = await resolveServiceOrderForActions(serviceOrderId);
+                const printWindow = window.open('', '', 'width=800,height=600');
+                if (!printWindow) throw new Error('Não foi possível abrir a janela de impressão.');
+                const html = buildServiceOrderPrintableHtml(data);
                 printWindow.document.write(html);
                 printWindow.document.close();
                 setTimeout(() => printWindow.print(), 500);
             } catch (error) {
                 showAlert('Erro ao gerar PDF', 'error');
+            }
+        }
+
+        async function printServiceOrderFromPreview() {
+            await printServiceOrder();
+        }
+
+        async function downloadServiceOrderPdfFromPreview() {
+            try {
+                const data = await resolveServiceOrderForActions();
+                const blob = buildServiceOrderPdfBlob(data);
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${data.numero_os || 'ordem-servico'}.html`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 500);
+            } catch (error) {
+                showAlert('Erro ao baixar O.S.', 'error');
+            }
+        }
+
+        async function openServiceOrderPreviewInNewTab() {
+            try {
+                const data = await resolveServiceOrderForActions();
+                const html = buildServiceOrderPrintableHtml(data);
+                const newTab = window.open('', '_blank');
+                if (!newTab) throw new Error('Não foi possível abrir nova aba.');
+                newTab.document.write(html);
+                newTab.document.close();
+            } catch (error) {
+                showAlert('Erro ao abrir O.S. em nova aba', 'error');
             }
         }
 
