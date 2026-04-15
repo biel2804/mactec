@@ -1593,26 +1593,15 @@
                 <h2 style="margin:0;">👤 Já é cliente da MacTec?</h2>
                 <button id="closeIdentificationModalBtn" type="button" class="btn btn-secondary" style="min-width:36px; width:36px; height:36px; padding:0; border-radius:999px; line-height:1;" aria-label="Fechar identificação">×</button>
             </div>
-            <p style="color: var(--text-secondary);">Informe seu telefone para localizar seu cadastro e acelerar o orçamento.</p>
+            <p style="color: var(--text-secondary);">Informe seu celular/WhatsApp para localizar seu cadastro e acelerar o orçamento.</p>
             <div class="form-group">
                 <label for="identificationPhone">Telefone/WhatsApp:</label>
                 <input type="tel" id="identificationPhone" inputmode="tel" maxlength="15" placeholder="(11) 99999-9999">
             </div>
             <small id="identificationStatus" style="display:block; margin-bottom: 1rem; color: var(--text-secondary);"></small>
             <div id="existingCustomerCard" style="display:none; padding: 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;"></div>
-            <div id="otpSection" style="display:none; margin-bottom:1rem; border:1px dashed var(--border-color); border-radius:8px; padding:0.85rem;">
-                <small id="otpDestination" style="display:block; margin-bottom:0.6rem; color:var(--text-secondary);"></small>
-                <div class="form-group" style="margin-bottom:0.6rem;">
-                    <label for="verificationCodeInput">Código de verificação:</label>
-                    <input type="text" id="verificationCodeInput" maxlength="6" inputmode="numeric" placeholder="Digite os 6 dígitos recebidos por e-mail">
-                </div>
-                <small id="otpStatus" style="display:block; color:var(--text-secondary);"></small>
-            </div>
             <div class="modal-actions" style="justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap;">
                 <button id="searchCustomerBtn" type="button" class="btn btn-primary">Buscar cadastro</button>
-                <button id="sendVerificationCodeBtn" type="button" class="btn btn-secondary" style="display:none;">Enviar código</button>
-                <button id="verifyCodeBtn" type="button" class="btn btn-secondary" style="display:none;">Confirmar código</button>
-                <button id="resendCodeBtn" type="button" class="btn btn-secondary" style="display:none;">Reenviar código</button>
                 <button id="confirmExistingCustomerBtn" type="button" class="btn btn-secondary" style="display:none;">Confirmar e continuar</button>
                 <button id="retryIdentificationBtn" type="button" class="btn btn-secondary" style="display:none;">Usar outro número</button>
                 <button id="newCustomerBtn" type="button" class="btn btn-secondary">Sou novo cliente</button>
@@ -1632,13 +1621,8 @@
             <div class="form-group"><label for="newCustomerStreet">Rua:</label><input type="text" id="newCustomerStreet" placeholder="Rua"></div>
             <div class="quote-address-grid cols-2"><div class="form-group" style="margin-bottom:0;"><label for="newCustomerNumber">Número:</label><input type="text" id="newCustomerNumber" placeholder="Número"></div><div class="form-group" style="margin-bottom:0;"><label for="newCustomerDistrict">Bairro:</label><input type="text" id="newCustomerDistrict" placeholder="Bairro"></div></div>
             <div class="quote-address-grid cols-2-1"><div class="form-group" style="margin-bottom:0;"><label for="newCustomerCity">Cidade:</label><input type="text" id="newCustomerCity" placeholder="Cidade"></div><div class="form-group" style="margin-bottom:0;"><label for="newCustomerState">Estado:</label><input type="text" id="newCustomerState" maxlength="2" placeholder="UF"></div></div>
-            <div id="newCustomerOtpSection" style="display:none; margin-top:0.8rem; margin-bottom:0.3rem; border:1px dashed var(--border-color); border-radius:8px; padding:0.85rem;">
-                <small id="newCustomerOtpDestination" style="display:block; margin-bottom:0.6rem; color:var(--text-secondary);"></small>
-                <div class="form-group" style="margin-bottom:0.6rem;"><label for="newCustomerVerificationCodeInput">Código de verificação:</label><input type="text" id="newCustomerVerificationCodeInput" maxlength="6" inputmode="numeric" placeholder="Digite os 6 dígitos recebidos por e-mail"></div>
-                <small id="newCustomerOtpStatus" style="display:block; color: var(--text-secondary);"></small>
-            </div>
             <small id="newCustomerStatus" style="display:block; margin-top:0.7rem; color: var(--text-secondary);"></small>
-            <div class="modal-actions" style="justify-content:flex-end; gap:0.5rem; margin-top:0.7rem;"><button id="backToIdentificationBtn" type="button" class="btn btn-secondary">Voltar</button><button id="submitNewCustomerBtn" type="button" class="btn btn-primary">Cadastrar e continuar</button><button id="verifyNewCustomerCodeBtn" type="button" class="btn btn-secondary" style="display:none;">Confirmar código</button><button id="resendNewCustomerCodeBtn" type="button" class="btn btn-secondary" style="display:none;">Reenviar código</button></div>
+            <div class="modal-actions" style="justify-content:flex-end; gap:0.5rem; margin-top:0.7rem;"><button id="backToIdentificationBtn" type="button" class="btn btn-secondary">Voltar</button><button id="submitNewCustomerBtn" type="button" class="btn btn-primary">Cadastrar e continuar</button></div>
         </div>
     </div>
 
@@ -2611,24 +2595,6 @@
         let accessoriesStockById = {};
         let identifiedCustomerProfile = null;
         let pendingExistingCustomer = null;
-        let pendingExistingCustomerVerification = {
-            phone: '',
-            maskedEmail: '',
-            canResendAt: 0,
-            verified: false,
-            sessionToken: '',
-            sessionExpiresAt: ''
-        };
-        let pendingNewCustomerForm = null;
-        let pendingNewCustomerVerification = {
-            phone: '',
-            email: '',
-            maskedEmail: '',
-            canResendAt: 0,
-            verified: false,
-            sessionToken: '',
-            sessionExpiresAt: ''
-        };
         let adminCustomerFilters = { name: '', phone: '' };
         let shouldShowHowItWorksOnQuoteEntry = false;
 
@@ -2777,57 +2743,10 @@
             return formatted.replace(/(\d{1,4})$/, (chunk) => '*'.repeat(chunk.length));
         }
 
-        function maskEmailForPreview(email) {
-            const [localRaw, domainRaw] = String(email || '').trim().toLowerCase().split('@');
-            if (!localRaw || !domainRaw) return 'e***@***';
-            const local = localRaw.length <= 2 ? `${localRaw.slice(0, 1)}*` : `${localRaw.slice(0, 2)}${'*'.repeat(Math.max(1, localRaw.length - 2))}`;
-            const domainParts = domainRaw.split('.');
-            const domainName = domainParts.shift() || '';
-            const tld = domainParts.join('.');
-            const maskedDomain = domainName.length <= 1 ? '*' : `${domainName.slice(0, 1)}${'*'.repeat(Math.max(1, domainName.length - 1))}`;
-            return `${local}@${maskedDomain}${tld ? `.${tld}` : ''}`;
-        }
-
         function getPreviewLocation(profile = {}) {
             const cidade = String(profile.cidade || '').trim();
             const estado = String(profile.estado || '').trim().toUpperCase();
             return [cidade, estado].filter(Boolean).join(' - ');
-        }
-
-        async function callVerificationFunction(payload) {
-            const client = ensureSupabaseClient(false);
-
-            if (client?.functions?.invoke) {
-                const { data, error } = await client.functions.invoke('customer-verification', {
-                    body: payload,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        apikey: SUPABASE_ANON_KEY,
-                        Authorization: `Bearer ${SUPABASE_ANON_KEY}`
-                    }
-                });
-
-                if (error) {
-                    throw new Error(error.message || 'Falha ao processar verificação.');
-                }
-
-                return data || {};
-            }
-
-            const response = await fetch(OTP_FUNCTION_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    apikey: SUPABASE_ANON_KEY,
-                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`
-                },
-                body: JSON.stringify(payload)
-            });
-            const body = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                throw new Error(body.error || 'Falha ao processar verificação.');
-            }
-            return body;
         }
 
         async function findCustomerByPhone(rawPhone) {
@@ -3772,7 +3691,6 @@
         let supabaseClient = null;
         const SHIPPING_API_URL = APP_CONFIG.SHIPPING_API_URL || '';
         const FREIGHT_FUNCTION_URL = APP_CONFIG.FREIGHT_FUNCTION_URL || (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/calcular-frete` : '/functions/v1/calcular-frete');
-        const OTP_FUNCTION_URL = APP_CONFIG.OTP_FUNCTION_URL || (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/customer-verification` : '/functions/v1/customer-verification');
         const ERROR_LOG_TABLE = APP_CONFIG.ERROR_LOG_TABLE || 'logs_erros';
         const COMPANY_SETTINGS_TABLE = APP_CONFIG.COMPANY_SETTINGS_TABLE || 'configuracoes_empresa';
         const COMPANY_SETTINGS_ID = 1;
@@ -4426,37 +4344,15 @@
 
         function resetIdentificationModalState() {
             pendingExistingCustomer = null;
-            pendingExistingCustomerVerification = {
-                phone: '',
-                maskedEmail: '',
-                canResendAt: 0,
-                verified: false,
-                sessionToken: '',
-                sessionExpiresAt: ''
-            };
             const card = document.getElementById('existingCustomerCard');
             const confirmBtn = document.getElementById('confirmExistingCustomerBtn');
             const retryBtn = document.getElementById('retryIdentificationBtn');
-            const sendBtn = document.getElementById('sendVerificationCodeBtn');
-            const verifyBtn = document.getElementById('verifyCodeBtn');
-            const resendBtn = document.getElementById('resendCodeBtn');
-            const otpSection = document.getElementById('otpSection');
-            const otpStatus = document.getElementById('otpStatus');
-            const otpDestination = document.getElementById('otpDestination');
-            const otpInput = document.getElementById('verificationCodeInput');
             if (card) {
                 card.style.display = 'none';
                 card.innerHTML = '';
             }
-            if (otpSection) otpSection.style.display = 'none';
-            if (otpInput) otpInput.value = '';
-            if (otpStatus) otpStatus.textContent = '';
-            if (otpDestination) otpDestination.textContent = '';
             if (confirmBtn) confirmBtn.style.display = 'none';
             if (retryBtn) retryBtn.style.display = 'none';
-            if (sendBtn) sendBtn.style.display = 'none';
-            if (verifyBtn) verifyBtn.style.display = 'none';
-            if (resendBtn) resendBtn.style.display = 'none';
         }
 
         function openCustomerIdentificationModal() {
@@ -4484,182 +4380,42 @@
 
         function renderExistingCustomerCard(profile) {
             const card = document.getElementById('existingCustomerCard');
-            const sendBtn = document.getElementById('sendVerificationCodeBtn');
-            const verifyBtn = document.getElementById('verifyCodeBtn');
+            const confirmBtn = document.getElementById('confirmExistingCustomerBtn');
             const retryBtn = document.getElementById('retryIdentificationBtn');
-            const resendBtn = document.getElementById('resendCodeBtn');
-            const otpSection = document.getElementById('otpSection');
-            if (!card || !sendBtn || !verifyBtn || !retryBtn || !resendBtn || !otpSection) return;
+            if (!card || !confirmBtn || !retryBtn) return;
             const normalized = normalizeCustomerProfileForQuote(profile || {});
-            const isVerified = Boolean(pendingExistingCustomerVerification.verified);
-            const nome = isVerified ? (normalized.nome || 'Cliente encontrado') : maskNameForPreview(normalized.nome || '');
-            const telefone = isVerified
-                ? formatPhoneForDisplay(normalized.telefone_normalizado || normalized.telefone || '')
-                : maskPhoneForPreview(normalized.telefone_normalizado || normalized.telefone || '');
+            const nome = maskNameForPreview(normalized.nome || '');
+            const telefone = maskPhoneForPreview(normalized.telefone_normalizado || normalized.telefone || '');
             const localizacao = getPreviewLocation(profile);
-            const emailMasked = pendingExistingCustomerVerification.maskedEmail || maskEmailForPreview(normalized.email || '');
-            const emailDisplay = isVerified ? (normalized.email || '') : emailMasked;
-            const enderecoCompleto = isVerified ? normalized.endereco : '';
             card.innerHTML = [
                 `<strong>${escapeHtml(nome)}</strong>`,
                 telefone ? `<div>📞 ${escapeHtml(telefone)}</div>` : '',
-                emailDisplay ? `<div>✉️ ${escapeHtml(emailDisplay)}</div>` : '',
-                localizacao ? `<div>📍 ${escapeHtml(localizacao)}</div>` : '',
-                enderecoCompleto ? `<div style="white-space: pre-line;">🏠 ${escapeHtml(enderecoCompleto)}</div>` : ''
+                localizacao ? `<div>📍 ${escapeHtml(localizacao)}</div>` : ''
             ].filter(Boolean).join('');
             card.style.display = 'block';
-            otpSection.style.display = 'block';
-            const otpDestination = document.getElementById('otpDestination');
-            if (otpDestination) {
-                otpDestination.textContent = pendingExistingCustomerVerification.maskedEmail
-                    ? `Código enviado para ${pendingExistingCustomerVerification.maskedEmail}.`
-                    : 'O código de verificação será enviado para o e-mail do seu cadastro.';
-            }
-            sendBtn.style.display = 'inline-flex';
-            verifyBtn.style.display = 'inline-flex';
+            confirmBtn.style.display = 'inline-flex';
             retryBtn.style.display = 'inline-flex';
-            resendBtn.style.display = 'inline-flex';
         }
 
         async function handleSearchCustomerByPhone() {
             const input = document.getElementById('identificationPhone');
             const status = document.getElementById('identificationStatus');
-            const otpStatus = document.getElementById('otpStatus');
             if (!input || !status) return;
             try {
                 const customer = await findCustomerByPhone(input.value);
                 if (!customer) {
                     resetIdentificationModalState();
-                    status.textContent = 'Telefone não encontrado. Você pode continuar com novo cadastro.';
+                    status.textContent = 'Celular/WhatsApp não encontrado. Você pode continuar com novo cadastro.';
                     status.style.color = 'var(--warning)';
                     return;
                 }
                 pendingExistingCustomer = customer;
-                pendingExistingCustomerVerification.phone = normalizePhone(customer.telefone_normalizado || customer.telefone || input.value);
                 renderExistingCustomerCard(customer);
-                status.textContent = 'Cadastro encontrado. Envie e valide o código por e-mail para liberar os dados completos.';
+                status.textContent = 'Cadastro encontrado. Confirme para continuar o orçamento.';
                 status.style.color = 'var(--success)';
-                if (otpStatus) {
-                    otpStatus.textContent = 'NUNCA exibimos o cadastro completo antes da validação do código.';
-                    otpStatus.style.color = 'var(--text-secondary)';
-                }
             } catch (error) {
                 status.textContent = error.message || 'Erro ao buscar cadastro.';
                 status.style.color = 'var(--error)';
-            }
-        }
-
-        async function handleSendVerificationCode() {
-            const status = document.getElementById('identificationStatus');
-            const otpStatus = document.getElementById('otpStatus');
-            const otpDestination = document.getElementById('otpDestination');
-            const resendBtn = document.getElementById('resendCodeBtn');
-            const sendBtn = document.getElementById('sendVerificationCodeBtn');
-            if (!pendingExistingCustomer) {
-                showAlert('Busque um cadastro antes de enviar o código.', 'warning');
-                return;
-            }
-            if (sendBtn) sendBtn.disabled = true;
-            try {
-                const response = await callVerificationFunction({
-                    action: 'start_verification',
-                    context: 'existing_customer',
-                    phone: pendingExistingCustomerVerification.phone
-                });
-                pendingExistingCustomerVerification.canResendAt = Date.now() + ((response.cooldown_seconds || 60) * 1000);
-                pendingExistingCustomerVerification.verified = false;
-                pendingExistingCustomerVerification.maskedEmail = response.masked_email || pendingExistingCustomerVerification.maskedEmail;
-                if (status) {
-                    status.textContent = response.message || 'Enviamos um código para seu e-mail.';
-                    status.style.color = 'var(--success)';
-                }
-                if (otpDestination && pendingExistingCustomerVerification.maskedEmail) {
-                    otpDestination.textContent = `Código enviado para ${pendingExistingCustomerVerification.maskedEmail}.`;
-                }
-                if (otpStatus) {
-                    otpStatus.textContent = response.message || 'Enviamos um código para seu e-mail.';
-                    otpStatus.style.color = 'var(--success)';
-                }
-                if (resendBtn) resendBtn.style.display = 'inline-flex';
-            } catch (error) {
-                if (otpStatus) {
-                    otpStatus.textContent = error.message || 'Não foi possível enviar o código por e-mail.';
-                    otpStatus.style.color = 'var(--error)';
-                }
-            } finally {
-                if (sendBtn) sendBtn.disabled = false;
-            }
-        }
-
-        async function handleVerifyCode() {
-            const codeInput = document.getElementById('verificationCodeInput');
-            const otpStatus = document.getElementById('otpStatus');
-            const status = document.getElementById('identificationStatus');
-            const confirmBtn = document.getElementById('confirmExistingCustomerBtn');
-            if (!pendingExistingCustomer || !codeInput) {
-                showAlert('Busque um cadastro antes de validar o código.', 'warning');
-                return;
-            }
-            try {
-                const response = await callVerificationFunction({
-                    action: 'verify_code',
-                    phone: pendingExistingCustomerVerification.phone,
-                    code: codeInput.value
-                });
-                pendingExistingCustomerVerification.verified = true;
-                pendingExistingCustomerVerification.sessionToken = response.verified_session_token || '';
-                pendingExistingCustomerVerification.sessionExpiresAt = response.verified_session_expires_at || '';
-                pendingExistingCustomer = response.customer || pendingExistingCustomer;
-                renderExistingCustomerCard(pendingExistingCustomer);
-                if (confirmBtn) confirmBtn.style.display = 'inline-flex';
-                if (status) {
-                    status.textContent = 'Código validado! Dados completos liberados.';
-                    status.style.color = 'var(--success)';
-                }
-                if (otpStatus) {
-                    otpStatus.textContent = 'Código validado com sucesso.';
-                    otpStatus.style.color = 'var(--success)';
-                }
-            } catch (error) {
-                if (status) {
-                    status.textContent = error.message || 'Falha ao validar código.';
-                    status.style.color = 'var(--error)';
-                }
-                if (otpStatus) {
-                    otpStatus.textContent = error.message || 'Código inválido.';
-                    otpStatus.style.color = 'var(--error)';
-                }
-            }
-        }
-
-        async function handleResendVerificationCode() {
-            const otpStatus = document.getElementById('otpStatus');
-            const remainingMs = pendingExistingCustomerVerification.canResendAt - Date.now();
-            if (remainingMs > 0) {
-                const seconds = Math.ceil(remainingMs / 1000);
-                if (otpStatus) {
-                    otpStatus.textContent = `Aguarde ${seconds}s para reenviar o código.`;
-                    otpStatus.style.color = 'var(--warning)';
-                }
-                return;
-            }
-            try {
-                const response = await callVerificationFunction({
-                    action: 'resend_code',
-                    context: 'existing_customer',
-                    phone: pendingExistingCustomerVerification.phone
-                });
-                pendingExistingCustomerVerification.canResendAt = Date.now() + ((response.cooldown_seconds || 60) * 1000);
-                pendingExistingCustomerVerification.maskedEmail = response.masked_email || pendingExistingCustomerVerification.maskedEmail;
-                if (otpStatus) {
-                    otpStatus.textContent = response.message || 'Código reenviado para seu e-mail.';
-                    otpStatus.style.color = 'var(--success)';
-                }
-            } catch (error) {
-                if (otpStatus) {
-                    otpStatus.textContent = error.message || 'Não foi possível reenviar o código.';
-                    otpStatus.style.color = 'var(--error)';
-                }
             }
         }
 
@@ -4682,10 +4438,6 @@
                 showAlert('Busque um cadastro antes de confirmar.', 'warning');
                 return;
             }
-            if (!pendingExistingCustomerVerification.verified) {
-                showAlert('Valide o código para liberar os dados completos do cadastro.', 'warning');
-                return;
-            }
             populateCustomerDataIntoBudget(pendingExistingCustomer);
             shouldShowHowItWorksOnQuoteEntry = true;
             enterBudgetFlowAfterCustomerIdentification();
@@ -4695,29 +4447,10 @@
             const modal = document.getElementById('newCustomerModal');
             if (!modal) return;
             const status = document.getElementById('newCustomerStatus');
-            const otpStatus = document.getElementById('newCustomerOtpStatus');
-            const otpSection = document.getElementById('newCustomerOtpSection');
-            const codeInput = document.getElementById('newCustomerVerificationCodeInput');
             if (status) {
                 status.textContent = '';
                 status.style.color = 'var(--text-secondary)';
             }
-            if (otpStatus) {
-                otpStatus.textContent = '';
-                otpStatus.style.color = 'var(--text-secondary)';
-            }
-            if (otpSection) otpSection.style.display = 'none';
-            if (codeInput) codeInput.value = '';
-            pendingNewCustomerForm = null;
-            pendingNewCustomerVerification = {
-                phone: '',
-                email: '',
-                maskedEmail: '',
-                canResendAt: 0,
-                verified: false,
-                sessionToken: '',
-                sessionExpiresAt: ''
-            };
             modal.style.display = 'flex';
         }
 
@@ -4728,117 +4461,22 @@
 
         async function submitNewCustomerRegistration() {
             const status = document.getElementById('newCustomerStatus');
-            const otpSection = document.getElementById('newCustomerOtpSection');
-            const otpStatus = document.getElementById('newCustomerOtpStatus');
-            const otpDestination = document.getElementById('newCustomerOtpDestination');
-            const verifyBtn = document.getElementById('verifyNewCustomerCodeBtn');
-            const resendBtn = document.getElementById('resendNewCustomerCodeBtn');
             const submitBtn = document.getElementById('submitNewCustomerBtn');
             try {
                 const form = getNewCustomerFormData();
                 if (submitBtn) submitBtn.disabled = true;
-                const response = await callVerificationFunction({
-                    action: 'start_verification',
-                    context: 'new_customer',
-                    phone: form.telefone,
-                    email: form.email,
-                    name: form.nome
-                });
-                pendingNewCustomerForm = form;
-                pendingNewCustomerVerification = {
-                    phone: normalizePhone(form.telefone),
-                    email: form.email,
-                    maskedEmail: response.masked_email || maskEmailForPreview(form.email),
-                    canResendAt: Date.now() + ((response.cooldown_seconds || 60) * 1000),
-                    verified: false,
-                    sessionToken: '',
-                    sessionExpiresAt: ''
-                };
-                if (otpSection) otpSection.style.display = 'block';
-                if (otpDestination) otpDestination.textContent = `Código enviado para ${pendingNewCustomerVerification.maskedEmail}.`;
-                if (verifyBtn) verifyBtn.style.display = 'inline-flex';
-                if (resendBtn) resendBtn.style.display = 'inline-flex';
-                if (status) {
-                    status.textContent = 'Código enviado por e-mail. Digite os 6 dígitos para concluir o cadastro.';
-                    status.style.color = 'var(--success)';
-                }
-                if (otpStatus) {
-                    otpStatus.textContent = 'Verifique sua caixa de entrada e spam.';
-                    otpStatus.style.color = 'var(--text-secondary)';
-                }
-            } catch (error) {
-                if (status) {
-                    status.textContent = error.message || 'Não foi possível iniciar a verificação por e-mail.';
-                    status.style.color = 'var(--error)';
-                }
-            } finally {
-                if (submitBtn) submitBtn.disabled = false;
-            }
-        }
-
-        async function verifyNewCustomerCodeAndFinish() {
-            const status = document.getElementById('newCustomerStatus');
-            const otpStatus = document.getElementById('newCustomerOtpStatus');
-            const codeInput = document.getElementById('newCustomerVerificationCodeInput');
-            if (!pendingNewCustomerForm || !codeInput) {
-                if (status) {
-                    status.textContent = 'Preencha o cadastro e envie o código antes de confirmar.';
-                    status.style.color = 'var(--warning)';
-                }
-                return;
-            }
-            try {
-                const response = await callVerificationFunction({
-                    action: 'verify_code',
-                    phone: pendingNewCustomerVerification.phone,
-                    code: codeInput.value
-                });
-                pendingNewCustomerVerification.verified = true;
-                pendingNewCustomerVerification.sessionToken = response.verified_session_token || '';
-                pendingNewCustomerVerification.sessionExpiresAt = response.verified_session_expires_at || '';
-                const saved = await saveCustomerProfile(pendingNewCustomerForm);
+                const saved = await saveCustomerProfile(form);
                 populateCustomerDataIntoBudget(saved);
                 closeNewCustomerModal();
                 shouldShowHowItWorksOnQuoteEntry = true;
                 enterBudgetFlowAfterCustomerIdentification();
             } catch (error) {
-                if (otpStatus) {
-                    otpStatus.textContent = error.message || 'Código inválido.';
-                    otpStatus.style.color = 'var(--error)';
+                if (status) {
+                    status.textContent = error.message || 'Não foi possível concluir o cadastro.';
+                    status.style.color = 'var(--error)';
                 }
-            }
-        }
-
-        async function resendNewCustomerCode() {
-            const otpStatus = document.getElementById('newCustomerOtpStatus');
-            const remainingMs = pendingNewCustomerVerification.canResendAt - Date.now();
-            if (remainingMs > 0) {
-                const seconds = Math.ceil(remainingMs / 1000);
-                if (otpStatus) {
-                    otpStatus.textContent = `Aguarde ${seconds}s para reenviar o código.`;
-                    otpStatus.style.color = 'var(--warning)';
-                }
-                return;
-            }
-            if (!pendingNewCustomerForm) return;
-            try {
-                const response = await callVerificationFunction({
-                    action: 'resend_code',
-                    context: 'new_customer',
-                    phone: pendingNewCustomerVerification.phone,
-                    email: pendingNewCustomerVerification.email,
-                    name: pendingNewCustomerForm.nome
-                });
-                pendingNewCustomerVerification.canResendAt = Date.now() + ((response.cooldown_seconds || 60) * 1000);
-                if (otpStatus) {
-                    otpStatus.textContent = response.message || 'Código reenviado para seu e-mail.';
-                    otpStatus.style.color = 'var(--success)';
-                }
-            } catch (error) {
-                if (otpStatus) {
-                    otpStatus.textContent = error.message || 'Não foi possível reenviar o código.';
-                    otpStatus.style.color = 'var(--error)';
-                }
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
         }
 
@@ -4849,12 +4487,6 @@
 
         function bindCustomerIdentificationEvents() {
             document.getElementById('searchCustomerBtn')?.addEventListener('click', handleSearchCustomerByPhone);
-            document.getElementById('sendVerificationCodeBtn')?.addEventListener('click', handleSendVerificationCode);
-            document.getElementById('verifyCodeBtn')?.addEventListener('click', handleVerifyCode);
-            document.getElementById('resendCodeBtn')?.addEventListener('click', handleResendVerificationCode);
-            document.getElementById('verificationCodeInput')?.addEventListener('input', (event) => {
-                event.target.value = String(event.target.value || '').replace(/\D/g, '').slice(0, 6);
-            });
             document.getElementById('closeIdentificationModalBtn')?.addEventListener('click', closeCustomerIdentificationModal);
             document.getElementById('customerIdentificationModal')?.addEventListener('click', (event) => {
                 if (event.target?.id === 'customerIdentificationModal') {
@@ -4872,11 +4504,6 @@
             });
             document.getElementById('newCustomerBtn')?.addEventListener('click', startNewCustomerFlow);
             document.getElementById('submitNewCustomerBtn')?.addEventListener('click', submitNewCustomerRegistration);
-            document.getElementById('verifyNewCustomerCodeBtn')?.addEventListener('click', verifyNewCustomerCodeAndFinish);
-            document.getElementById('resendNewCustomerCodeBtn')?.addEventListener('click', resendNewCustomerCode);
-            document.getElementById('newCustomerVerificationCodeInput')?.addEventListener('input', (event) => {
-                event.target.value = String(event.target.value || '').replace(/\D/g, '').slice(0, 6);
-            });
             document.getElementById('backToIdentificationBtn')?.addEventListener('click', () => {
                 closeNewCustomerModal();
                 openCustomerIdentificationModal();
@@ -7364,10 +6991,6 @@ async function getMelhorEnvioShipping(cep, type) {
             document.getElementById('newCustomerDistrict').value = '';
             document.getElementById('newCustomerCity').value = '';
             document.getElementById('newCustomerState').value = '';
-            const newCustomerOtpCode = document.getElementById('newCustomerVerificationCodeInput');
-            if (newCustomerOtpCode) newCustomerOtpCode.value = '';
-            const newCustomerOtpSection = document.getElementById('newCustomerOtpSection');
-            if (newCustomerOtpSection) newCustomerOtpSection.style.display = 'none';
             const identificationStatus = document.getElementById('identificationStatus');
             if (identificationStatus) identificationStatus.textContent = '';
             resetIdentificationModalState();
