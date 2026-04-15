@@ -980,6 +980,18 @@
             top: 80px;
             width: 220px;
         }
+        #adminPanel .admin-sidebar.collapsed {
+            width: 70px;
+        }
+        #adminPanel .admin-sidebar.collapsed .admin-tab {
+            justify-content: center;
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+        #adminPanel .admin-sidebar.collapsed .admin-tab .tab-icon {
+            width: 100%;
+            text-align: center;
+        }
 
         #adminPanel .sidebar-nav {
             padding: 0.6rem;
@@ -1019,6 +1031,28 @@
 
         #adminPanel .table-container {
             margin-bottom: 1rem;
+        }
+
+        #adminPanel .admin-orders-table tbody tr:nth-child(odd) {
+            background: #162234;
+        }
+
+        #adminPanel .admin-orders-table tbody tr:nth-child(even) {
+            background: #1c2a3d;
+        }
+
+        #adminPanel .admin-orders-table tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        #adminPanel .admin-orders-table tbody tr:hover {
+            background: #24344a;
+        }
+
+        #adminPanel .admin-orders-table td {
+            padding: 12px 14px;
+            font-size: 14px;
+            line-height: 1.35;
         }
 
         #adminPanel .form-group,
@@ -2336,10 +2370,23 @@
             <!-- Orders Tab -->
             <div id="orders" class="tab-content">
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Pedidos</h2>
+                <div style="background: var(--secondary-dark); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border-color);">
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="adminOrderSearchNumber">Número do Pedido</label>
+                            <input type="text" id="adminOrderSearchNumber" inputmode="numeric" placeholder="Ex: 1000">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap;">
+                        <button class="btn btn-primary" type="button" onclick="applyOrderSearch()">Buscar</button>
+                        <button class="btn btn-secondary" type="button" onclick="resetOrderSearch()">Limpar</button>
+                    </div>
+                </div>
                 <div class="table-container">
-                    <table>
+                    <table class="admin-orders-table">
                         <thead>
                             <tr>
+                                <th>Nº Pedido</th>
                                 <th>Cliente</th>
                                 <th>Aparelho</th>
                                 <th>Valor</th>
@@ -2353,7 +2400,7 @@
                         </thead>
                         <tbody id="ordersTable">
                             <tr>
-                                <td colspan="9" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td>
+                                <td colspan="10" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -2539,8 +2586,9 @@
                         <input type="hidden" id="editingServiceOrderId" value="">
                         <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
                             <div class="form-group">
-                                <label for="osOrderId">Número do Pedido (ID):</label>
+                                <label for="osOrderId">Número do Pedido:</label>
                                 <input type="text" id="osOrderId" placeholder="Ex: 123">
+                                <input type="hidden" id="osInternalOrderId" value="">
                             </div>
                             <div class="form-group" style="align-self: end;">
                                 <button type="button" class="btn btn-secondary" style="width:100%;" onclick="buscarPedidoPorId()">Carregar Pedido</button>
@@ -2787,6 +2835,7 @@
         let identifiedCustomerProfile = null;
         let pendingExistingCustomer = null;
         let adminCustomerFilters = { name: '', phone: '' };
+        let adminOrderFilters = { numeroPedido: '' };
         let shouldShowHowItWorksOnQuoteEntry = false;
 
         function applyTheme(theme) {
@@ -6256,15 +6305,20 @@ async function calcularFrete(cep) {
                 const client = ensureSupabaseClient(true);
                 if (!client) return;
                 const tbody = document.getElementById('ordersTable');
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary);">Carregando pedidos...</td></tr>';
 
-                const { data: orders, error } = await client.from('pedidos').select('*').order('created_at', { ascending: false });
+                let query = client.from('pedidos').select('*').order('created_at', { ascending: false });
+                if (adminOrderFilters.numeroPedido) {
+                    query = query.eq('numero_pedido', adminOrderFilters.numeroPedido);
+                }
+
+                const { data: orders, error } = await query;
                 if (error) throw error;
 
                 tbody.innerHTML = '';
 
                 if (!orders || orders.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">Nenhum pedido encontrado.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary);">Nenhum pedido encontrado.</td></tr>';
                     return;
                 }
 
@@ -6272,6 +6326,7 @@ async function calcularFrete(cep) {
                     const financial = window.FinanceiroModule?.calculateOrderFinancials(order) || { lucro_bruto: 0 };
                     const row = document.createElement('tr');
                     row.innerHTML = `
+                        <td>${order.numero_pedido != null ? escapeHtml(String(order.numero_pedido)) : '-'}</td>
                         <td>${escapeHtml(order.cliente_nome || 'Não informado')}</td>
                         <td>
                             <div>${escapeHtml(order.modelo_dispositivo || 'Não informado')}</div>
@@ -6296,9 +6351,25 @@ async function calcularFrete(cep) {
             } catch (error) {
                 console.error('Erro ao carregar pedidos:', error);
                 const tbody = document.getElementById('ordersTable');
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--error);">Erro ao carregar pedidos: ${escapeHtml(error.message || 'desconhecido')}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--error);">Erro ao carregar pedidos: ${escapeHtml(error.message || 'desconhecido')}</td></tr>`;
                 showAlert('Erro ao carregar pedidos no admin.', 'error');
             }
+        }
+
+        function applyOrderSearch() {
+            const rawValue = String(document.getElementById('adminOrderSearchNumber')?.value || '').trim();
+            const normalizedValue = rawValue.replace(/\D+/g, '');
+            adminOrderFilters = { numeroPedido: normalizedValue };
+            const input = document.getElementById('adminOrderSearchNumber');
+            if (input) input.value = normalizedValue;
+            loadOrdersTable();
+        }
+
+        function resetOrderSearch() {
+            adminOrderFilters = { numeroPedido: '' };
+            const input = document.getElementById('adminOrderSearchNumber');
+            if (input) input.value = '';
+            loadOrdersTable();
         }
 
         function formatCustomerCreatedAt(value) {
@@ -6992,6 +7063,18 @@ async function calcularFrete(cep) {
             return data;
         }
 
+        async function fetchOrderByNumeroPedido(numeroPedido) {
+            const client = ensureSupabaseClient(true);
+            if (!client) return null;
+            const { data, error } = await client
+                .from('pedidos')
+                .select('*')
+                .eq('numero_pedido', numeroPedido)
+                .single();
+            if (error) throw error;
+            return data;
+        }
+
         function fillOrderForm(order) {
             document.getElementById('editingOrderId').value = String(order.id || '');
             document.getElementById('orderCustomerName').value = order.cliente_nome || '';
@@ -7258,13 +7341,15 @@ async function getMelhorEnvioShipping(cep, type) {
         function resetServiceOrderForm() {
             document.getElementById('serviceOrderForm')?.reset();
             document.getElementById('editingServiceOrderId').value = '';
+            document.getElementById('osInternalOrderId').value = '';
             document.getElementById('saveServiceOrderBtn').textContent = 'Salvar O.S.';
             document.getElementById('cancelServiceOrderEditBtn').style.display = 'none';
             currentServiceOrderId = null;
         }
 
         function getServiceOrderFormData() {
-            const orderId = document.getElementById('osOrderId').value.trim();
+            const orderNumber = document.getElementById('osOrderId').value.trim();
+            const internalOrderId = document.getElementById('osInternalOrderId').value.trim();
             const clientName = document.getElementById('osClientName').value.trim();
             const phone = document.getElementById('osPhone').value.trim();
             const address = document.getElementById('osAddress').value.trim();
@@ -7283,7 +7368,7 @@ async function getMelhorEnvioShipping(cep, type) {
             if (!status) throw new Error('Status é obrigatório.');
             if (!Number.isFinite(totalValue) || totalValue < 0) throw new Error('Valor total inválido.');
 
-            return { orderId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes };
+            return { orderNumber, internalOrderId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes };
         }
 
         function extractPartFromOrder(order) {
@@ -7294,16 +7379,18 @@ async function getMelhorEnvioShipping(cep, type) {
         }
 
         async function buscarPedidoPorId() {
-            const pedidoId = document.getElementById('osOrderId').value.trim();
-            if (!pedidoId) {
+            const pedidoNumero = document.getElementById('osOrderId').value.trim().replace(/\D+/g, '');
+            if (!pedidoNumero) {
                 showAlert('Informe o número do pedido para carregar.', 'warning');
                 return;
             }
 
             try {
-                const pedido = await fetchOrderById(pedidoId);
+                const pedido = await fetchOrderByNumeroPedido(pedidoNumero);
                 if (!pedido) throw new Error('Pedido não encontrado');
 
+                document.getElementById('osOrderId').value = String(pedido.numero_pedido || pedidoNumero);
+                document.getElementById('osInternalOrderId').value = String(pedido.id || '');
                 document.getElementById('osClientName').value = pedido.cliente_nome || '';
                 document.getElementById('osPhone').value = pedido.whatsapp || '';
                 document.getElementById('osAddress').value = pedido.endereco || '';
@@ -7350,9 +7437,20 @@ async function getMelhorEnvioShipping(cep, type) {
             setButtonLoading(saveBtn, true, 'Salvando...');
             try {
                 const editingId = document.getElementById('editingServiceOrderId').value;
-                const { orderId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes } = getServiceOrderFormData();
+                const { orderNumber, internalOrderId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes } = getServiceOrderFormData();
+                let resolvedOrderId = internalOrderId || null;
+                if (!resolvedOrderId && orderNumber) {
+                    const pedido = await fetchOrderByNumeroPedido(orderNumber.replace(/\D+/g, ''));
+                    if (pedido?.id) {
+                        resolvedOrderId = String(pedido.id);
+                        document.getElementById('osInternalOrderId').value = resolvedOrderId;
+                    } else {
+                        throw new Error('Número do pedido não encontrado.');
+                    }
+                }
+
                 const payload = {
-                    pedido_id: orderId || null,
+                    pedido_id: resolvedOrderId || null,
                     cliente_nome: clientName,
                     cliente_telefone: phone || null,
                     cliente_endereco: address || null,
@@ -7493,7 +7591,14 @@ async function getMelhorEnvioShipping(cep, type) {
 
                 currentServiceOrderId = osId;
                 document.getElementById('editingServiceOrderId').value = String(data.id);
-                document.getElementById('osOrderId').value = data.pedido_id || '';
+                document.getElementById('osInternalOrderId').value = data.pedido_id || '';
+                document.getElementById('osOrderId').value = '';
+                if (data.pedido_id) {
+                    const pedido = await fetchOrderById(data.pedido_id);
+                    if (pedido?.numero_pedido != null) {
+                        document.getElementById('osOrderId').value = String(pedido.numero_pedido);
+                    }
+                }
                 document.getElementById('osClientName').value = data.cliente_nome || '';
                 document.getElementById('osPhone').value = data.cliente_telefone || '';
                 document.getElementById('osAddress').value = data.cliente_endereco || '';
