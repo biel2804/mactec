@@ -1146,6 +1146,46 @@
             margin-bottom: 10px;
         }
 
+        #adminPanel #service-orders .os-container {
+            max-width: 1000px;
+        }
+
+        #adminPanel #service-orders .form-group {
+            margin-bottom: 10px;
+        }
+
+        #adminPanel #service-orders label {
+            font-size: 12px;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        #adminPanel #service-orders input,
+        #adminPanel #service-orders select,
+        #adminPanel #service-orders textarea {
+            height: 36px;
+            padding: 6px 10px;
+            font-size: 13px;
+            line-height: 1.2;
+            border-radius: 6px;
+        }
+
+        #adminPanel #service-orders textarea {
+            min-height: 70px;
+        }
+
+        #adminPanel #service-orders .os-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        #adminPanel #service-orders .os-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
         .tab-content {
             display: none;
         }
@@ -2580,7 +2620,7 @@
             <div id="service-orders" class="tab-content">
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Ordem de Serviço</h2>
 
-                <div style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color);">
+                <div class="os-container" style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color);">
                     <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Criar / Editar O.S.</h3>
                     <form id="serviceOrderForm">
                         <input type="hidden" id="editingServiceOrderId" value="">
@@ -2594,22 +2634,24 @@
                                 <button type="button" class="btn btn-secondary" style="width:100%;" onclick="buscarPedidoPorId()">Carregar Pedido</button>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label for="osClientName">Cliente:</label>
-                            <input type="text" id="osClientName" placeholder="Nome do cliente">
-                        </div>
-                        <div class="form-group">
-                            <label for="osPhone">Telefone (opcional):</label>
-                            <input type="tel" id="osPhone" placeholder="(11) 99999-9999">
-                        </div>
-                        <div class="form-group">
-                            <label for="osAddress">Endereço do Cliente:</label>
-                            <input type="text" id="osAddress" placeholder="Rua, número - bairro">
-                        </div>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="os-grid-2">
                             <div class="form-group" style="margin-bottom: 0;">
-                                <label for="osTotalValue">Valor Total (R$):</label>
-                                <input type="number" id="osTotalValue" placeholder="0,00" step="0.01" min="0">
+                                <label for="osClientName">Cliente:</label>
+                                <input type="text" id="osClientName" placeholder="Nome do cliente">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="osPhone">Telefone (opcional):</label>
+                                <input type="tel" id="osPhone" placeholder="(11) 99999-9999">
+                            </div>
+                        </div>
+                        <div class="os-grid">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="osBrand">Marca:</label>
+                                <input type="text" id="osBrand" placeholder="Ex: Apple">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="osModel">Modelo:</label>
+                                <input type="text" id="osModel" placeholder="Ex: iPhone 11">
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label for="osPartUsed">Peça utilizada:</label>
@@ -2617,28 +2659,30 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="osBrand">Marca:</label>
-                            <input type="text" id="osBrand" placeholder="Ex: Apple">
+                            <label for="osAddress">Endereço do Cliente:</label>
+                            <input type="text" id="osAddress" placeholder="Rua, número - bairro">
                         </div>
-                        <div class="form-group">
-                            <label for="osModel">Modelo:</label>
-                            <input type="text" id="osModel" placeholder="Ex: iPhone 11">
+                        <div class="os-grid-2">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="osTotalValue">Valor Total (R$):</label>
+                                <input type="number" id="osTotalValue" placeholder="0,00" step="0.01" min="0">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="osStatusInline">Status:</label>
+                                <select id="osStatusInline">
+                                    <option value="pendente">Pendente</option>
+                                    <option value="em_andamento">Em andamento</option>
+                                    <option value="concluido">Concluído</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="osDefect">Defeito:</label>
-                            <textarea id="osDefect" placeholder="Descreva o defeito" style="min-height: 80px;"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="osStatusInline">Status:</label>
-                            <select id="osStatusInline">
-                                <option value="pendente">Pendente</option>
-                                <option value="em_andamento">Em andamento</option>
-                                <option value="concluido">Concluído</option>
-                            </select>
+                            <textarea id="osDefect" placeholder="Descreva o defeito"></textarea>
                         </div>
                         <div class="form-group">
                             <label for="osNotes">Observações (opcional):</label>
-                            <textarea id="osNotes" placeholder="Observações adicionais" style="min-height: 80px;"></textarea>
+                            <textarea id="osNotes" placeholder="Observações adicionais"></textarea>
                         </div>
                         <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
                             <button type="submit" class="btn btn-primary" id="saveServiceOrderBtn">Salvar O.S.</button>
