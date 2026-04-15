@@ -1033,26 +1033,81 @@
             margin-bottom: 1rem;
         }
 
-        #adminPanel .admin-orders-table tbody tr:nth-child(odd) {
+        #adminPanel #orders .admin-orders-table th,
+        #adminPanel #orders .admin-orders-table td {
+            padding: 8px 12px;
+            font-size: 14px;
+            line-height: 1.25;
+        }
+
+        :root[data-theme="dark"] #adminPanel #orders .admin-orders-table tbody tr:nth-child(odd) {
             background: #162234;
         }
 
-        #adminPanel .admin-orders-table tbody tr:nth-child(even) {
+        :root[data-theme="dark"] #adminPanel #orders .admin-orders-table tbody tr:nth-child(even) {
             background: #1c2a3d;
         }
 
-        #adminPanel .admin-orders-table tbody tr {
+        :root[data-theme="dark"] #adminPanel #orders .admin-orders-table tbody tr {
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        #adminPanel .admin-orders-table tbody tr:hover {
+        :root[data-theme="dark"] #adminPanel #orders .admin-orders-table tbody tr:hover {
             background: #24344a;
         }
 
-        #adminPanel .admin-orders-table td {
-            padding: 12px 14px;
+        :root[data-theme="light"] #adminPanel #orders .admin-orders-table thead th {
+            background: #f3f6fb;
+            color: #0f172a;
+            border-bottom: 1px solid #d9e2ec;
+        }
+
+        :root[data-theme="light"] #adminPanel #orders .admin-orders-table tbody tr:nth-child(odd) {
+            background: #ffffff;
+        }
+
+        :root[data-theme="light"] #adminPanel #orders .admin-orders-table tbody tr:nth-child(even) {
+            background: #f8fbff;
+        }
+
+        :root[data-theme="light"] #adminPanel #orders .admin-orders-table tbody tr {
+            border-bottom: 1px solid #e5edf5;
+        }
+
+        :root[data-theme="light"] #adminPanel #orders .admin-orders-table tbody tr:hover {
+            background: #eef4fb;
+        }
+
+        :root[data-theme="light"] #adminPanel #orders .admin-orders-table td {
+            color: #0f172a;
+        }
+
+        #adminPanel #orders .admin-orders-search {
+            padding: 14px 16px !important;
+            border-radius: 14px !important;
+        }
+
+        #adminPanel #orders .admin-orders-search label {
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        #adminPanel #orders .admin-orders-search input {
+            height: 40px;
+            padding: 8px 12px;
             font-size: 14px;
-            line-height: 1.35;
+        }
+
+        #adminPanel #orders .admin-orders-search button {
+            height: 38px;
+            padding: 0 14px;
+            font-size: 14px;
+            border-radius: 10px;
+        }
+
+        #adminPanel #orders .admin-orders-search .search-actions {
+            margin-top: 10px !important;
+            gap: 8px !important;
         }
 
         #adminPanel .form-group,
@@ -2472,14 +2527,14 @@
             <!-- Orders Tab -->
             <div id="orders" class="tab-content">
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Pedidos</h2>
-                <div style="background: var(--secondary-dark); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border-color);">
+                <div class="admin-orders-search" style="background: var(--secondary-dark); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border-color);">
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
                         <div class="form-group" style="margin-bottom:0;">
                             <label for="adminOrderSearchNumber">Número do Pedido</label>
                             <input type="text" id="adminOrderSearchNumber" inputmode="numeric" placeholder="Ex: 1000">
                         </div>
                     </div>
-                    <div style="display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap;">
+                    <div class="search-actions" style="display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap;">
                         <button class="btn btn-primary" type="button" onclick="applyOrderSearch()">Buscar</button>
                         <button class="btn btn-secondary" type="button" onclick="resetOrderSearch()">Limpar</button>
                     </div>
