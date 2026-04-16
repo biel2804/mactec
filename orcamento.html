@@ -3355,9 +3355,42 @@
         }
 
         function getCustomerFormData() {
-            const nome = document.getElementById('customerName')?.value.trim() || '';
-            const telefone = document.getElementById('customerWhatsApp')?.value.trim() || '';
-            const cep = sanitizeCepInputValue(document.getElementById('customerCep')?.value || '');
+            const legacyNameField = document.getElementById('customerName');
+            const legacyPhoneField = document.getElementById('customerWhatsApp');
+            const legacyCepField = document.getElementById('customerCep');
+            const hasLegacyFields = Boolean(legacyNameField && legacyPhoneField && legacyCepField);
+
+            if (!hasLegacyFields) {
+                const normalizedCustomer = normalizeCustomerProfileForQuote(identifiedCustomerProfile || {});
+                const fallbackAddress = currentQuote.customerAddressData || {};
+                const endereco = {
+                    cep: sanitizeCepInputValue(normalizedCustomer.cep || fallbackAddress.cep || ''),
+                    rua: String(normalizedCustomer.rua || fallbackAddress.rua || '').trim(),
+                    numero: String(normalizedCustomer.numero || fallbackAddress.numero || '').trim(),
+                    bairro: String(normalizedCustomer.bairro || fallbackAddress.bairro || '').trim(),
+                    cidade: String(normalizedCustomer.cidade || fallbackAddress.cidade || '').trim(),
+                    estado: String(normalizedCustomer.estado || fallbackAddress.estado || '').trim()
+                };
+                const nome = String(normalizedCustomer.nome || currentQuote.customerName || '').trim();
+                const telefone = String(normalizedCustomer.telefone || currentQuote.customerWhatsApp || '').trim();
+                const email = String(normalizedCustomer.email || currentQuote.customerEmail || '').trim();
+
+                if (!nome || !telefone || !endereco.cep || !endereco.rua || !endereco.numero || !endereco.bairro || !endereco.cidade || !endereco.estado) {
+                    throw new Error('Cadastro do cliente incompleto. Continue pelo fluxo oficial de identificação e carrinho.');
+                }
+
+                return {
+                    nome,
+                    telefone,
+                    endereco,
+                    enderecoFormatado: buildFormattedCustomerAddress(endereco),
+                    email: email || null
+                };
+            }
+
+            const nome = legacyNameField.value.trim() || '';
+            const telefone = legacyPhoneField.value.trim() || '';
+            const cep = sanitizeCepInputValue(legacyCepField.value || '');
             const rua = document.getElementById('customerStreet')?.value.trim() || '';
             const numero = document.getElementById('customerNumber')?.value.trim() || '';
             const bairro = document.getElementById('customerDistrict')?.value.trim() || '';
@@ -5766,63 +5799,9 @@ async function calcularFrete(cep) {
 
         // Process Payment
         async function processPayment() {
-            // Validate form
-            let cliente;
-            try {
-                cliente = getCustomerFormData();
-            } catch (error) {
-                showAlert(error.message, 'error');
-                return;
-            }
-
-            if (!cliente.nome || !cliente.telefone || !cliente.endereco.cep || !cliente.endereco.rua || !cliente.endereco.numero || !cliente.endereco.bairro || !cliente.endereco.cidade || !cliente.endereco.estado) {
-                showAlert('Preencha os dados obrigatórios do cliente para continuar.', 'error');
-                return;
-            }
-
-            if (Number(currentQuote.baseCost || 0) <= 0) {
-                showAlert('Selecione uma peça e calcule o frete antes de continuar.', 'error');
-                return;
-            }
-
-            syncQuoteSelections(currentQuote);
-            if (!validateQuoteSelections(currentQuote)) {
-                return;
-            }
-
-            currentQuote.customerName = cliente.nome;
-            currentQuote.customerWhatsApp = cliente.telefone;
-            currentQuote.customerAddress = cliente.enderecoFormatado;
-            currentQuote.customerAddressData = cliente.endereco;
-            currentQuote.customerEmail = cliente.email;
-
-            const client = ensureSupabaseClient(true);
-            if (!client) {
-                showAlert('Configure o Supabase para concluir o orçamento.', 'error');
-                return;
-            }
-
-            // Salva/atualiza cliente com contrato canônico de dados
-            try {
-                const savedCustomer = await saveCustomerProfile({
-                    nome: cliente.nome,
-                    telefone: cliente.telefone,
-                    email: cliente.email,
-                    cep: cliente.endereco.cep,
-                    rua: cliente.endereco.rua,
-                    numero: cliente.endereco.numero,
-                    bairro: cliente.endereco.bairro,
-                    cidade: cliente.endereco.cidade,
-                    estado: cliente.endereco.estado,
-                    endereco: cliente.enderecoFormatado
-                });
-
-                currentQuote.customerId = savedCustomer?.id || currentQuote.customerId || null;
-                await showPaymentOptions();
-            } catch (error) {
-                console.error('Falha ao salvar cliente antes do pagamento:', error);
-                showAlert('Não foi possível validar o cadastro do cliente. Revise os dados e tente novamente.', 'error');
-            }
+            // Compatibilidade legado: o fechamento operacional oficial acontece no carrinho.
+            showAlert('Fluxo atualizado: adicione ao carrinho e finalize por lá.', 'warning');
+            addQuoteToCart();
         }
 
         // Show Payment Options
@@ -5897,21 +5876,15 @@ async function calcularFrete(cep) {
         }
 
         async function completePaymentSelection(method, label) {
-            const orderId = 'ORD-' + Date.now();
+            // Compatibilidade legado: evita fechamento direto fora do carrinho.
             currentQuote.paymentMethod = method;
             currentQuote.paymentLabel = label;
             currentQuote.installments = method === 'credito'
                 ? Number(document.getElementById('quoteInstallmentsSelect')?.value || 1)
                 : 1;
-
-            try {
-                const savedOrder = await saveOrder(orderId);
-                currentQuote.savedOrderId = savedOrder.id;
-                closePaymentOptionsModal();
-                completePayment(orderId);
-            } catch (error) {
-                showAlert('Erro ao salvar pedido: ' + error.message, 'error');
-            }
+            closePaymentOptionsModal();
+            showAlert('Finalize o pedido pelo carrinho para concluir o envio.', 'warning');
+            openCartModal();
         }
 
         // Save Order
@@ -6009,14 +5982,12 @@ async function calcularFrete(cep) {
 
         // Complete Payment
         function completePayment(orderId) {
-            closeQuoteModal();
-            const paymentLabel = currentQuote.paymentLabel || 'não informado';
-            showAlert(`Pedido confirmado! Forma de pagamento: ${paymentLabel}.`, 'success');
-
-            // Automatically share on WhatsApp and close
-            setTimeout(() => {
-                shareOnWhatsApp(orderId);
-            }, 1500);
+            // Compatibilidade legado: direciona para o checkout oficial no carrinho.
+            if (orderId && !currentQuote.savedOrderId) {
+                currentQuote.savedOrderId = orderId;
+            }
+            showAlert('Finalize o pedido pelo carrinho para concluir o envio.', 'warning');
+            openCartModal();
         }
 
         // Update Order Status
@@ -6113,6 +6084,11 @@ async function calcularFrete(cep) {
 
         // Share on WhatsApp
         function shareOnWhatsApp(orderId) {
+            if (!currentQuote.savedOrderId && !orderId) {
+                showAlert('Envio direto desativado. Finalize pelo carrinho.', 'warning');
+                openCartModal();
+                return;
+            }
             const financial = currentQuote.financial || {};
             const parcelas = Number(financial.parcelas || currentQuote.installments || 1);
             const valorTotalComJuros = Number(financial.valor_total_com_juros || currentQuote.totalPrice || 0);
