@@ -4787,6 +4787,13 @@
             if (retryBtn) retryBtn.style.display = 'none';
         }
 
+        function resetIdentifiedCustomerState() {
+            identifiedCustomerProfile = null;
+            isIdentifiedCustomerConfirmed = false;
+            pendingPostIdentificationAction = null;
+            resetIdentificationModalState();
+        }
+
         function openCustomerIdentificationModal() {
             const modal = document.getElementById('customerIdentificationModal');
             const status = document.getElementById('identificationStatus');
@@ -7396,6 +7403,7 @@ async function getMelhorEnvioShipping(cep, type) {
             document.getElementById('quoteModal').style.display = 'none';
             closeCustomerIdentificationModal();
             closeNewCustomerModal();
+            resetIdentifiedCustomerState();
             // Reset form
             document.getElementById('brandSelect').innerHTML = '<option value="">-- Selecione a marca --</option>';
             document.getElementById('modelSelect').innerHTML = '<option value="">-- Selecione o modelo --</option>';
@@ -7418,7 +7426,6 @@ async function getMelhorEnvioShipping(cep, type) {
             document.getElementById('newCustomerState').value = '';
             const identificationStatus = document.getElementById('identificationStatus');
             if (identificationStatus) identificationStatus.textContent = '';
-            resetIdentificationModalState();
             const cepStatus = document.getElementById('customerCepStatus');
             if (cepStatus) cepStatus.textContent = '';
             const customerSummarySection = document.getElementById('customerDataSummarySection');
