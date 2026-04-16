@@ -2926,7 +2926,7 @@
 
     <a
         class="whatsapp-float"
-        href="https://wa.me/5511945462973"
+        href="#"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Conversar no WhatsApp"
@@ -4102,8 +4102,19 @@
         // Social Media Configuration
         const LOJA_WHATSAPP = '5511945462973';
 
+        function getCompanyWhatsAppNumber() {
+            const normalizedCompanyNumber = String(COMPANY_WHATSAPP || '').replace(/\D/g, '');
+            const normalizedFallbackNumber = String(LOJA_WHATSAPP || '').replace(/\D/g, '');
+            return normalizedCompanyNumber || normalizedFallbackNumber;
+        }
+
         function abrirWhatsApp(mensagem = '') {
-            const baseUrl = `https://wa.me/${LOJA_WHATSAPP}`;
+            const companyWhatsApp = getCompanyWhatsAppNumber();
+            if (!companyWhatsApp) {
+                showAlert('WhatsApp da empresa não configurado.', 'warning');
+                return;
+            }
+            const baseUrl = `https://wa.me/${companyWhatsApp}`;
             const text = String(mensagem || '').trim();
             const url = text ? `${baseUrl}?text=${encodeURIComponent(text)}` : baseUrl;
             window.location.href = url;
@@ -6124,12 +6135,12 @@ async function calcularFrete(cep) {
                 valorParcela,
                 delivery: currentQuote.shippingServiceLabel || currentQuote.shippingUserMessage || currentQuote.shippingLabel || currentQuote.shippingEtaText || 'Retirada e entrega a combinar'
             });
-            const targetPhone = getNormalizedWhatsApp(currentQuote.customerWhatsApp);
+            const targetPhone = getCompanyWhatsAppNumber();
             if (!targetPhone) {
-                showAlert('WhatsApp do cliente não informado. Atualize o telefone para continuar.', 'warning');
+                showAlert('WhatsApp da empresa não configurado. Atualize as configurações para continuar.', 'warning');
                 return;
             }
-            const whatsappUrl = `https://wa.me/55${targetPhone}?text=${encodeURIComponent(message)}`;
+            const whatsappUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`;
             window.location.href = whatsappUrl;
         }
 
