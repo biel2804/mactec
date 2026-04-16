@@ -2995,7 +2995,7 @@
         let pendingExistingCustomer = null;
         let adminCustomerFilters = { name: '', phone: '' };
         let adminOrderFilters = { numeroPedido: '' };
-        let shouldShowHowItWorksOnQuoteEntry = false;
+        let pendingPostIdentificationAction = null;
 
         function applyTheme(theme) {
             const nextTheme = theme === 'light' ? 'light' : 'dark';
@@ -3743,9 +3743,24 @@
             showAlert('Item removido do carrinho', 'success');
         }
 
-        function openCartModal() {
+        function isCustomerIdentificationCompleted() {
+            if (!identifiedCustomerProfile) return false;
+            const normalizedPhone = normalizePhone(identifiedCustomerProfile.telefone_normalizado || identifiedCustomerProfile.telefone || '');
+            return Boolean(identifiedCustomerProfile.id || normalizedPhone);
+        }
+
+        function openCartModalDirect() {
             document.getElementById('cartModal').style.display = 'block';
             updateCartDisplay();
+        }
+
+        function openCartModal() {
+            if (!isCustomerIdentificationCompleted()) {
+                pendingPostIdentificationAction = 'openCart';
+                openCustomerIdentificationModal();
+                return;
+            }
+            openCartModalDirect();
         }
 
         function closeCartModal() {
@@ -4825,17 +4840,12 @@
             }
         }
 
-        function enterBudgetFlowAfterCustomerIdentification() {
+        function completeCustomerIdentificationFlow() {
             closeCustomerIdentificationModal();
-            document.getElementById('quoteModal').style.display = 'block';
-            if (!ensureSupabaseClient(true)) {
-                showAlert('Configure o Supabase no app-config.js para listar marcas e modelos.', 'warning');
-                return;
-            }
-            loadBrands();
-            if (shouldShowHowItWorksOnQuoteEntry) {
-                showHowItWorksIfAllowed();
-                shouldShowHowItWorksOnQuoteEntry = false;
+            const action = pendingPostIdentificationAction;
+            pendingPostIdentificationAction = null;
+            if (action === 'openCart') {
+                openCartModalDirect();
             }
         }
 
@@ -4845,8 +4855,7 @@
                 return;
             }
             populateCustomerDataIntoBudget(pendingExistingCustomer);
-            shouldShowHowItWorksOnQuoteEntry = true;
-            enterBudgetFlowAfterCustomerIdentification();
+            completeCustomerIdentificationFlow();
         }
 
         function openNewCustomerModal() {
@@ -4874,8 +4883,7 @@
                 const saved = await saveCustomerProfile(form);
                 populateCustomerDataIntoBudget(saved);
                 closeNewCustomerModal();
-                shouldShowHowItWorksOnQuoteEntry = true;
-                enterBudgetFlowAfterCustomerIdentification();
+                completeCustomerIdentificationFlow();
             } catch (error) {
                 if (status) {
                     status.textContent = error.message || 'Não foi possível concluir o cadastro.';
@@ -4930,7 +4938,13 @@
 
         // Load brands when quote modal opens
         function openQuoteModal() {
-            openCustomerIdentificationModal();
+            document.getElementById('quoteModal').style.display = 'block';
+            if (!ensureSupabaseClient(true)) {
+                showAlert('Configure o Supabase no app-config.js para listar marcas e modelos.', 'warning');
+                return;
+            }
+            loadBrands();
+            showHowItWorksIfAllowed();
         }
 
         // Handle Service Selection
