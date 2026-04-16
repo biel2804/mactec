@@ -2946,6 +2946,7 @@
         let cart = [];
         let accessoriesStockById = {};
         let identifiedCustomerProfile = null;
+        let isIdentifiedCustomerConfirmed = false;
         let pendingExistingCustomer = null;
         let adminCustomerFilters = { name: '', phone: '' };
         let adminOrderFilters = { numeroPedido: '' };
@@ -3115,7 +3116,7 @@
 
             const { data, error } = await client
                 .from('clientes')
-                .select('id, nome, telefone, telefone_normalizado, cidade, estado')
+                .select('id, nome, telefone, telefone_normalizado, email, cep, rua, numero, bairro, cidade, estado, endereco')
                 .eq('telefone_normalizado', telefoneNormalizado)
                 .maybeSingle();
 
@@ -3189,6 +3190,9 @@
         function populateCustomerDataIntoBudget(profile, options = {}) {
             const normalized = normalizeCustomerProfileForQuote(profile || {});
             identifiedCustomerProfile = normalized;
+            if (options.confirmed === true) {
+                isIdentifiedCustomerConfirmed = true;
+            }
             currentQuote.customerId = normalized.id || null;
             currentQuote.customerName = normalized.nome || '';
             currentQuote.customerWhatsApp = normalized.telefone || '';
@@ -3707,6 +3711,7 @@
 
         function isCustomerIdentificationCompleted() {
             if (!identifiedCustomerProfile) return false;
+            if (!isIdentifiedCustomerConfirmed) return false;
             const normalizedPhone = normalizePhone(identifiedCustomerProfile.telefone_normalizado || identifiedCustomerProfile.telefone || '');
             return Boolean(identifiedCustomerProfile.id || normalizedPhone);
         }
@@ -4101,7 +4106,7 @@
             const baseUrl = `https://wa.me/${LOJA_WHATSAPP}`;
             const text = String(mensagem || '').trim();
             const url = text ? `${baseUrl}?text=${encodeURIComponent(text)}` : baseUrl;
-            window.open(url, '_blank');
+            window.location.href = url;
         }
 
         function formatWhatsAppDate(value = new Date()) {
@@ -4820,7 +4825,7 @@
                 showAlert('Busque um cadastro antes de confirmar.', 'warning');
                 return;
             }
-            populateCustomerDataIntoBudget(pendingExistingCustomer);
+            populateCustomerDataIntoBudget(pendingExistingCustomer, { confirmed: true });
             completeCustomerIdentificationFlow();
         }
 
@@ -4847,7 +4852,7 @@
                 const form = getNewCustomerFormData();
                 if (submitBtn) submitBtn.disabled = true;
                 const saved = await saveCustomerProfile(form);
-                populateCustomerDataIntoBudget(saved);
+                populateCustomerDataIntoBudget(saved, { confirmed: true });
                 closeNewCustomerModal();
                 completeCustomerIdentificationFlow();
             } catch (error) {
@@ -6125,7 +6130,7 @@ async function calcularFrete(cep) {
                 return;
             }
             const whatsappUrl = `https://wa.me/55${targetPhone}?text=${encodeURIComponent(message)}`;
-            window.open(whatsappUrl, '_blank');
+            window.location.href = whatsappUrl;
         }
 
         // Admin Auth + Session/Inatividade
