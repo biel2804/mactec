@@ -2282,52 +2282,6 @@
                     <div id="customerProfileSummary" style="background: rgba(34, 197, 94, 0.08); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem;"></div>
                 </div>
 
-                <div class="quote-section">
-                    <h3>6. Seus Dados (edição pontual deste orçamento)</h3>
-                    <div class="form-group">
-                        <label for="customerName">Nome Completo:</label>
-                        <input type="text" id="customerName" placeholder="Seu nome">
-                    </div>
-                    <div class="form-group">
-                        <label for="customerWhatsApp">WhatsApp:</label>
-                        <input type="tel" id="customerWhatsApp" inputmode="tel" maxlength="15" placeholder="(11) 99999-9999">
-                    </div>
-                    <div class="form-group">
-                        <label for="customerCep">CEP:</label>
-                        <input type="text" id="customerCep" placeholder="Ex: 01001000" inputmode="numeric" maxlength="8" onblur="buscarCep()">
-                        <small style="display:block; margin-top:0.35rem; color: var(--text-secondary);">Digite apenas números (sem traços ou pontos)</small>
-                        <small id="customerCepStatus" style="display:block; margin-top:0.35rem; color: var(--text-secondary);"></small>
-                    </div>
-                    <div class="form-group">
-                        <label for="customerStreet">Rua:</label>
-                        <input type="text" id="customerStreet" placeholder="Ex: Rua das Flores">
-                    </div>
-                    <div class="quote-address-grid cols-2">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="customerNumber">Número:</label>
-                            <input type="text" id="customerNumber" placeholder="Ex: 123">
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="customerDistrict">Bairro:</label>
-                            <input type="text" id="customerDistrict" placeholder="Ex: Centro">
-                        </div>
-                    </div>
-                    <div class="quote-address-grid cols-2-1">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="customerCity">Cidade:</label>
-                            <input type="text" id="customerCity" placeholder="Ex: São Paulo">
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="customerState">Estado:</label>
-                            <input type="text" id="customerState" placeholder="Ex: SP" maxlength="2">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="customerEmail">E-mail (opcional):</label>
-                        <input type="email" id="customerEmail" placeholder="Ex: cliente@email.com">
-                    </div>
-                </div>
-
                 <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="addQuoteToCart()">
                     Adicionar ao Carrinho
                 </button>
@@ -3432,19 +3386,6 @@
         }
 
         function addQuoteToCart() {
-            let cliente;
-            try {
-                cliente = getCustomerFormData();
-            } catch (error) {
-                showAlert(error.message, 'error');
-                return;
-            }
-
-            if (!cliente.nome || !cliente.telefone || !cliente.endereco.cep || !cliente.endereco.rua || !cliente.endereco.numero || !cliente.endereco.bairro || !cliente.endereco.cidade || !cliente.endereco.estado) {
-                showAlert('Preencha os dados obrigatórios do cliente para continuar.', 'error');
-                return;
-            }
-
             if (Number(currentQuote.baseCost || 0) <= 0) {
                 showAlert('Selecione uma peça e calcule o frete antes de adicionar ao carrinho.', 'error');
                 return;
@@ -3455,11 +3396,31 @@
                 return;
             }
 
-            currentQuote.customerName = cliente.nome;
-            currentQuote.customerWhatsApp = cliente.telefone;
-            currentQuote.customerAddress = cliente.enderecoFormatado;
-            currentQuote.customerAddressData = cliente.endereco;
-            currentQuote.customerEmail = cliente.email;
+            if (!isCustomerIdentificationCompleted()) {
+                pendingPostIdentificationAction = 'addQuoteToCart';
+                openCustomerIdentificationModal();
+                return;
+            }
+
+            const normalizedCustomer = normalizeCustomerProfileForQuote(identifiedCustomerProfile || {});
+            if (!normalizedCustomer.nome || !normalizedCustomer.telefone || !normalizedCustomer.cep || !normalizedCustomer.rua || !normalizedCustomer.numero || !normalizedCustomer.bairro || !normalizedCustomer.cidade || !normalizedCustomer.estado) {
+                showAlert('Não foi possível usar o cadastro identificado. Confirme seu cadastro para continuar.', 'error');
+                return;
+            }
+
+            currentQuote.customerId = normalizedCustomer.id || currentQuote.customerId || null;
+            currentQuote.customerName = normalizedCustomer.nome;
+            currentQuote.customerWhatsApp = normalizedCustomer.telefone;
+            currentQuote.customerEmail = normalizedCustomer.email || '';
+            currentQuote.customerAddressData = {
+                cep: normalizedCustomer.cep,
+                rua: normalizedCustomer.rua,
+                numero: normalizedCustomer.numero,
+                bairro: normalizedCustomer.bairro,
+                cidade: normalizedCustomer.cidade,
+                estado: normalizedCustomer.estado
+            };
+            currentQuote.customerAddress = buildFormattedCustomerAddress(currentQuote.customerAddressData);
             currentQuote.itemType = 'quote';
             currentQuote.id = 'QUOTE-' + Date.now();
             currentQuote.mao_de_obra = currentQuote.laborCost;
@@ -3470,6 +3431,7 @@
             updateCartDisplay();
             closeQuoteModal();
             showAlert('Orçamento adicionado ao carrinho com sucesso.', 'success');
+            openCartModalDirect();
         }
 
         function addAccessoryToCart({ id, name, price, stock, quantity }) {
@@ -4846,6 +4808,10 @@
             pendingPostIdentificationAction = null;
             if (action === 'openCart') {
                 openCartModalDirect();
+                return;
+            }
+            if (action === 'addQuoteToCart') {
+                addQuoteToCart();
             }
         }
 
@@ -7444,15 +7410,10 @@ async function getMelhorEnvioShipping(cep, type) {
             document.getElementById('serviceSelect').value = '';
             document.getElementById('partSelect').innerHTML = '<option value="">-- Selecione a peça --</option>';
             document.getElementById('serviceMessage').style.display = 'none';
-            document.getElementById('customerName').value = '';
-            document.getElementById('customerWhatsApp').value = '';
-            document.getElementById('customerCep').value = '';
-            document.getElementById('customerStreet').value = '';
-            document.getElementById('customerNumber').value = '';
-            document.getElementById('customerDistrict').value = '';
-            document.getElementById('customerCity').value = '';
-            document.getElementById('customerState').value = '';
-            document.getElementById('customerEmail').value = '';
+            ['customerName', 'customerWhatsApp', 'customerCep', 'customerStreet', 'customerNumber', 'customerDistrict', 'customerCity', 'customerState', 'customerEmail'].forEach((id) => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
             document.getElementById('identificationPhone').value = '';
             document.getElementById('newCustomerName').value = '';
             document.getElementById('newCustomerPhone').value = '';
