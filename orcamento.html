@@ -3528,29 +3528,27 @@
             const groupedAccessories = cart
                 .filter(item => item.itemType === 'accessory')
                 .map(item => ({ id: Number(item.accessoryId), quantity: Number(item.quantity || 0) }))
-                .filter(item => Number.isFinite(item.id) && item.quantity > 0);
+                .filter(item => Number.isFinite(item.id) && item.quantity > 0)
+                .reduce((acc, item) => {
+                    acc[item.id] = (acc[item.id] || 0) + item.quantity;
+                    return acc;
+                }, {});
 
-            for (const item of groupedAccessories) {
-                const { data: row, error: readError } = await client
-                    .from('acessorios')
-                    .select('id, estoque')
-                    .eq('id', item.id)
-                    .single();
+            const accessoryEntries = Object.entries(groupedAccessories);
+            for (const [id, quantity] of accessoryEntries) {
+                const accessoryId = Number(id);
+                const requestedQty = Number(quantity || 0);
+                const { data, error } = await client.rpc('decrement_accessory_stock', {
+                    p_accessory_id: accessoryId,
+                    p_quantity: requestedQty
+                });
 
-                if (readError) throw readError;
+                if (error) throw error;
 
-                const currentStock = Number(row?.estoque || 0);
-                const newStock = currentStock - item.quantity;
-                if (newStock < 0) {
-                    throw new Error(`Estoque insuficiente no item ${item.id}.`);
+                const result = Array.isArray(data) ? data[0] : data;
+                if (!result?.success) {
+                    throw new Error(result?.message || `Estoque insuficiente no item ${accessoryId}.`);
                 }
-
-                const { error: updateError } = await client
-                    .from('acessorios')
-                    .update({ estoque: newStock })
-                    .eq('id', item.id);
-
-                if (updateError) throw updateError;
             }
         }
 
@@ -4052,6 +4050,8 @@
         }
 
         async function sendCartToCompanyWhatsApp(savedOrder = null, checkoutData = null) {
+            await syncAccessoryStockAfterCheckout();
+
             const quoteItem = cart.find((item) => item.itemType === 'quote');
             const customerName = savedOrder?.cliente_nome || quoteItem?.customerName || 'Não informado';
             const customerPhone = savedOrder?.whatsapp || quoteItem?.customerWhatsApp || 'Não informado';
@@ -4083,13 +4083,7 @@
                 delivery: quoteItem?.shippingServiceLabel || quoteItem?.shippingLabel || 'Retirada e entrega a combinar'
             });
             abrirWhatsApp(mensagemPedido);
-
-            try {
-                await syncAccessoryStockAfterCheckout();
-                await loadAccessoriesForSale();
-            } catch (error) {
-                showAlert('Pedido enviado, mas falhou ao sincronizar estoque: ' + error.message, 'warning');
-            }
+            await loadAccessoriesForSale();
 
             cart = [];
             updateCartDisplay();
