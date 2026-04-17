@@ -8072,7 +8072,7 @@ async function getMelhorEnvioShipping(cep, type) {
         }
 
         // Close modal when clicking outside
-        window.onclick = function(event) {
+        function handleModalOutsideClick(event) {
             const quoteModal = document.getElementById('quoteModal');
             const orderModal = document.getElementById('orderModal');
             const customerAdminModal = document.getElementById('customerAdminModal');
@@ -8086,6 +8086,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 closeAdminCustomerModal();
             }
         }
+        window.addEventListener('click', handleModalOutsideClick);
 </script> <!-- 🔥 FECHAR AQUI -->
 </body>
 </html>
