@@ -406,6 +406,66 @@
             margin-bottom: 1rem;
         }
 
+        /* Order Tracking Section */
+        .order-tracking {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .order-tracking-card {
+            background: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        .order-tracking-form {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .order-tracking-form input {
+            flex: 1 1 280px;
+            min-width: 220px;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-main);
+        }
+
+        .order-tracking-feedback {
+            min-height: 1.2rem;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .order-tracking-result {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.85rem;
+            background: var(--card-bg);
+            display: none;
+        }
+
+        .order-tracking-result .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.6rem;
+            border-radius: 999px;
+            font-weight: 600;
+            color: #fff;
+            margin-top: 0.35rem;
+        }
+
         /* Footer */
         footer {
             background: var(--secondary-dark);
@@ -2067,6 +2127,7 @@
             <li><a href="#" onclick="goToQuote()">Orçamento</a></li>
             <li><a href="#" onclick="goToAccessories()">Acessórios</a></li>
             <li><a href="#" onclick="goToServices()">Serviços</a></li>
+            <li><a href="#" onclick="goToOrders()">Pedidos</a></li>
             <li><a href="#" onclick="goToContact()">Contato</a></li>
         </ul>
         <!-- Social Media Icons in Navbar -->
@@ -2217,6 +2278,19 @@
                     <h3>Reparo Realizado</h3>
                     <p>Trabalho executado por profissionais com qualidade garantida</p>
                 </div>
+            </div>
+        </section>
+
+        <section class="order-tracking" id="ordersTrackingSection">
+            <h2 class="section-title">Pedidos</h2>
+            <div class="order-tracking-card">
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Consulte o andamento do seu pedido pelo número do pedido ou WhatsApp.</p>
+                <div class="order-tracking-form">
+                    <input type="text" id="orderTrackingInput" placeholder="Ex: 12345 ou (11) 99999-9999" inputmode="text">
+                    <button type="button" class="btn btn-primary" onclick="trackOrderFromHome()">Consultar pedido</button>
+                </div>
+                <p class="order-tracking-feedback" id="orderTrackingFeedback"></p>
+                <div class="order-tracking-result" id="orderTrackingResult"></div>
             </div>
         </section>
     </div>
@@ -2658,11 +2732,20 @@
                         <div class="form-group">
                             <label for="orderStatus">Status:</label>
                             <select id="orderStatus">
-                                <option value="orcamento">Orçamento</option>
-                                <option value="aprovado">Aprovado</option>
-                                <option value="andamento">Andamento</option>
-                                <option value="finalizado">Finalizado</option>
-                                <option value="entregue">Entregue</option>
+                                <option value="PEDIDO_EM_ANALISE">Pedido em análise</option>
+                                <option value="AGENDAR_COLETA">Agendar coleta do equipamento</option>
+                                <option value="COLETA_OK_ANALISE_OS">Coleta OK - enviado para análise para O.S.</option>
+                                <option value="OS_ENVIADA_AGUARDANDO_APROVACAO">O.S enviada e aguardando aprovação</option>
+                                <option value="OS_APROVADA_MANUTENCAO">O.S aprovada - manutenção em andamento</option>
+                                <option value="OS_REPROVADA_AGENDAR_DEVOLUCAO">O.S reprovada - agendar devolução</option>
+                                <option value="MANUTENCAO_CONCLUIDA">Manutenção concluída</option>
+                                <option value="AGENDAR_DEVOLUCAO">Agendar devolução</option>
+                                <option value="FINALIZADO">Finalizado</option>
+                                <option value="orcamento">Orçamento (legado)</option>
+                                <option value="aprovado">Aprovado (legado)</option>
+                                <option value="andamento">Andamento (legado)</option>
+                                <option value="finalizado">Finalizado (legado)</option>
+                                <option value="entregue">Entregue (legado)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -2781,9 +2864,18 @@
                                     <div class="form-group" style="margin-bottom: 0;">
                                         <label for="osStatusInline">Status:</label>
                                         <select id="osStatusInline">
-                                            <option value="pendente">Pendente</option>
-                                            <option value="em_andamento">Em andamento</option>
-                                            <option value="concluido">Concluído</option>
+                                            <option value="PEDIDO_EM_ANALISE">Pedido em análise</option>
+                                            <option value="AGENDAR_COLETA">Agendar coleta do equipamento</option>
+                                            <option value="COLETA_OK_ANALISE_OS">Coleta OK - enviado para análise para O.S.</option>
+                                            <option value="OS_ENVIADA_AGUARDANDO_APROVACAO">O.S enviada e aguardando aprovação</option>
+                                            <option value="OS_APROVADA_MANUTENCAO">O.S aprovada - manutenção em andamento</option>
+                                            <option value="OS_REPROVADA_AGENDAR_DEVOLUCAO">O.S reprovada - agendar devolução</option>
+                                            <option value="MANUTENCAO_CONCLUIDA">Manutenção concluída</option>
+                                            <option value="AGENDAR_DEVOLUCAO">Agendar devolução</option>
+                                            <option value="FINALIZADO">Finalizado</option>
+                                            <option value="pendente">Pendente (legado)</option>
+                                            <option value="em_andamento">Em andamento (legado)</option>
+                                            <option value="concluido">Concluído (legado)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -4376,6 +4468,18 @@
             CANCELADO: 'cancelado'
         });
 
+        const ORDER_TRACKING_STATUSES = Object.freeze({
+            PEDIDO_EM_ANALISE: 'Pedido em análise',
+            AGENDAR_COLETA: 'Agendar coleta do equipamento',
+            COLETA_OK_ANALISE_OS: 'Coleta OK - enviado para análise para O.S.',
+            OS_ENVIADA_AGUARDANDO_APROVACAO: 'O.S enviada e aguardando aprovação',
+            OS_APROVADA_MANUTENCAO: 'O.S aprovada - manutenção em andamento',
+            OS_REPROVADA_AGENDAR_DEVOLUCAO: 'O.S reprovada - agendar devolução',
+            MANUTENCAO_CONCLUIDA: 'Manutenção concluída',
+            AGENDAR_DEVOLUCAO: 'Agendar devolução',
+            FINALIZADO: 'Finalizado'
+        });
+
         const STATUS_LABELS = Object.freeze({
             [ORDER_STATUS.PENDENTE]: 'Pendente',
             [ORDER_STATUS.ORCAMENTO]: 'Orçamento',
@@ -4385,7 +4489,8 @@
             [ORDER_STATUS.CONCLUIDO]: 'Concluído',
             [ORDER_STATUS.FINALIZADO]: 'Finalizado',
             [ORDER_STATUS.ENTREGUE]: 'Entregue',
-            [ORDER_STATUS.CANCELADO]: 'Cancelado'
+            [ORDER_STATUS.CANCELADO]: 'Cancelado',
+            ...ORDER_TRACKING_STATUSES
         });
 
         const SERVICE_LABELS = Object.freeze({
@@ -4441,6 +4546,120 @@
 
         function getNormalizedWhatsApp(value) {
             return (value || '').replace(/\D/g, '');
+        }
+
+        function setOrderTrackingFeedback(message, tone = 'muted') {
+            const feedback = document.getElementById('orderTrackingFeedback');
+            if (!feedback) return;
+            const colorByTone = {
+                muted: 'var(--text-secondary)',
+                success: 'var(--success)',
+                warning: 'var(--warning)',
+                error: 'var(--error)'
+            };
+            feedback.textContent = message || '';
+            feedback.style.color = colorByTone[tone] || colorByTone.muted;
+        }
+
+        function clearOrderTrackingResult() {
+            const result = document.getElementById('orderTrackingResult');
+            if (!result) return;
+            result.style.display = 'none';
+            result.innerHTML = '';
+        }
+
+        function isOrderNumberInput(value) {
+            return /^\d+$/.test(String(value || '').trim());
+        }
+
+        function buildOrderTrackingPhoneCandidates(rawValue) {
+            const digits = normalizePhone(rawValue);
+            const candidates = new Set();
+            if (!digits) return [];
+            candidates.add(digits);
+            if (digits.length === 11) candidates.add(`55${digits}`);
+            if (digits.length === 13 && digits.startsWith('55')) candidates.add(digits.slice(2));
+            return Array.from(candidates).filter(Boolean);
+        }
+
+        async function findTrackableOrder(searchTerm) {
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+
+            const trimmed = String(searchTerm || '').trim();
+            const columns = 'id, numero_pedido, cliente_nome, whatsapp, status, created_at, updated_at';
+
+            if (isOrderNumberInput(trimmed)) {
+                const numeroPedido = trimmed.replace(/^0+/, '') || '0';
+                const { data, error } = await client
+                    .from('pedidos')
+                    .select(columns)
+                    .eq('numero_pedido', numeroPedido)
+                    .maybeSingle();
+                if (error) throw error;
+                return data || null;
+            }
+
+            const phoneCandidates = buildOrderTrackingPhoneCandidates(trimmed);
+            if (!phoneCandidates.length) {
+                throw new Error('Informe um número de pedido ou WhatsApp válido.');
+            }
+
+            const orClause = phoneCandidates.map((candidate) => `whatsapp.eq.${candidate}`).join(',');
+            const { data, error } = await client
+                .from('pedidos')
+                .select(columns)
+                .or(orClause)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (error) throw error;
+            return Array.isArray(data) && data.length ? data[0] : null;
+        }
+
+        function renderOrderTrackingResult(order) {
+            const result = document.getElementById('orderTrackingResult');
+            if (!result) return;
+
+            const createdAt = order?.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : 'Não informado';
+            const status = order?.status || '';
+            const statusLabel = formatStatus(status);
+            const statusColor = getStatusColor(status);
+
+            result.innerHTML = `
+                <div><strong>Pedido:</strong> #${escapeHtml(String(order?.numero_pedido ?? '-'))}</div>
+                <div><strong>Cliente:</strong> ${escapeHtml(order?.cliente_nome || 'Não informado')}</div>
+                <div><strong>WhatsApp:</strong> ${escapeHtml(formatPhoneForDisplay(order?.whatsapp || '')) || 'Não informado'}</div>
+                <div><strong>Abertura:</strong> ${escapeHtml(createdAt)}</div>
+                <div style="margin-top:0.45rem;"><strong>Status atual:</strong></div>
+                <div class="status-pill" style="background:${statusColor};">${escapeHtml(statusLabel)}</div>
+            `;
+            result.style.display = 'block';
+        }
+
+        async function trackOrderFromHome() {
+            const input = document.getElementById('orderTrackingInput');
+            const rawValue = String(input?.value || '').trim();
+            clearOrderTrackingResult();
+
+            if (!rawValue) {
+                setOrderTrackingFeedback('Informe um número de pedido ou WhatsApp para consultar.', 'warning');
+                return;
+            }
+
+            try {
+                setOrderTrackingFeedback('Consultando pedido...', 'muted');
+                const order = await findTrackableOrder(rawValue);
+                if (!order) {
+                    setOrderTrackingFeedback('Pedido não encontrado com os dados informados.', 'warning');
+                    return;
+                }
+
+                renderOrderTrackingResult(order);
+                setOrderTrackingFeedback('Pedido encontrado com sucesso.', 'success');
+            } catch (error) {
+                setOrderTrackingFeedback(error.message || 'Não foi possível consultar o pedido agora.', 'error');
+            }
         }
 
         function syncQuoteSelections(quote) {
@@ -7521,6 +7740,14 @@ async function getMelhorEnvioShipping(cep, type) {
             document.getElementById('servicesSection').scrollIntoView({ behavior: 'smooth' });
         }
 
+        function goToOrders() {
+            closeMobileNav();
+            document.getElementById('mainContent').style.display = 'block';
+            closeAdminPanel();
+            document.getElementById('ordersTrackingSection').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('orderTrackingInput')?.focus();
+        }
+
         function goToContact() {
             closeMobileNav();
             abrirWhatsApp();
@@ -7866,7 +8093,16 @@ async function getMelhorEnvioShipping(cep, type) {
                 [ORDER_STATUS.CONCLUIDO]: '#10b981',
                 [ORDER_STATUS.FINALIZADO]: '#10b981',
                 [ORDER_STATUS.ENTREGUE]: '#16a34a',
-                [ORDER_STATUS.CANCELADO]: '#ef4444'
+                [ORDER_STATUS.CANCELADO]: '#ef4444',
+                PEDIDO_EM_ANALISE: '#f59e0b',
+                AGENDAR_COLETA: '#f97316',
+                COLETA_OK_ANALISE_OS: '#3b82f6',
+                OS_ENVIADA_AGUARDANDO_APROVACAO: '#6366f1',
+                OS_APROVADA_MANUTENCAO: '#2563eb',
+                OS_REPROVADA_AGENDAR_DEVOLUCAO: '#dc2626',
+                MANUTENCAO_CONCLUIDA: '#0ea5e9',
+                AGENDAR_DEVOLUCAO: '#0d9488',
+                FINALIZADO: '#16a34a'
             };
             return colors[status] || '#6b7280';
         }
