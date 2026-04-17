@@ -2478,6 +2478,7 @@
             <h1>Painel Administrativo</h1>
             <div class="admin-header-actions">
                 <button id="adminMobileMenuButton" class="admin-mobile-nav-btn" onclick="toggleAdminSidebar()" aria-controls="adminSidebar" aria-expanded="false">☰ Menu</button>
+                <button class="btn btn-secondary" onclick="goHome()">Home</button>
                 <button class="btn btn-secondary" onclick="logoutAdmin()">Sair</button>
             </div>
         </div>
@@ -4150,7 +4151,7 @@
                 modelo_dispositivo: mainDevice ? `${mainDevice.marca || ''} ${mainDevice.modelo || ''}`.trim() : 'Pedido de acessórios',
                 servico: mainDevice?.servico || 'Pedido via carrinho',
                 tipo_envio: mainQuoteItem?.shippingServiceType || null,
-                status: ORDER_STATUS.PENDENTE,
+                status: 'PEDIDO_EM_ANALISE',
                 previsao_entrega: pedido.data,
                 cliente_id: mainQuoteItem?.customerId || null
                 },
@@ -4480,6 +4481,17 @@
             FINALIZADO: 'Finalizado'
         });
 
+        const LEGACY_OPERATIONAL_STATUS_ALIASES = Object.freeze({
+            pendente: 'PEDIDO_EM_ANALISE',
+            'em análise': 'PEDIDO_EM_ANALISE',
+            em_analise: 'PEDIDO_EM_ANALISE',
+            em_andamento: 'OS_APROVADA_MANUTENCAO',
+            andamento: 'OS_APROVADA_MANUTENCAO',
+            concluido: 'MANUTENCAO_CONCLUIDA',
+            finalizado: 'FINALIZADO',
+            entregue: 'FINALIZADO'
+        });
+
         const STATUS_LABELS = Object.freeze({
             [ORDER_STATUS.PENDENTE]: 'Pendente',
             [ORDER_STATUS.ORCAMENTO]: 'Orçamento',
@@ -4513,8 +4525,17 @@
         });
         const DEFAULT_SHIPPING_SERVICE_TYPE = 'retirada_entrega';
 
+        function normalizeOperationalStatus(status) {
+            const raw = String(status || '').trim();
+            if (!raw) return '';
+            if (ORDER_TRACKING_STATUSES[raw]) return raw;
+            const lower = raw.toLowerCase();
+            return LEGACY_OPERATIONAL_STATUS_ALIASES[lower] || raw;
+        }
+
         function formatStatus(status) {
-            return STATUS_LABELS[status] || status || 'Não informado';
+            const normalizedStatus = normalizeOperationalStatus(status);
+            return STATUS_LABELS[normalizedStatus] || STATUS_LABELS[status] || status || 'Não informado';
         }
 
         function formatPaymentStatus(statusPagamento) {
@@ -4587,7 +4608,30 @@
             if (!client) throw new Error('Supabase não configurado.');
 
             const trimmed = String(searchTerm || '').trim();
-            const columns = 'id, numero_pedido, cliente_nome, whatsapp, status, created_at, updated_at';
+            const columns = 'id, numero_pedido, cliente_nome, whatsapp, modelo_dispositivo, status, created_at, updated_at';
+
+            try {
+                if (isOrderNumberInput(trimmed)) {
+                    const numeroPedido = Number(trimmed.replace(/^0+/, '') || '0');
+                    const { data, error } = await client.rpc('track_pedido', {
+                        search_numero: numeroPedido,
+                        search_whatsapp: null
+                    });
+                    if (!error && Array.isArray(data) && data.length) return data[0];
+                } else {
+                    const phoneCandidates = buildOrderTrackingPhoneCandidates(trimmed);
+                    const primaryPhone = phoneCandidates[0] || null;
+                    if (primaryPhone) {
+                        const { data, error } = await client.rpc('track_pedido', {
+                            search_numero: null,
+                            search_whatsapp: primaryPhone
+                        });
+                        if (!error && Array.isArray(data) && data.length) return data[0];
+                    }
+                }
+            } catch (rpcError) {
+                console.warn('RPC track_pedido indisponível, usando fallback por tabela:', rpcError?.message || rpcError);
+            }
 
             if (isOrderNumberInput(trimmed)) {
                 const numeroPedido = trimmed.replace(/^0+/, '') || '0';
@@ -4622,13 +4666,14 @@
             if (!result) return;
 
             const createdAt = order?.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : 'Não informado';
-            const status = order?.status || '';
+            const status = normalizeOperationalStatus(order?.status || '');
             const statusLabel = formatStatus(status);
             const statusColor = getStatusColor(status);
 
             result.innerHTML = `
                 <div><strong>Pedido:</strong> #${escapeHtml(String(order?.numero_pedido ?? '-'))}</div>
                 <div><strong>Cliente:</strong> ${escapeHtml(order?.cliente_nome || 'Não informado')}</div>
+                <div><strong>Aparelho/Modelo:</strong> ${escapeHtml(order?.modelo_dispositivo || 'Não informado')}</div>
                 <div><strong>WhatsApp:</strong> ${escapeHtml(formatPhoneForDisplay(order?.whatsapp || '')) || 'Não informado'}</div>
                 <div><strong>Abertura:</strong> ${escapeHtml(createdAt)}</div>
                 <div style="margin-top:0.45rem;"><strong>Status atual:</strong></div>
@@ -6171,7 +6216,7 @@ async function calcularFrete(cep) {
                         endereco: quote.customerAddress,
                         modelo_dispositivo: `${quote.brand} ${quote.model}`.trim(),
                         servico: quote.serviceLabel || getServiceLabel(quote.service),
-                        status: ORDER_STATUS.PENDENTE,
+                        status: 'PEDIDO_EM_ANALISE',
                         distancia_km: quote.distance,
                         tipo_envio: quote.shippingServiceType || null,
                         previsao_entrega: getDeliveryDate(),
@@ -7491,6 +7536,7 @@ async function calcularFrete(cep) {
         }
 
         function fillOrderForm(order) {
+            const normalizedStatus = normalizeOperationalStatus(order.status || ORDER_STATUS.PENDENTE);
             document.getElementById('editingOrderId').value = String(order.id || '');
             document.getElementById('orderCustomerName').value = order.cliente_nome || '';
             document.getElementById('orderWhatsApp').value = order.whatsapp || '';
@@ -7499,7 +7545,7 @@ async function calcularFrete(cep) {
             document.getElementById('orderPartCost').value = Number(order.custo_peca || 0);
             document.getElementById('orderLaborCost').value = Number(order.custo_mao_obra || 0);
             document.getElementById('orderFreightCost').value = Number(order.valor_frete || 0);
-            document.getElementById('orderStatus').value = order.status || ORDER_STATUS.PENDENTE;
+            document.getElementById('orderStatus').value = normalizedStatus;
             document.getElementById('orderPaymentStatus').value = order.status_pagamento || 'pendente';
             document.getElementById('orderCreatedAt').value = order.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : '';
             document.getElementById('orderItems').value = formatOrderItems(order.itens_json);
