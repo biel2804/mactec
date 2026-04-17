@@ -1832,6 +1832,8 @@
                 transition: transform 0.25s ease;
                 box-shadow: 8px 0 24px rgba(0, 0, 0, 0.25);
                 z-index: 40;
+                overflow-y: auto;
+                overflow-x: hidden;
             }
             .admin-sidebar-overlay {
                 position: fixed;
@@ -1917,6 +1919,43 @@
                 margin: 8% auto;
                 padding: 1rem;
                 max-height: 88vh;
+            }
+
+            #adminPanel .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #adminPanel table {
+                min-width: 720px;
+            }
+
+            #adminPanel .action-buttons button,
+            #adminPanel .js-service-order-action {
+                min-height: 38px;
+                padding: 0.35rem 0.6rem !important;
+            }
+
+            #adminPanel .modal-content {
+                width: min(760px, 96vw);
+                margin: 6vh auto;
+                max-height: 88vh;
+                overflow-y: auto;
+                padding: 1rem;
+            }
+
+            #adminPanel #service-orders .os-layout {
+                grid-template-columns: 1fr;
+            }
+
+            #adminPanel #service-orders .os-preview-panel {
+                display: none;
+            }
+
+            #adminPanel #service-orders .os-grid,
+            #adminPanel #service-orders .os-grid-2,
+            #adminPanel #serviceOrderForm > div[style*="grid-template-columns: 2fr 1fr"] {
+                grid-template-columns: 1fr !important;
             }
         }
 
@@ -7490,6 +7529,11 @@ async function getMelhorEnvioShipping(cep, type) {
         // Service Order Functions
         let currentServiceOrderId = null;
         let currentServiceOrderPreviewData = null;
+        const MOBILE_PREVIEW_MAX_WIDTH = 768;
+
+        function isMobileServiceOrderViewport() {
+            return window.innerWidth <= MOBILE_PREVIEW_MAX_WIDTH;
+        }
 
         function getServiceOrderPreviewHtml(data) {
             if (!data) {
@@ -7948,9 +7992,23 @@ async function getMelhorEnvioShipping(cep, type) {
             throw new Error('Nenhuma O.S. em pré-visualização.');
         }
 
-        async function printServiceOrder(serviceOrderId = null) {
+        async function printServiceOrder(serviceOrderId = null, options = {}) {
             try {
                 const data = await resolveServiceOrderForActions(serviceOrderId);
+                const mode = options.mode || (isMobileServiceOrderViewport() ? 'tab' : 'preview');
+
+                if (mode === 'preview') {
+                    renderServiceOrderPreview(data);
+                    document.getElementById('serviceOrderPreviewCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    showAlert('Pré-visualização carregada no painel da O.S.', 'info');
+                    return;
+                }
+
+                if (mode === 'tab') {
+                    await openServiceOrderPreviewInNewTab(data);
+                    return;
+                }
+
                 const printWindow = window.open('', '', 'width=800,height=600');
                 if (!printWindow) throw new Error('Não foi possível abrir a janela de impressão.');
                 const html = buildServiceOrderPrintableHtml(data);
@@ -7963,7 +8021,7 @@ async function getMelhorEnvioShipping(cep, type) {
         }
 
         async function printServiceOrderFromPreview() {
-            await printServiceOrder();
+            await printServiceOrder(null, { mode: 'print' });
         }
 
         async function downloadServiceOrderPdfFromPreview() {
@@ -7983,9 +8041,9 @@ async function getMelhorEnvioShipping(cep, type) {
             }
         }
 
-        async function openServiceOrderPreviewInNewTab() {
+        async function openServiceOrderPreviewInNewTab(resolvedData = null) {
             try {
-                const data = await resolveServiceOrderForActions();
+                const data = resolvedData || await resolveServiceOrderForActions();
                 const html = buildServiceOrderPrintableHtml(data);
                 const newTab = window.open('', '_blank');
                 if (!newTab) throw new Error('Não foi possível abrir nova aba.');
