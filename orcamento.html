@@ -752,12 +752,69 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            display: flex;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(6px);
+            display: none;
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            padding: 1rem;
+        }
+
+        .tracking-modal {
+            width: min(900px, 95%);
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 16px;
+            padding: 24px;
+            background: linear-gradient(145deg, #0b1220, #0f1a2f);
+            box-shadow: 0 0 40px rgba(0,255,150,0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .tracking-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .tracking-modal-title {
+            flex: 1;
+            margin: 0;
+            text-align: center;
+            color: var(--accent-green);
+        }
+
+        .tracking-modal-close {
+            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .tracking-modal .order-tracking {
+            padding: 0;
+            max-width: 100%;
+            margin: 0;
+        }
+
+        .tracking-modal .order-tracking-card {
+            max-width: 100%;
+            background: rgba(14, 25, 42, 0.88);
+            border: 1px solid rgba(34, 197, 94, 0.35);
+            box-shadow: 0 0 22px rgba(0,255,150,0.12);
+            border-radius: 14px;
+            padding: 1.2rem;
+        }
+
+        .tracking-modal .order-tracking-form {
+            justify-content: center;
         }
 
         #howItWorksModal .modal-content {
@@ -2052,6 +2109,12 @@
             .order-modal-actions .btn {
                 width: 100%;
             }
+
+            .tracking-modal {
+                width: 96%;
+                max-height: 92vh;
+                padding: 16px;
+            }
         }
     </style>
 </head>
@@ -2281,18 +2344,26 @@
             </div>
         </section>
 
-        <section class="order-tracking" id="ordersTrackingSection">
-            <h2 class="section-title">Pedidos</h2>
-            <div class="order-tracking-card">
-                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Consulte o andamento do seu pedido pelo número do pedido ou WhatsApp.</p>
-                <div class="order-tracking-form">
-                    <input type="text" id="orderTrackingInput" placeholder="Ex: 12345 ou (11) 99999-9999" inputmode="text">
-                    <button type="button" class="btn btn-primary" onclick="trackOrderFromHome()">Consultar pedido</button>
+        <div id="ordersTrackingModal" class="modal-overlay">
+            <div class="modal-content tracking-modal">
+                <div class="tracking-modal-header">
+                    <span style="width:36px; height:36px;" aria-hidden="true"></span>
+                    <h2 class="tracking-modal-title">Acompanhar Pedido</h2>
+                    <button type="button" class="tracking-modal-close" aria-label="Fechar modal de pedidos" onclick="closeOrdersTrackingModal()">×</button>
                 </div>
-                <p class="order-tracking-feedback" id="orderTrackingFeedback"></p>
-                <div class="order-tracking-result" id="orderTrackingResult"></div>
+                <section class="order-tracking" id="ordersTrackingSection">
+                    <div class="order-tracking-card">
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">Consulte o andamento do seu pedido pelo número do pedido ou WhatsApp.</p>
+                        <div class="order-tracking-form">
+                            <input type="text" id="orderTrackingInput" placeholder="Ex: 12345 ou (11) 99999-9999" inputmode="text">
+                            <button type="button" class="btn btn-primary" onclick="trackOrderFromHome()">Consultar pedido</button>
+                        </div>
+                        <p class="order-tracking-feedback" id="orderTrackingFeedback"></p>
+                        <div class="order-tracking-result" id="orderTrackingResult"></div>
+                    </div>
+                </section>
             </div>
-        </section>
+        </div>
     </div>
 
     <!-- Quote Modal -->
@@ -7790,8 +7861,24 @@ async function getMelhorEnvioShipping(cep, type) {
             closeMobileNav();
             document.getElementById('mainContent').style.display = 'block';
             closeAdminPanel();
-            document.getElementById('ordersTrackingSection').scrollIntoView({ behavior: 'smooth' });
-            document.getElementById('orderTrackingInput')?.focus();
+            openOrdersTrackingModal();
+        }
+
+        function openOrdersTrackingModal() {
+            const ordersTrackingModal = document.getElementById('ordersTrackingModal');
+            if (!ordersTrackingModal) return;
+            ordersTrackingModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => {
+                document.getElementById('orderTrackingInput')?.focus();
+            }, 20);
+        }
+
+        function closeOrdersTrackingModal() {
+            const ordersTrackingModal = document.getElementById('ordersTrackingModal');
+            if (!ordersTrackingModal) return;
+            ordersTrackingModal.style.display = 'none';
+            document.body.style.overflow = '';
         }
 
         function goToContact() {
@@ -8358,6 +8445,7 @@ async function getMelhorEnvioShipping(cep, type) {
             const quoteModal = document.getElementById('quoteModal');
             const orderModal = document.getElementById('orderModal');
             const customerAdminModal = document.getElementById('customerAdminModal');
+            const ordersTrackingModal = document.getElementById('ordersTrackingModal');
             if (event.target == quoteModal) {
                 closeQuoteModal();
             }
@@ -8367,8 +8455,19 @@ async function getMelhorEnvioShipping(cep, type) {
             if (event.target == customerAdminModal) {
                 closeAdminCustomerModal();
             }
+            if (event.target == ordersTrackingModal) {
+                closeOrdersTrackingModal();
+            }
         }
         window.addEventListener('click', handleModalOutsideClick);
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') return;
+            const ordersTrackingModal = document.getElementById('ordersTrackingModal');
+            if (ordersTrackingModal && ordersTrackingModal.style.display === 'flex') {
+                closeOrdersTrackingModal();
+            }
+        });
 </script> <!-- 🔥 FECHAR AQUI -->
 </body>
 </html>
