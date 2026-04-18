@@ -761,14 +761,16 @@
         }
 
         .tracking-modal {
-            width: min(900px, 95%);
+            width: min(960px, 95%);
             max-height: 90vh;
             overflow-y: auto;
-            border-radius: 16px;
-            padding: 24px;
-            background: linear-gradient(145deg, #0b1220, #0f1a2f);
-            box-shadow: 0 0 40px rgba(0,255,150,0.15);
-            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 18px;
+            padding: 26px;
+            background:
+                radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 42%),
+                linear-gradient(145deg, #091321, #0e1b30 58%, #0c1628);
+            box-shadow: 0 24px 64px rgba(2, 8, 23, 0.72), 0 0 0 1px rgba(148, 163, 184, 0.06);
+            border: 1px solid rgba(34, 197, 94, 0.22);
         }
 
         .tracking-modal-header {
@@ -776,7 +778,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.1rem;
         }
 
         .tracking-modal-title {
@@ -784,18 +786,28 @@
             margin: 0;
             text-align: center;
             color: var(--accent-green);
+            letter-spacing: 0.02em;
+            font-size: clamp(1.4rem, 2.4vw, 1.85rem);
+            text-shadow: 0 0 18px rgba(34, 197, 94, 0.2);
         }
 
         .tracking-modal-close {
-            border: 1px solid var(--border-color);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-main);
-            width: 36px;
-            height: 36px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background: rgba(255, 255, 255, 0.04);
+            color: #dbe5f5;
+            width: 38px;
+            height: 38px;
             border-radius: 999px;
             cursor: pointer;
             font-size: 1.2rem;
             line-height: 1;
+            transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .tracking-modal-close:hover {
+            transform: translateY(-1px);
+            border-color: rgba(34, 197, 94, 0.6);
+            background: rgba(34, 197, 94, 0.1);
         }
 
         .tracking-modal .order-tracking {
@@ -806,15 +818,263 @@
 
         .tracking-modal .order-tracking-card {
             max-width: 100%;
-            background: rgba(14, 25, 42, 0.88);
-            border: 1px solid rgba(34, 197, 94, 0.35);
-            box-shadow: 0 0 22px rgba(0,255,150,0.12);
-            border-radius: 14px;
-            padding: 1.2rem;
+            background: linear-gradient(170deg, rgba(15, 29, 50, 0.95), rgba(12, 24, 42, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 18px 32px rgba(2, 8, 23, 0.38);
+            border-radius: 16px;
+            padding: 1.35rem;
         }
 
         .tracking-modal .order-tracking-form {
             justify-content: center;
+            gap: 0.9rem;
+            margin-bottom: 0.9rem;
+        }
+
+        .tracking-modal .order-tracking-form input {
+            border-radius: 11px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: rgba(15, 23, 42, 0.9);
+            padding: 0.82rem 0.95rem;
+            min-height: 46px;
+        }
+
+        .tracking-modal .order-tracking-form input:focus {
+            border-color: rgba(34, 197, 94, 0.72);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.14);
+        }
+
+        .tracking-modal .order-tracking-form .btn {
+            min-height: 46px;
+            padding-inline: 1.2rem;
+            border-radius: 11px;
+        }
+
+        .tracking-modal .order-tracking-feedback {
+            margin-bottom: 0.75rem;
+            font-size: 0.93rem;
+            font-weight: 500;
+        }
+
+        .tracking-modal .order-tracking-result {
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: linear-gradient(160deg, rgba(8, 15, 29, 0.9), rgba(12, 22, 39, 0.95));
+            padding: 1rem;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+        }
+
+        .tracking-result-card {
+            position: relative;
+            border-radius: 14px;
+            border: 1px solid rgba(34, 197, 94, 0.22);
+            background: linear-gradient(165deg, rgba(12, 25, 43, 0.86), rgba(8, 18, 33, 0.96));
+            box-shadow: 0 20px 36px rgba(2, 8, 23, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            padding: 1rem 1rem 0.95rem;
+            overflow: hidden;
+        }
+
+        .tracking-result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 18px;
+            right: 18px;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0), rgba(16, 185, 129, 0.7), rgba(16, 185, 129, 0));
+        }
+
+        .tracking-result-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.7rem;
+            margin-bottom: 0.9rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .tracking-result-title {
+            margin: 0;
+            font-size: 0.79rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #9db2ce;
+        }
+
+        .tracking-result-order-number {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #e7f0ff;
+            margin-top: 0.1rem;
+        }
+
+        .tracking-result-status-label {
+            display: block;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #9db2ce;
+            margin-bottom: 0.25rem;
+            text-align: right;
+        }
+
+        .tracking-result-status .status-pill {
+            margin: 0;
+            padding: 0.45rem 0.78rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 8px 18px rgba(2, 8, 23, 0.35), inset 0 1px 0 rgba(255,255,255,0.24);
+        }
+
+        .tracking-result-body {
+            display: grid;
+            grid-template-columns: minmax(250px, 1.1fr) minmax(220px, 0.9fr);
+            gap: 1rem;
+        }
+
+        .tracking-meta {
+            display: grid;
+            gap: 0.6rem;
+            align-content: start;
+        }
+
+        .tracking-meta-item {
+            display: flex;
+            gap: 0.65rem;
+            align-items: flex-start;
+            padding: 0.46rem 0.58rem;
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            background: rgba(10, 18, 32, 0.56);
+        }
+
+        .tracking-meta-icon {
+            font-size: 1rem;
+            line-height: 1.2;
+            width: 1.2rem;
+            text-align: center;
+            flex: 0 0 1.2rem;
+            opacity: 0.95;
+        }
+
+        .tracking-meta-label {
+            display: block;
+            font-size: 0.72rem;
+            color: #8da4c3;
+            margin-bottom: 0.12rem;
+            text-transform: uppercase;
+            letter-spacing: 0.055em;
+        }
+
+        .tracking-meta-value {
+            color: #e6eefc;
+            font-size: 0.92rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .tracking-timeline {
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            background: rgba(7, 13, 25, 0.58);
+            padding: 0.8rem 0.75rem 0.7rem 0.9rem;
+        }
+
+        .tracking-timeline-title {
+            margin: 0 0 0.75rem;
+            color: #c9daf3;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .tracking-timeline-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .tracking-timeline-item {
+            position: relative;
+            padding: 0 0 0.82rem 1.42rem;
+            color: #92a8c7;
+        }
+
+        .tracking-timeline-item:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 0.38rem;
+            top: 0.55rem;
+            bottom: -0.15rem;
+            width: 2px;
+            background: rgba(148, 163, 184, 0.24);
+        }
+
+        .tracking-timeline-bullet {
+            position: absolute;
+            left: 0;
+            top: 0.16rem;
+            width: 0.76rem;
+            height: 0.76rem;
+            border-radius: 999px;
+            border: 2px solid rgba(148, 163, 184, 0.58);
+            background: #0f1b30;
+        }
+
+        .tracking-timeline-item.done {
+            color: #c6d8f2;
+        }
+
+        .tracking-timeline-item.done .tracking-timeline-bullet {
+            border-color: rgba(52, 211, 153, 0.88);
+            background: rgba(16, 185, 129, 0.92);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.17);
+        }
+
+        .tracking-timeline-item.done:not(:last-child)::before {
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.86), rgba(96, 165, 250, 0.36));
+        }
+
+        .tracking-timeline-item.current {
+            color: #eff7ff;
+        }
+
+        .tracking-timeline-item.current .tracking-timeline-bullet {
+            border-color: rgba(16, 185, 129, 1);
+            background: #10b981;
+            box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.22), 0 0 20px rgba(16, 185, 129, 0.35);
+        }
+
+        .tracking-timeline-label {
+            display: inline-block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            line-height: 1.32;
+        }
+
+        .tracking-card-footer {
+            margin-top: 0.95rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid rgba(148, 163, 184, 0.18);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .tracking-whatsapp-btn {
+            min-height: 42px;
+            border-radius: 10px;
+            padding-inline: 1.1rem;
+            box-shadow: 0 10px 20px rgba(22, 163, 74, 0.24);
+        }
+
+        @media (max-width: 900px) {
+            .tracking-result-body {
+                grid-template-columns: 1fr;
+            }
         }
 
         #howItWorksModal .modal-content {
@@ -2114,6 +2374,27 @@
                 width: 96%;
                 max-height: 92vh;
                 padding: 16px;
+            }
+
+            .tracking-modal-title {
+                font-size: 1.28rem;
+            }
+
+            .tracking-modal .order-tracking-card {
+                padding: 1rem;
+            }
+
+            .tracking-result-head {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .tracking-result-status-label {
+                text-align: left;
+            }
+
+            .tracking-card-footer .tracking-whatsapp-btn {
+                width: 100%;
             }
         }
     </style>
@@ -4674,6 +4955,24 @@
             return Array.from(candidates).filter(Boolean);
         }
 
+        function buildOrderTrackingTimeline(status) {
+            const normalizedStatus = normalizeOperationalStatus(status);
+            const steps = [
+                ORDER_TRACKING_STATUSES.PEDIDO_EM_ANALISE,
+                ORDER_TRACKING_STATUSES.OS_APROVADA_MANUTENCAO,
+                ORDER_TRACKING_STATUSES.MANUTENCAO_CONCLUIDA,
+                ORDER_TRACKING_STATUSES.AGENDAR_DEVOLUCAO,
+                ORDER_TRACKING_STATUSES.FINALIZADO
+            ];
+            const currentIndex = Math.max(steps.indexOf(normalizedStatus), 0);
+            return steps.map((step, index) => {
+                let stateClass = '';
+                if (index < currentIndex) stateClass = 'done';
+                if (index === currentIndex) stateClass = 'current';
+                return `<li class="tracking-timeline-item ${stateClass}"><span class="tracking-timeline-bullet" aria-hidden="true"></span><span class="tracking-timeline-label">${escapeHtml(formatStatus(step))}</span></li>`;
+            }).join('');
+        }
+
         async function findTrackableOrder(searchTerm) {
             const client = ensureSupabaseClient(true);
             if (!client) throw new Error('Supabase não configurado.');
@@ -4740,15 +5039,50 @@
             const status = normalizeOperationalStatus(order?.status || '');
             const statusLabel = formatStatus(status);
             const statusColor = getStatusColor(status);
+            const timeline = buildOrderTrackingTimeline(status);
 
             result.innerHTML = `
-                <div><strong>Pedido:</strong> #${escapeHtml(String(order?.numero_pedido ?? '-'))}</div>
-                <div><strong>Cliente:</strong> ${escapeHtml(order?.cliente_nome || 'Não informado')}</div>
-                <div><strong>Aparelho/Modelo:</strong> ${escapeHtml(order?.modelo_dispositivo || 'Não informado')}</div>
-                <div><strong>WhatsApp:</strong> ${escapeHtml(formatPhoneForDisplay(order?.whatsapp || '')) || 'Não informado'}</div>
-                <div><strong>Abertura:</strong> ${escapeHtml(createdAt)}</div>
-                <div style="margin-top:0.45rem;"><strong>Status atual:</strong></div>
-                <div class="status-pill" style="background:${statusColor};">${escapeHtml(statusLabel)}</div>
+                <article class="tracking-result-card">
+                    <header class="tracking-result-head">
+                        <div>
+                            <p class="tracking-result-title">Acompanhamento do pedido</p>
+                            <div class="tracking-result-order-number">#${escapeHtml(String(order?.numero_pedido ?? '-'))}</div>
+                        </div>
+                        <div class="tracking-result-status">
+                            <span class="tracking-result-status-label">Status atual</span>
+                            <span class="status-pill" style="background:${statusColor};">${escapeHtml(statusLabel)}</span>
+                        </div>
+                    </header>
+                    <div class="tracking-result-body">
+                        <div class="tracking-meta">
+                            <div class="tracking-meta-item">
+                                <span class="tracking-meta-icon" aria-hidden="true">👤</span>
+                                <div><span class="tracking-meta-label">Cliente</span><span class="tracking-meta-value">${escapeHtml(order?.cliente_nome || 'Não informado')}</span></div>
+                            </div>
+                            <div class="tracking-meta-item">
+                                <span class="tracking-meta-icon" aria-hidden="true">📱</span>
+                                <div><span class="tracking-meta-label">Aparelho/Modelo</span><span class="tracking-meta-value">${escapeHtml(order?.modelo_dispositivo || 'Não informado')}</span></div>
+                            </div>
+                            <div class="tracking-meta-item">
+                                <span class="tracking-meta-icon" aria-hidden="true">💬</span>
+                                <div><span class="tracking-meta-label">WhatsApp</span><span class="tracking-meta-value">${escapeHtml(formatPhoneForDisplay(order?.whatsapp || '')) || 'Não informado'}</span></div>
+                            </div>
+                            <div class="tracking-meta-item">
+                                <span class="tracking-meta-icon" aria-hidden="true">🗓️</span>
+                                <div><span class="tracking-meta-label">Abertura</span><span class="tracking-meta-value">${escapeHtml(createdAt)}</span></div>
+                            </div>
+                        </div>
+                        <aside class="tracking-timeline" aria-label="Linha do tempo do pedido">
+                            <h3 class="tracking-timeline-title">Linha do tempo</h3>
+                            <ol class="tracking-timeline-list">${timeline}</ol>
+                        </aside>
+                    </div>
+                    <footer class="tracking-card-footer">
+                        <button type="button" class="btn btn-primary tracking-whatsapp-btn" onclick="abrirWhatsApp('Olá! Quero ajuda com o pedido #${escapeHtml(String(order?.numero_pedido ?? '-'))}.')">
+                            Falar no WhatsApp
+                        </button>
+                    </footer>
+                </article>
             `;
             result.style.display = 'block';
         }
