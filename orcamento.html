@@ -1825,12 +1825,15 @@
             width: 100%;
             text-align: left;
             border: 1px solid rgba(148, 163, 184, 0.27);
-            border-radius: 10px;
-            padding: 0.7rem;
+            border-radius: 12px;
+            padding: 0.85rem 0.8rem;
             background: linear-gradient(165deg, rgba(17, 28, 47, 0.95), rgba(10, 18, 34, 0.95));
             color: var(--text-primary);
             cursor: pointer;
             transition: border-color 0.18s ease, transform 0.18s ease;
+            display: grid;
+            gap: 0.4rem;
+            min-height: 142px;
         }
         #adminPanel #service-orders .os-kanban-card:hover {
             border-color: var(--accent-green);
@@ -1839,47 +1842,87 @@
         #adminPanel #service-orders .os-card-top {
             display: flex;
             justify-content: space-between;
-            gap: 0.4rem;
+            gap: 0.55rem;
             align-items: center;
-            margin-bottom: 0.35rem;
+            min-width: 0;
         }
         #adminPanel #service-orders .os-card-number {
             font-weight: 700;
             color: #f6fbff;
-            font-size: 0.88rem;
+            font-size: 0.84rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        #adminPanel #service-orders .os-card-meta {
+        #adminPanel #service-orders .os-card-date {
             color: #99b6de;
-            font-size: 0.75rem;
+            font-size: 0.73rem;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         #adminPanel #service-orders .os-card-client {
-            font-size: 0.84rem;
-            font-weight: 600;
-            color: #d9e8ff;
-            margin-bottom: 0.2rem;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #ebf4ff;
+            line-height: 1.25;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         #adminPanel #service-orders .os-card-device,
         #adminPanel #service-orders .os-card-defect {
-            font-size: 0.79rem;
-            color: var(--text-secondary);
-            line-height: 1.3;
-            margin-bottom: 0.2rem;
+            min-width: 0;
+            line-height: 1.34;
+        }
+        #adminPanel #service-orders .os-card-device {
+            font-size: 0.78rem;
+            color: #bed0ec;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #adminPanel #service-orders .os-card-defect {
+            font-size: 0.76rem;
+            color: #9cb1ce;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 2.05em;
         }
         #adminPanel #service-orders .os-card-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-top: 0.3rem;
-            margin-top: 0.1rem;
+            padding-top: 0.45rem;
+            margin-top: auto;
             border-top: 1px dashed rgba(148, 163, 184, 0.22);
+            gap: 0.5rem;
+            min-width: 0;
+        }
+        #adminPanel #service-orders .os-card-photo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.28rem;
+            font-size: 0.72rem;
+            color: #95accd;
+            opacity: 0.92;
+        }
+        #adminPanel #service-orders .os-card-photo.is-hidden {
+            visibility: hidden;
         }
         #adminPanel #service-orders .os-card-badge {
             border-radius: 999px;
-            padding: 0.08rem 0.45rem;
-            font-size: 0.7rem;
+            padding: 0.18rem 0.48rem;
+            font-size: 0.68rem;
             color: #cce2ff;
             border: 1px solid rgba(59, 130, 246, 0.4);
             background: rgba(37, 99, 235, 0.16);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 62%;
         }
         #adminPanel #service-orders .os-kanban-empty {
             color: var(--text-secondary);
@@ -9029,18 +9072,18 @@ async function getMelhorEnvioShipping(cep, type) {
                         const deviceLabel = [brand, model].filter(Boolean).join(' ') || 'Dispositivo não informado';
                         const createdAt = os.data_criacao ? new Date(os.data_criacao).toLocaleDateString('pt-BR') : '-';
                         const defectLabel = (os.servico || 'Defeito não informado').trim();
-                        const shortDefect = defectLabel.length > 54 ? `${defectLabel.slice(0, 54)}...` : defectLabel;
+                        const hasPhotos = Boolean(os.foto) || Number(os.total_fotos || 0) > 0 || Number(os.photos_count || 0) > 0;
                         return `
                             <button type="button" class="os-kanban-card js-service-order-kanban-card" data-id="${os.id}">
                                 <div class="os-card-top">
                                     <span class="os-card-number">${escapeHtml(os.numero_os || '-')}</span>
-                                    <span class="os-card-meta">${escapeHtml(createdAt)}</span>
+                                    <span class="os-card-date">${escapeHtml(createdAt)}</span>
                                 </div>
                                 <div class="os-card-client">${escapeHtml(os.cliente_nome || 'Sem cliente')}</div>
                                 <div class="os-card-device">${escapeHtml(deviceLabel)}</div>
-                                <div class="os-card-defect">${escapeHtml(shortDefect)}</div>
+                                <div class="os-card-defect">${escapeHtml(defectLabel)}</div>
                                 <div class="os-card-footer">
-                                    <span class="os-card-meta">📷</span>
+                                    <span class="os-card-photo ${hasPhotos ? '' : 'is-hidden'}">📷 <span>Foto</span></span>
                                     <span class="os-card-badge">${escapeHtml(formatStatus(os.status || status))}</span>
                                 </div>
                             </button>
