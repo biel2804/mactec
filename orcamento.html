@@ -8378,6 +8378,7 @@ async function getMelhorEnvioShipping(cep, type) {
         let currentServiceOrderView = SERVICE_ORDER_VIEW.KANBAN;
         const MOBILE_PREVIEW_MAX_WIDTH = 768;
         const SERVICE_ORDER_PHOTOS_BUCKET = 'os-photos';
+        const SERVICE_ORDER_PRINT_MAX_PHOTOS = 4;
         let currentServiceOrderPhotos = [];
 
         function isMobileServiceOrderViewport() {
@@ -8999,6 +9000,21 @@ async function getMelhorEnvioShipping(cep, type) {
         }
 
         function buildServiceOrderPrintableHtml(data) {
+            const printablePhotos = Array.isArray(data?.printable_photos) ? data.printable_photos : [];
+            const photoSectionHtml = printablePhotos.length
+                ? `
+                        <div class="section photo-section">
+                            <h3>Registro Fotográfico do Aparelho</h3>
+                            <div class="photo-grid photo-grid-${Math.min(printablePhotos.length, SERVICE_ORDER_PRINT_MAX_PHOTOS)}">
+                                ${printablePhotos.map((photo) => `
+                                    <figure class="photo-item">
+                                        <img src="${escapeHtml(photo.url || '')}" alt="Foto da O.S.">
+                                    </figure>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `
+                : '';
             return `
                     <!DOCTYPE html>
                     <html>
@@ -9013,6 +9029,14 @@ async function getMelhorEnvioShipping(cep, type) {
                             .row { display: flex; justify-content: space-between; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
                             .label { font-weight: bold; }
                             .status { padding: 5px 10px; border-radius: 4px; display: inline-block; color: white; }
+                            .photo-section { margin-top: 12px; margin-bottom: 16px; }
+                            .photo-grid { display: grid; gap: 8px; }
+                            .photo-grid-1,
+                            .photo-grid-2,
+                            .photo-grid-3,
+                            .photo-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                            .photo-item { margin: 0; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; background: #fff; }
+                            .photo-item img { width: 100%; height: 125px; object-fit: cover; display: block; }
                             .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
                         </style>
                     </head>
@@ -9058,6 +9082,8 @@ async function getMelhorEnvioShipping(cep, type) {
                             ${data.observacoes ? `<div class="row"><div><span class="label">Observações:</span> ${data.observacoes}</div></div>` : ''}
                         </div>
 
+                        ${photoSectionHtml}
+
                         <div class="footer">
                             <p>Documento gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
                             <p>MacTec Support - Assistência Técnica Profissional</p>
@@ -9071,10 +9097,36 @@ async function getMelhorEnvioShipping(cep, type) {
             return new Blob([buildServiceOrderPrintableHtml(data)], { type: 'text/html;charset=utf-8' });
         }
 
+        async function getPrintableServiceOrderPhotos(serviceOrderId) {
+            if (!serviceOrderId) return [];
+            try {
+                const photos = await listServiceOrderPhotos(serviceOrderId);
+                return photos
+                    .map((photo) => ({
+                        ...photo,
+                        url: resolveServiceOrderPhotoUrl(photo.storage_path)
+                    }))
+                    .filter((photo) => photo.url)
+                    .slice(0, SERVICE_ORDER_PRINT_MAX_PHOTOS);
+            } catch (error) {
+                console.warn('Falha ao carregar fotos para impressão da O.S.:', error?.message || error);
+                return [];
+            }
+        }
+
         async function resolveServiceOrderForActions(serviceOrderId = null) {
-            if (serviceOrderId) return fetchServiceOrderById(serviceOrderId);
-            if (currentServiceOrderPreviewData?.id) return fetchServiceOrderById(currentServiceOrderPreviewData.id);
-            if (currentServiceOrderPreviewData) return currentServiceOrderPreviewData;
+            let data = null;
+            if (serviceOrderId) {
+                data = await fetchServiceOrderById(serviceOrderId);
+            } else if (currentServiceOrderPreviewData?.id) {
+                data = await fetchServiceOrderById(currentServiceOrderPreviewData.id);
+            } else if (currentServiceOrderPreviewData) {
+                data = currentServiceOrderPreviewData;
+            }
+            if (data) {
+                const printablePhotos = await getPrintableServiceOrderPhotos(data.id);
+                return { ...data, printable_photos: printablePhotos };
+            }
             throw new Error('Nenhuma O.S. em pré-visualização.');
         }
 
