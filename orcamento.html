@@ -1958,72 +1958,133 @@
             background: rgba(15, 23, 42, 0.45);
         }
         #adminPanel #service-orders .os-kanban-section {
-            margin-bottom: 2rem;
+            margin-bottom: 1.8rem;
             display: grid;
-            gap: 0.95rem;
+            gap: 1.15rem;
         }
         #adminPanel #service-orders .os-list-panel {
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 12px;
-            background: linear-gradient(180deg, rgba(16, 27, 46, 0.9), rgba(11, 20, 36, 0.94));
-            box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.08);
-            padding: 0.7rem 0.8rem 0.5rem;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(13, 23, 39, 0.9), rgba(10, 18, 33, 0.92));
+            box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.05);
+            padding: 0.8rem 0.9rem 0.65rem;
+            position: relative;
+        }
+        #adminPanel #service-orders .os-list-panel::before {
+            content: '';
+            display: block;
+            height: 1px;
+            margin: -0.15rem 0 0.65rem;
+            background: linear-gradient(90deg, rgba(148, 163, 184, 0.3), rgba(148, 163, 184, 0.05) 65%, transparent);
         }
         #adminPanel #service-orders .os-list-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 0.65rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.65rem;
+        }
+        #adminPanel #service-orders .os-list-title {
+            display: grid;
+            gap: 0.2rem;
         }
         #adminPanel #service-orders .os-list-header h3 {
             margin: 0;
-            color: #d8e7ff;
-            font-size: 0.98rem;
-            font-weight: 650;
-            letter-spacing: 0.01em;
+            color: #d2e3ff;
+            font-size: 0.92rem;
+            font-weight: 620;
+            letter-spacing: 0.025em;
+            text-transform: uppercase;
+        }
+        #adminPanel #service-orders .os-list-subtitle {
+            margin: 0;
+            color: #86a0c4;
+            font-size: 0.75rem;
         }
         #adminPanel #service-orders .os-list-view-all-btn {
-            height: 30px;
-            padding: 0 10px;
-            font-size: 0.77rem;
-            border-radius: 8px;
-            background: rgba(15, 23, 42, 0.55);
-            border-color: rgba(148, 163, 184, 0.34);
+            height: 29px;
+            padding: 0 11px;
+            font-size: 0.74rem;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.42);
+            border-color: rgba(148, 163, 184, 0.3);
+            color: #bdd2f3;
+            font-weight: 600;
         }
         #adminPanel #service-orders .os-list-table-container {
-            border: 1px solid rgba(148, 163, 184, 0.18);
-            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 12px;
             overflow: hidden;
-            margin-bottom: 0.45rem;
-            background: rgba(8, 15, 28, 0.55);
+            margin-bottom: 0.5rem;
+            background: rgba(7, 14, 26, 0.62);
+        }
+        #adminPanel #service-orders .os-list-table {
+            width: 100%;
+            border-collapse: collapse;
         }
         #adminPanel #service-orders .os-list-table thead th {
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: #9bb2d4;
-            padding: 0.55rem 0.8rem;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-            background: rgba(12, 20, 34, 0.7);
+            letter-spacing: 0.065em;
+            color: #8fa7cb;
+            padding: 0.62rem 0.78rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            background: rgba(11, 20, 34, 0.74);
+            text-align: left;
+            font-weight: 620;
         }
         #adminPanel #service-orders .os-list-table tbody td {
-            padding: 0.55rem 0.8rem;
-            font-size: 0.83rem;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-            color: #d6e5ff;
+            padding: 0.64rem 0.78rem;
+            font-size: 0.81rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.09);
+            color: #c9daf6;
             vertical-align: middle;
+            line-height: 1.35;
         }
         #adminPanel #service-orders .os-list-table tbody tr:last-child td {
             border-bottom: none;
         }
+        #adminPanel #service-orders .os-list-table tbody tr {
+            transition: background-color 0.18s ease;
+        }
         #adminPanel #service-orders .os-list-table tbody tr:hover td {
-            background: rgba(37, 99, 235, 0.08);
+            background: rgba(37, 99, 235, 0.09);
+        }
+        #adminPanel #service-orders .os-list-table tbody td:first-child {
+            color: #e5efff;
+            font-weight: 670;
+            font-variant-numeric: tabular-nums;
+        }
+        #adminPanel #service-orders .os-list-table td:nth-child(6),
+        #adminPanel #service-orders .os-list-table th:nth-child(6) {
+            white-space: nowrap;
+            width: 108px;
+        }
+        #adminPanel #service-orders .os-list-table td:nth-child(7),
+        #adminPanel #service-orders .os-list-table th:nth-child(7) {
+            width: 140px;
+            text-align: right;
+        }
+        #adminPanel #service-orders .os-list-value {
+            display: inline-block;
+            max-width: 240px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        #adminPanel #service-orders .os-list-defect {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            max-width: 280px;
+            color: #adc2e1;
         }
         #adminPanel #service-orders .os-list-table .os-list-empty {
             text-align: center;
             color: var(--text-secondary);
-            padding: 0.95rem;
+            padding: 1.1rem;
         }
         #adminPanel #service-orders .os-status-badge {
             --status-color: #6b7280;
@@ -2031,30 +2092,38 @@
             align-items: center;
             justify-content: center;
             border-radius: 999px;
-            padding: 0.18rem 0.58rem;
-            font-size: 0.74rem;
-            font-weight: 650;
-            color: #e7f0ff;
-            border: 1px solid color-mix(in srgb, var(--status-color) 54%, #ffffff 22%);
-            background: color-mix(in srgb, var(--status-color) 26%, rgba(15, 23, 42, 0.9));
+            padding: 0.21rem 0.62rem;
+            font-size: 0.71rem;
+            font-weight: 680;
+            color: #eaf3ff;
+            border: 1px solid color-mix(in srgb, var(--status-color) 58%, #ffffff 20%);
+            background:
+                linear-gradient(180deg, color-mix(in srgb, var(--status-color) 24%, rgba(255, 255, 255, 0.02)), transparent),
+                color-mix(in srgb, var(--status-color) 20%, rgba(15, 23, 42, 0.92));
             white-space: nowrap;
+            letter-spacing: 0.01em;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
         }
         #adminPanel #service-orders .os-list-actions {
             display: flex;
             gap: 0.35rem;
             align-items: center;
+            justify-content: flex-end;
         }
         #adminPanel #service-orders .os-list-action-btn {
             height: 28px;
             padding: 0 10px;
-            border-radius: 7px;
-            font-size: 0.75rem;
-            font-weight: 650;
+            border-radius: 8px;
+            font-size: 0.72rem;
+            font-weight: 670;
+            border-width: 1px;
+            min-width: 54px;
         }
         #adminPanel #service-orders .os-list-meta {
             margin: 0;
-            font-size: 0.78rem;
-            color: #8fa7cb;
+            font-size: 0.74rem;
+            color: #809bc0;
+            padding: 0.1rem 0.1rem 0.05rem;
         }
         #adminPanel #service-orders .os-photos-section {
             border: 1px solid var(--border-color);
@@ -3756,7 +3825,10 @@
                     <div id="serviceOrdersKanbanBoard" class="os-kanban-board"></div>
                     <section class="os-list-panel" aria-label="Lista de ordens de serviço">
                         <div class="os-list-header">
-                            <h3>Lista de Ordens de Serviço</h3>
+                            <div class="os-list-title">
+                                <h3>Lista de Ordens de Serviço</h3>
+                                <p class="os-list-subtitle">Visão complementar para conferência rápida e ações operacionais.</p>
+                            </div>
                             <button type="button" class="btn btn-secondary os-list-view-all-btn" onclick="loadServiceOrdersTable()">Ver todas</button>
                         </div>
                         <div class="table-container os-list-table-container">
@@ -9365,10 +9437,10 @@ async function getMelhorEnvioShipping(cep, type) {
                     const deviceLabel = [brand, model].filter(Boolean).join(' ') || 'Não informado';
                     const row = tbody.insertRow();
                     row.innerHTML = `
-                        <td>${escapeHtml(os.numero_os || '-')}</td>
-                        <td>${escapeHtml(os.cliente_nome || 'Não informado')}</td>
-                        <td>${escapeHtml(deviceLabel)}</td>
-                        <td>${escapeHtml(os.servico || 'Não informado')}</td>
+                        <td><span class="os-list-value">${escapeHtml(os.numero_os || '-')}</span></td>
+                        <td><span class="os-list-value">${escapeHtml(os.cliente_nome || 'Não informado')}</span></td>
+                        <td><span class="os-list-value">${escapeHtml(deviceLabel)}</span></td>
+                        <td><span class="os-list-defect">${escapeHtml(os.servico || 'Não informado')}</span></td>
                         <td><span class="os-status-badge" style="--status-color: ${getStatusColor(os.status)};">${formatStatus(os.status)}</span></td>
                         <td>${os.data_criacao ? new Date(os.data_criacao).toLocaleDateString('pt-BR') : '-'}</td>
                         <td>
