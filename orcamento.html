@@ -1564,6 +1564,236 @@
             border-radius: 999px;
         }
 
+        /* Logistics tab (lote 1 visual) */
+        #adminPanel #logistics .logistics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        #adminPanel #logistics .logistics-subtitle {
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        #adminPanel #logistics .logistics-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        #adminPanel #logistics .logistics-summary-card {
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.95));
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.85rem;
+            display: flex;
+            gap: 0.65rem;
+            align-items: center;
+        }
+
+        #adminPanel #logistics .logistics-summary-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            background: rgba(34, 197, 94, 0.12);
+            color: #4ade80;
+            flex: 0 0 auto;
+        }
+
+        #adminPanel #logistics .logistics-summary-card strong {
+            display: block;
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
+        #adminPanel #logistics .logistics-summary-card span {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        #adminPanel #logistics .logistics-main-grid {
+            display: grid;
+            grid-template-columns: 2.2fr 1fr;
+            gap: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        #adminPanel #logistics .logistics-panel {
+            background: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        #adminPanel #logistics .logistics-panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        #adminPanel #logistics .logistics-map-placeholder {
+            min-height: 290px;
+            border-radius: 10px;
+            border: 1px dashed rgba(34, 197, 94, 0.4);
+            background:
+                radial-gradient(circle at 16% 22%, rgba(34, 197, 94, 0.15), transparent 36%),
+                radial-gradient(circle at 74% 62%, rgba(59, 130, 246, 0.12), transparent 40%),
+                linear-gradient(145deg, rgba(2, 6, 23, 0.55), rgba(17, 24, 39, 0.9));
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        #adminPanel #logistics .logistics-route-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        #adminPanel #logistics .logistics-route-tags span {
+            border: 1px solid rgba(34, 197, 94, 0.35);
+            border-radius: 999px;
+            padding: 0.25rem 0.55rem;
+            font-size: 0.78rem;
+            color: #86efac;
+            background: rgba(34, 197, 94, 0.09);
+        }
+
+        #adminPanel #logistics .logistics-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 0.35rem;
+        }
+
+        #adminPanel #logistics .logistics-weekday,
+        #adminPanel #logistics .logistics-day {
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.78rem;
+            padding: 0.42rem 0;
+        }
+
+        #adminPanel #logistics .logistics-weekday {
+            color: var(--text-secondary);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+        }
+
+        #adminPanel #logistics .logistics-day {
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            background: rgba(15, 23, 42, 0.3);
+        }
+
+        #adminPanel #logistics .logistics-day.muted {
+            opacity: 0.35;
+        }
+
+        #adminPanel #logistics .logistics-day.highlight {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: rgba(74, 222, 128, 0.65);
+            color: #bbf7d0;
+            font-weight: 700;
+            position: relative;
+        }
+
+        #adminPanel #logistics .logistics-day.has-pending::after {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #f59e0b;
+            position: absolute;
+            bottom: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #adminPanel #logistics .logistics-deliveries-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        #adminPanel #logistics .logistics-date-badge {
+            border: 1px solid rgba(34, 197, 94, 0.35);
+            background: rgba(34, 197, 94, 0.1);
+            color: #86efac;
+            border-radius: 999px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.78rem;
+        }
+
+        #adminPanel #logistics .logistics-delivery-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        #adminPanel #logistics .logistics-delivery-item {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.36);
+            padding: 0.8rem;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 0.65rem;
+        }
+
+        #adminPanel #logistics .logistics-delivery-meta {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        #adminPanel #logistics .logistics-status-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.77rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        #adminPanel #logistics .logistics-status-transit {
+            color: #93c5fd;
+            background: rgba(59, 130, 246, 0.12);
+            border-color: rgba(96, 165, 250, 0.45);
+        }
+
+        #adminPanel #logistics .logistics-status-pending {
+            color: #fcd34d;
+            background: rgba(245, 158, 11, 0.12);
+            border-color: rgba(245, 158, 11, 0.45);
+        }
+
+        #adminPanel #logistics .logistics-status-scheduled {
+            color: #c4b5fd;
+            background: rgba(139, 92, 246, 0.12);
+            border-color: rgba(167, 139, 250, 0.4);
+        }
+
+        #adminPanel #logistics .logistics-actions {
+            display: flex;
+            gap: 0.35rem;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
         #adminPanel #serviceOrderForm {
             display: grid;
             gap: 12px;
@@ -2739,6 +2969,12 @@
             .finance-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+            #adminPanel #logistics .logistics-summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #adminPanel #logistics .logistics-main-grid {
+                grid-template-columns: 1fr;
+            }
             .admin-mobile-nav-btn {
                 display: inline-flex;
             }
@@ -2840,6 +3076,18 @@
 
             #adminPanel #service-orders .os-summary-grid {
                 grid-template-columns: 1fr 1fr;
+            }
+
+            #adminPanel #logistics .logistics-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            #adminPanel #logistics .logistics-delivery-item {
+                grid-template-columns: 1fr;
+            }
+
+            #adminPanel #logistics .logistics-actions {
+                justify-content: flex-start;
             }
         }
 
@@ -3357,6 +3605,7 @@
                     <button class="admin-tab" data-tab="orders" onclick="switchAdminTab('orders', event)" title="Pedidos"><span class="tab-icon">🧾</span><span class="tab-label">Pedidos</span></button>
                     <button class="admin-tab" data-tab="customers" onclick="switchAdminTab('customers', event)" title="Clientes"><span class="tab-icon">👥</span><span class="tab-label">Clientes</span></button>
                     <button class="admin-tab" data-tab="service-orders" onclick="switchAdminTab('service-orders', event)" title="Ordem de Serviço"><span class="tab-icon">🛠️</span><span class="tab-label">Ordem de Serviço</span></button>
+                    <button class="admin-tab" data-tab="logistics" onclick="switchAdminTab('logistics', event)" title="Logística"><span class="tab-icon">🚚</span><span class="tab-label">Logística</span></button>
                     <button class="admin-tab" data-tab="parts" onclick="switchAdminTab('parts', event)" title="Gerenciar Peças"><span class="tab-icon">📦</span><span class="tab-label">Gerenciar Peças</span></button>
                     <button class="admin-tab" data-tab="despesas" onclick="switchAdminTab('despesas', event)" title="Despesas"><span class="tab-icon">💸</span><span class="tab-label">Despesas</span></button>
                     <button class="admin-tab" data-tab="reports" onclick="switchAdminTab('reports', event)" title="Relatórios"><span class="tab-icon">📈</span><span class="tab-label">Relatórios</span></button>
@@ -3670,6 +3919,164 @@
             <div id="reports" class="tab-content">
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Relatórios</h2>
                 <p style="color: var(--text-secondary);">Use os gráficos do dashboard e filtros de despesas para análise financeira mensal.</p>
+            </div>
+
+            <div id="logistics" class="tab-content">
+                <div class="logistics-header">
+                    <div>
+                        <h2 style="color: var(--accent-green); margin-bottom: 0.35rem;">Logística</h2>
+                        <p class="logistics-subtitle">Rastreamento e gestão de coletas e entregas</p>
+                    </div>
+                </div>
+
+                <div class="logistics-summary-grid">
+                    <article class="logistics-summary-card">
+                        <span class="logistics-summary-icon">🏍️</span>
+                        <div>
+                            <strong>6</strong>
+                            <p>Motoboys em rota</p>
+                            <span>2 aguardando novo chamado</span>
+                        </div>
+                    </article>
+                    <article class="logistics-summary-card">
+                        <span class="logistics-summary-icon">📦</span>
+                        <div>
+                            <strong>14</strong>
+                            <p>Entregas pendentes</p>
+                            <span>5 com prazo até 18h</span>
+                        </div>
+                    </article>
+                    <article class="logistics-summary-card">
+                        <span class="logistics-summary-icon">✅</span>
+                        <div>
+                            <strong>9</strong>
+                            <p>Entregues hoje</p>
+                            <span>Taxa de conclusão 90%</span>
+                        </div>
+                    </article>
+                    <article class="logistics-summary-card">
+                        <span class="logistics-summary-icon">🛣️</span>
+                        <div>
+                            <strong>78 km</strong>
+                            <p>Km rota do dia</p>
+                            <span>Média 13 km por motoboy</span>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="logistics-main-grid">
+                    <section class="logistics-panel">
+                        <div class="logistics-panel-head">
+                            <h3 style="color: var(--accent-green); margin:0;">Mapa de Entregas</h3>
+                        </div>
+                        <div class="logistics-map-placeholder">
+                            <div>
+                                <p style="margin:0 0 0.45rem 0; color: var(--text-secondary);">Container visual preparado para futura integração com mapa real (Leaflet).</p>
+                                <div class="logistics-route-tags">
+                                    <span>Rota Centro-SBC</span>
+                                    <span>Rota Santo André</span>
+                                    <span>Rota Diadema</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button type="button" class="btn btn-secondary" onclick="handleLogisticsPlaceholderAction('Ver todas as rotas')">Ver todas as rotas</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <aside class="logistics-panel">
+                        <div class="logistics-panel-head">
+                            <h3 style="color: var(--accent-green); margin:0;">Calendário</h3>
+                            <span style="color: var(--text-secondary); font-size:0.85rem;">Abr 2026</span>
+                        </div>
+                        <div class="logistics-calendar-grid" aria-label="Calendário logístico abril 2026">
+                            <span class="logistics-weekday">D</span><span class="logistics-weekday">S</span><span class="logistics-weekday">T</span><span class="logistics-weekday">Q</span><span class="logistics-weekday">Q</span><span class="logistics-weekday">S</span><span class="logistics-weekday">S</span>
+                            <span class="logistics-day muted">29</span><span class="logistics-day muted">30</span><span class="logistics-day muted">31</span><span class="logistics-day">1</span><span class="logistics-day">2</span><span class="logistics-day">3</span><span class="logistics-day">4</span>
+                            <span class="logistics-day">5</span><span class="logistics-day">6</span><span class="logistics-day">7</span><span class="logistics-day">8</span><span class="logistics-day">9</span><span class="logistics-day">10</span><span class="logistics-day">11</span>
+                            <span class="logistics-day">12</span><span class="logistics-day">13</span><span class="logistics-day">14</span><span class="logistics-day">15</span><span class="logistics-day">16</span><span class="logistics-day">17</span><span class="logistics-day">18</span>
+                            <span class="logistics-day">19</span><span class="logistics-day">20</span><span class="logistics-day">21</span><span class="logistics-day highlight has-pending">22</span><span class="logistics-day has-pending">23</span><span class="logistics-day">24</span><span class="logistics-day">25</span>
+                            <span class="logistics-day">26</span><span class="logistics-day">27</span><span class="logistics-day">28</span><span class="logistics-day">29</span><span class="logistics-day">30</span><span class="logistics-day muted">1</span><span class="logistics-day muted">2</span>
+                        </div>
+                    </aside>
+                </div>
+
+                <section class="logistics-panel">
+                    <div class="logistics-deliveries-head">
+                        <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                            <h3 style="color: var(--accent-green); margin:0;">Entregas do Dia</h3>
+                            <span class="logistics-date-badge">quinta-feira, 22/04</span>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="handleLogisticsPlaceholderAction('+ Adicionar entrega')">+ Adicionar entrega</button>
+                    </div>
+
+                    <div class="logistics-delivery-list">
+                        <article class="logistics-delivery-item">
+                            <div>
+                                <p style="margin:0 0 0.2rem 0; font-weight:700;">Pedido #1048 — iPhone 11</p>
+                                <p class="logistics-delivery-meta">Cliente: João Pereira • Av. Kennedy, 2350 — São Bernardo do Campo, SP</p>
+                                <p class="logistics-delivery-meta">Motoboy: Carlos • Distância: ~4,2 km</p>
+                            </div>
+                            <div class="logistics-actions">
+                                <span class="logistics-status-pill logistics-status-transit">Em trânsito</span>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Ver rota #1048')">Ver rota</button>
+                                <button type="button" class="btn btn-primary btn-small" onclick="handleLogisticsPlaceholderAction('Confirmar entrega #1048')">Confirmar Entrega</button>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Reportar problema #1048')">Reportar Problema</button>
+                            </div>
+                        </article>
+                        <article class="logistics-delivery-item">
+                            <div>
+                                <p style="margin:0 0 0.2rem 0; font-weight:700;">Pedido #1051 — Redmi Note 12</p>
+                                <p class="logistics-delivery-meta">Cliente: Mariana Alves • Rua das Figueiras, 89 — Santo André, SP</p>
+                                <p class="logistics-delivery-meta">Motoboy: Lucas • Distância: ~6,8 km</p>
+                            </div>
+                            <div class="logistics-actions">
+                                <span class="logistics-status-pill logistics-status-pending">Pendente</span>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Ver rota #1051')">Ver rota</button>
+                                <button type="button" class="btn btn-primary btn-small" onclick="handleLogisticsPlaceholderAction('Confirmar entrega #1051')">Confirmar Entrega</button>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Reportar problema #1051')">Reportar Problema</button>
+                            </div>
+                        </article>
+                        <article class="logistics-delivery-item">
+                            <div>
+                                <p style="margin:0 0 0.2rem 0; font-weight:700;">Pedido #1053 — Samsung A23</p>
+                                <p class="logistics-delivery-meta">Cliente: Renata Souza • Rua Amazonas, 120 — São Caetano do Sul, SP</p>
+                                <p class="logistics-delivery-meta">Motoboy: Rafael • Distância: ~3,1 km</p>
+                            </div>
+                            <div class="logistics-actions">
+                                <span class="logistics-status-pill logistics-status-scheduled">Coleta agendada</span>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Ver rota #1053')">Ver rota</button>
+                                <button type="button" class="btn btn-primary btn-small" onclick="handleLogisticsPlaceholderAction('Confirmar entrega #1053')">Confirmar Entrega</button>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Reportar problema #1053')">Reportar Problema</button>
+                            </div>
+                        </article>
+                        <article class="logistics-delivery-item">
+                            <div>
+                                <p style="margin:0 0 0.2rem 0; font-weight:700;">Pedido #1054 — Motorola Moto G52</p>
+                                <p class="logistics-delivery-meta">Cliente: Fernanda Lima • Av. Dom Pedro II, 480 — Diadema, SP</p>
+                                <p class="logistics-delivery-meta">Motoboy: Carlos • Distância: ~7,4 km</p>
+                            </div>
+                            <div class="logistics-actions">
+                                <span class="logistics-status-pill logistics-status-pending">Pendente</span>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Ver rota #1054')">Ver rota</button>
+                                <button type="button" class="btn btn-primary btn-small" onclick="handleLogisticsPlaceholderAction('Confirmar entrega #1054')">Confirmar Entrega</button>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Reportar problema #1054')">Reportar Problema</button>
+                            </div>
+                        </article>
+                        <article class="logistics-delivery-item">
+                            <div>
+                                <p style="margin:0 0 0.2rem 0; font-weight:700;">Pedido #1055 — MacBook Air M1</p>
+                                <p class="logistics-delivery-meta">Cliente: Guilherme Rocha • Rua Jurubatuba, 340 — São Bernardo do Campo, SP</p>
+                                <p class="logistics-delivery-meta">Motoboy: Lucas • Distância: ~5,6 km</p>
+                            </div>
+                            <div class="logistics-actions">
+                                <span class="logistics-status-pill logistics-status-pending">Pendente</span>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Ver rota #1055')">Ver rota</button>
+                                <button type="button" class="btn btn-primary btn-small" onclick="handleLogisticsPlaceholderAction('Confirmar entrega #1055')">Confirmar Entrega</button>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Reportar problema #1055')">Reportar Problema</button>
+                            </div>
+                        </article>
+                    </div>
+                </section>
             </div>
 
             <!-- Service Orders Tab -->
@@ -7583,6 +7990,11 @@ async function calcularFrete(cep) {
             const wantsAdmin = params.get('admin') === '1';
             if (!wantsAdmin) return;
             openAdminPanel();
+        }
+
+        function handleLogisticsPlaceholderAction(actionLabel) {
+            console.log(`[Logística] ação placeholder: ${actionLabel}`);
+            showAlert(`Ação "${actionLabel}" será conectada no próximo lote.`, 'warning');
         }
 
         function switchAdminTab(tabName, ev = null) {
