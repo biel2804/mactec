@@ -1681,6 +1681,58 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
         }
+        #adminPanel #service-orders .os-view-toggle {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        #adminPanel #service-orders .os-view-toggle .btn.active {
+            background: var(--accent-green);
+            color: #fff;
+            border-color: var(--accent-green);
+        }
+        #adminPanel #service-orders .os-kanban-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        #adminPanel #service-orders .os-kanban-column {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            background: var(--primary-dark);
+            min-height: 160px;
+        }
+        #adminPanel #service-orders .os-kanban-column h4 {
+            margin: 0 0 0.75rem 0;
+            color: var(--accent-green);
+            font-size: 0.95rem;
+        }
+        #adminPanel #service-orders .os-kanban-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        #adminPanel #service-orders .os-kanban-card {
+            width: 100%;
+            text-align: left;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.65rem;
+            background: var(--secondary-dark);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        #adminPanel #service-orders .os-kanban-card:hover {
+            border-color: var(--accent-green);
+        }
+        #adminPanel #service-orders .os-kanban-empty {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin: 0;
+        }
 
         .tab-content {
             display: none;
@@ -3165,7 +3217,12 @@
             <div id="service-orders" class="tab-content">
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Ordem de Serviço</h2>
 
-                <div class="os-container" style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color);">
+                <div class="os-view-toggle">
+                    <button type="button" class="btn btn-secondary active" id="serviceOrdersKanbanBtn" onclick="setServiceOrderView('kanban')">Kanban</button>
+                    <button type="button" class="btn btn-primary" id="serviceOrdersNewBtn" onclick="openNewServiceOrderForm()">+ Nova O.S.</button>
+                </div>
+
+                <div id="serviceOrdersFormSection" class="os-container" style="background: var(--secondary-dark); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color); display:none;">
                     <div class="os-layout">
                         <div>
                             <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Criar / Editar O.S.</h3>
@@ -3242,7 +3299,7 @@
                                 </div>
                                 <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
                                     <button type="submit" class="btn btn-primary" id="saveServiceOrderBtn">Salvar O.S.</button>
-                                    <button type="button" class="btn btn-secondary" id="cancelServiceOrderEditBtn" onclick="resetServiceOrderForm()" style="display:none;">Cancelar edição</button>
+                                    <button type="button" class="btn btn-secondary" id="cancelServiceOrderEditBtn" onclick="cancelServiceOrderEdit()" style="display:none;">Cancelar edição</button>
                                 </div>
                             </form>
                         </div>
@@ -3260,7 +3317,8 @@
                     </div>
                 </div>
 
-                <div style="margin-bottom: 2rem;">
+                <div id="serviceOrdersKanbanSection" style="margin-bottom: 2rem;">
+                    <div id="serviceOrdersKanbanBoard" class="os-kanban-board"></div>
                     <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Listar Ordens de Serviço</h3>
                     <div class="table-container">
                         <table>
@@ -5398,6 +5456,15 @@
                     }
                 });
             });
+            safeRun('bind serviceOrdersKanban click', () => {
+                document.getElementById('serviceOrdersKanbanBoard')?.addEventListener('click', (event) => {
+                    const card = event.target.closest('.js-service-order-kanban-card');
+                    if (!card) return;
+                    const id = String(card.dataset.id || '');
+                    if (!id) return;
+                    editServiceOrder(id);
+                });
+            });
             safeRun('bind companyLogoUrl input', () => {
                 document.getElementById('companyLogoUrl')?.addEventListener('input', (event) => {
                     updateCompanyLogoPreview(event.target.value.trim());
@@ -7004,6 +7071,7 @@ async function calcularFrete(cep) {
             } else if (tabName === 'orders') {
                 loadOrdersTable();
             } else if (tabName === 'service-orders') {
+                initializeServiceOrdersView();
                 loadServiceOrdersTable();
             } else if (tabName === 'customers') {
                 loadCustomersTable();
@@ -8221,8 +8289,19 @@ async function getMelhorEnvioShipping(cep, type) {
         }
 
         // Service Order Functions
+        const SERVICE_ORDER_VIEW = {
+            KANBAN: 'kanban',
+            FORM: 'form'
+        };
+        const SERVICE_ORDER_KANBAN_COLUMNS = [
+            ORDER_STATUS.PENDENTE,
+            ORDER_STATUS.EM_ANDAMENTO,
+            ORDER_STATUS.CONCLUIDO,
+            ORDER_STATUS.FINALIZADO
+        ];
         let currentServiceOrderId = null;
         let currentServiceOrderPreviewData = null;
+        let currentServiceOrderView = SERVICE_ORDER_VIEW.KANBAN;
         const MOBILE_PREVIEW_MAX_WIDTH = 768;
 
         function isMobileServiceOrderViewport() {
@@ -8326,6 +8405,67 @@ async function getMelhorEnvioShipping(cep, type) {
             document.getElementById('saveServiceOrderBtn').textContent = 'Salvar O.S.';
             document.getElementById('cancelServiceOrderEditBtn').style.display = 'none';
             currentServiceOrderId = null;
+        }
+
+        function setServiceOrderView(viewName = SERVICE_ORDER_VIEW.KANBAN) {
+            const normalizedView = viewName === SERVICE_ORDER_VIEW.FORM ? SERVICE_ORDER_VIEW.FORM : SERVICE_ORDER_VIEW.KANBAN;
+            currentServiceOrderView = normalizedView;
+            const isKanban = normalizedView === SERVICE_ORDER_VIEW.KANBAN;
+            const formSection = document.getElementById('serviceOrdersFormSection');
+            const kanbanSection = document.getElementById('serviceOrdersKanbanSection');
+            const kanbanBtn = document.getElementById('serviceOrdersKanbanBtn');
+            if (formSection) formSection.style.display = isKanban ? 'none' : 'block';
+            if (kanbanSection) kanbanSection.style.display = isKanban ? 'block' : 'none';
+            if (kanbanBtn) kanbanBtn.classList.toggle('active', isKanban);
+        }
+
+        function initializeServiceOrdersView() {
+            setServiceOrderView(SERVICE_ORDER_VIEW.KANBAN);
+        }
+
+        function openNewServiceOrderForm() {
+            resetServiceOrderForm();
+            setServiceOrderView(SERVICE_ORDER_VIEW.FORM);
+        }
+
+        function cancelServiceOrderEdit() {
+            resetServiceOrderForm();
+            setServiceOrderView(SERVICE_ORDER_VIEW.KANBAN);
+        }
+
+        function renderServiceOrdersKanban(serviceOrders = []) {
+            const board = document.getElementById('serviceOrdersKanbanBoard');
+            if (!board) return;
+            const grouped = {};
+            SERVICE_ORDER_KANBAN_COLUMNS.forEach((status) => {
+                grouped[status] = [];
+            });
+            serviceOrders.forEach((os) => {
+                const normalizedStatus = SERVICE_ORDER_KANBAN_COLUMNS.includes(os.status) ? os.status : ORDER_STATUS.PENDENTE;
+                grouped[normalizedStatus].push(os);
+            });
+            board.innerHTML = SERVICE_ORDER_KANBAN_COLUMNS.map((status) => {
+                const cards = grouped[status] || [];
+                const cardsHtml = cards.length
+                    ? cards.map((os) => {
+                        const brand = (os.marca || '').trim();
+                        const model = (os.modelo || '').trim();
+                        const deviceLabel = [brand, model].filter(Boolean).join(' ') || 'Dispositivo não informado';
+                        return `
+                            <button type="button" class="os-kanban-card js-service-order-kanban-card" data-id="${os.id}">
+                                <div style="font-weight:700; margin-bottom:0.2rem;">${escapeHtml(os.numero_os || '-')} · ${escapeHtml(os.cliente_nome || 'Sem cliente')}</div>
+                                <div style="font-size:0.85rem; color:var(--text-secondary);">${escapeHtml(deviceLabel)}</div>
+                            </button>
+                        `;
+                    }).join('')
+                    : '<p class="os-kanban-empty">Sem O.S. nesta coluna.</p>';
+                return `
+                    <section class="os-kanban-column">
+                        <h4>${escapeHtml(formatStatus(status))}</h4>
+                        <div class="os-kanban-cards">${cardsHtml}</div>
+                    </section>
+                `;
+            }).join('');
         }
 
         function getServiceOrderFormData() {
@@ -8460,6 +8600,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 renderServiceOrderPreview(savedRecord || payload);
                 resetServiceOrderForm();
                 await loadServiceOrdersTable();
+                setServiceOrderView(SERVICE_ORDER_VIEW.KANBAN);
             } catch (error) {
                 showAlert('Erro ao salvar O.S.: ' + error.message, 'error');
                 logClientError({
@@ -8523,8 +8664,11 @@ async function getMelhorEnvioShipping(cep, type) {
 
                 if (!data || data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Nenhuma ordem de serviço encontrada</td></tr>';
+                    renderServiceOrdersKanban([]);
                     return;
                 }
+
+                renderServiceOrdersKanban(data);
 
                 data.forEach(os => {
                     const brand = (os.marca || '').trim();
@@ -8601,6 +8745,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 document.getElementById('saveServiceOrderBtn').textContent = 'Atualizar O.S.';
                 document.getElementById('cancelServiceOrderEditBtn').style.display = 'inline-flex';
                 renderServiceOrderPreview(data);
+                setServiceOrderView(SERVICE_ORDER_VIEW.FORM);
                 showAlert('O.S. carregada para edição.', 'info');
             } catch (error) {
                 showAlert('Erro ao carregar ordem de serviço', 'error');
