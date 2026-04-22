@@ -1692,6 +1692,7 @@
         #adminPanel #logistics .logistics-day {
             border: 1px solid rgba(148, 163, 184, 0.15);
             background: rgba(15, 23, 42, 0.3);
+            position: relative;
         }
 
         #adminPanel #logistics .logistics-day.muted {
@@ -1716,6 +1717,14 @@
             bottom: 6px;
             left: 50%;
             transform: translateX(-50%);
+        }
+
+        #adminPanel #logistics .logistics-day-count {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 0.62rem;
+            color: var(--text-secondary);
         }
 
         #adminPanel #logistics .logistics-deliveries-head {
@@ -1784,6 +1793,12 @@
             color: #c4b5fd;
             background: rgba(139, 92, 246, 0.12);
             border-color: rgba(167, 139, 250, 0.4);
+        }
+
+        #adminPanel #logistics .logistics-status-completed {
+            color: #86efac;
+            background: rgba(34, 197, 94, 0.14);
+            border-color: rgba(74, 222, 128, 0.45);
         }
 
         #adminPanel #logistics .logistics-actions {
@@ -4067,33 +4082,33 @@
                     <article class="logistics-summary-card">
                         <span class="logistics-summary-icon">🏍️</span>
                         <div>
-                            <strong>6</strong>
+                            <strong id="logisticsCardMotoboys">0</strong>
                             <p>Motoboys em rota</p>
-                            <span>2 aguardando novo chamado</span>
+                            <span id="logisticsCardMotoboysHint">Sem dados logísticos ativos.</span>
                         </div>
                     </article>
                     <article class="logistics-summary-card">
                         <span class="logistics-summary-icon">📦</span>
                         <div>
-                            <strong>14</strong>
+                            <strong id="logisticsCardPending">0</strong>
                             <p>Entregas pendentes</p>
-                            <span>5 com prazo até 18h</span>
+                            <span id="logisticsCardPendingHint">Nenhuma pendência logística.</span>
                         </div>
                     </article>
                     <article class="logistics-summary-card">
                         <span class="logistics-summary-icon">✅</span>
                         <div>
-                            <strong>9</strong>
+                            <strong id="logisticsCardDeliveredToday">0</strong>
                             <p>Entregues hoje</p>
-                            <span>Taxa de conclusão 90%</span>
+                            <span id="logisticsCardDeliveredTodayHint">Sem entregas confirmadas hoje.</span>
                         </div>
                     </article>
                     <article class="logistics-summary-card">
                         <span class="logistics-summary-icon">🛣️</span>
                         <div>
-                            <strong>78 km</strong>
+                            <strong id="logisticsCardKm">0 km</strong>
                             <p>Km rota do dia</p>
-                            <span>Média 13 km por motoboy</span>
+                            <span id="logisticsCardKmHint">Estimativa parcial com base nos pedidos.</span>
                         </div>
                     </article>
                 </div>
@@ -4105,11 +4120,9 @@
                         </div>
                         <div class="logistics-map-placeholder">
                             <div>
-                                <p style="margin:0 0 0.45rem 0; color: var(--text-secondary);">Container visual preparado para futura integração com mapa real (Leaflet).</p>
-                                <div class="logistics-route-tags">
-                                    <span>Rota Centro-SBC</span>
-                                    <span>Rota Santo André</span>
-                                    <span>Rota Diadema</span>
+                                <p id="logisticsMapHint" style="margin:0 0 0.45rem 0; color: var(--text-secondary);">Container visual preparado para futura integração com mapa real (Leaflet).</p>
+                                <div id="logisticsRouteTags" class="logistics-route-tags">
+                                    <span>Sem pontos de rota no momento</span>
                                 </div>
                             </div>
                             <div style="display:flex; justify-content:flex-end;">
@@ -4121,16 +4134,10 @@
                     <aside class="logistics-panel">
                         <div class="logistics-panel-head">
                             <h3 style="color: var(--accent-green); margin:0;">Calendário</h3>
-                            <span style="color: var(--text-secondary); font-size:0.85rem;">Abr 2026</span>
+                            <span id="logisticsCalendarMonthLabel" style="color: var(--text-secondary); font-size:0.85rem;">-</span>
                         </div>
-                        <div class="logistics-calendar-grid" aria-label="Calendário logístico abril 2026">
-                            <span class="logistics-weekday">D</span><span class="logistics-weekday">S</span><span class="logistics-weekday">T</span><span class="logistics-weekday">Q</span><span class="logistics-weekday">Q</span><span class="logistics-weekday">S</span><span class="logistics-weekday">S</span>
-                            <span class="logistics-day muted">29</span><span class="logistics-day muted">30</span><span class="logistics-day muted">31</span><span class="logistics-day">1</span><span class="logistics-day">2</span><span class="logistics-day">3</span><span class="logistics-day">4</span>
-                            <span class="logistics-day">5</span><span class="logistics-day">6</span><span class="logistics-day">7</span><span class="logistics-day">8</span><span class="logistics-day">9</span><span class="logistics-day">10</span><span class="logistics-day">11</span>
-                            <span class="logistics-day">12</span><span class="logistics-day">13</span><span class="logistics-day">14</span><span class="logistics-day">15</span><span class="logistics-day">16</span><span class="logistics-day">17</span><span class="logistics-day">18</span>
-                            <span class="logistics-day">19</span><span class="logistics-day">20</span><span class="logistics-day">21</span><span class="logistics-day highlight has-pending">22</span><span class="logistics-day has-pending">23</span><span class="logistics-day">24</span><span class="logistics-day">25</span>
-                            <span class="logistics-day">26</span><span class="logistics-day">27</span><span class="logistics-day">28</span><span class="logistics-day">29</span><span class="logistics-day">30</span><span class="logistics-day muted">1</span><span class="logistics-day muted">2</span>
-                        </div>
+                        <div id="logisticsCalendarGrid" class="logistics-calendar-grid" aria-label="Calendário logístico"></div>
+                        <p id="logisticsCalendarHint" style="margin-top:0.65rem; color: var(--text-secondary); font-size:0.82rem;">Dias com pontos indicam entregas/coletas previstas.</p>
                     </aside>
                 </div>
 
@@ -4138,78 +4145,11 @@
                     <div class="logistics-deliveries-head">
                         <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                             <h3 style="color: var(--accent-green); margin:0;">Entregas do Dia</h3>
-                            <span class="logistics-date-badge">quinta-feira, 22/04</span>
+                            <span id="logisticsDateBadge" class="logistics-date-badge">-</span>
                         </div>
                         <button type="button" class="btn btn-primary" onclick="handleLogisticsPlaceholderAction('+ Adicionar entrega')">+ Adicionar entrega</button>
                     </div>
-
-                    <div class="logistics-delivery-list">
-                        <article class="logistics-delivery-item">
-                            <div>
-                                <p style="margin:0 0 0.2rem 0; font-weight:700;">Pedido #1048 — iPhone 11</p>
-                                <p class="logistics-delivery-meta">Cliente: João Pereira • Av. Kennedy, 2350 — São Bernardo do Campo, SP</p>
-                                <p class="logistics-delivery-meta">Motoboy: Carlos • Distância: ~4,2 km</p>
-                            </div>
-                            <div class="logistics-actions">
-                                <span class="logistics-status-pill logistics-status-transit">Em trânsito</span>
-                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Ver rota #1048')">Ver rota</button>
-                                <button type="button" class="btn btn-primary btn-small" onclick="handleLogisticsPlaceholderAction('Confirmar entrega #1048')">Confirmar Entrega</button>
-                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Reportar problema #1048')">Reportar Problema</button>
-                            </div>
-                        </article>
-                        <article class="logistics-delivery-item">
-                            <div>
-                                <p style="margin:0 0 0.2rem 0; font-weight:700;">Pedido #1051 — Redmi Note 12</p>
-                                <p class="logistics-delivery-meta">Cliente: Mariana Alves • Rua das Figueiras, 89 — Santo André, SP</p>
-                                <p class="logistics-delivery-meta">Motoboy: Lucas • Distância: ~6,8 km</p>
-                            </div>
-                            <div class="logistics-actions">
-                                <span class="logistics-status-pill logistics-status-pending">Pendente</span>
-                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Ver rota #1051')">Ver rota</button>
-                                <button type="button" class="btn btn-primary btn-small" onclick="handleLogisticsPlaceholderAction('Confirmar entrega #1051')">Confirmar Entrega</button>
-                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Reportar problema #1051')">Reportar Problema</button>
-                            </div>
-                        </article>
-                        <article class="logistics-delivery-item">
-                            <div>
-                                <p style="margin:0 0 0.2rem 0; font-weight:700;">Pedido #1053 — Samsung A23</p>
-                                <p class="logistics-delivery-meta">Cliente: Renata Souza • Rua Amazonas, 120 — São Caetano do Sul, SP</p>
-                                <p class="logistics-delivery-meta">Motoboy: Rafael • Distância: ~3,1 km</p>
-                            </div>
-                            <div class="logistics-actions">
-                                <span class="logistics-status-pill logistics-status-scheduled">Coleta agendada</span>
-                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Ver rota #1053')">Ver rota</button>
-                                <button type="button" class="btn btn-primary btn-small" onclick="handleLogisticsPlaceholderAction('Confirmar entrega #1053')">Confirmar Entrega</button>
-                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Reportar problema #1053')">Reportar Problema</button>
-                            </div>
-                        </article>
-                        <article class="logistics-delivery-item">
-                            <div>
-                                <p style="margin:0 0 0.2rem 0; font-weight:700;">Pedido #1054 — Motorola Moto G52</p>
-                                <p class="logistics-delivery-meta">Cliente: Fernanda Lima • Av. Dom Pedro II, 480 — Diadema, SP</p>
-                                <p class="logistics-delivery-meta">Motoboy: Carlos • Distância: ~7,4 km</p>
-                            </div>
-                            <div class="logistics-actions">
-                                <span class="logistics-status-pill logistics-status-pending">Pendente</span>
-                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Ver rota #1054')">Ver rota</button>
-                                <button type="button" class="btn btn-primary btn-small" onclick="handleLogisticsPlaceholderAction('Confirmar entrega #1054')">Confirmar Entrega</button>
-                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Reportar problema #1054')">Reportar Problema</button>
-                            </div>
-                        </article>
-                        <article class="logistics-delivery-item">
-                            <div>
-                                <p style="margin:0 0 0.2rem 0; font-weight:700;">Pedido #1055 — MacBook Air M1</p>
-                                <p class="logistics-delivery-meta">Cliente: Guilherme Rocha • Rua Jurubatuba, 340 — São Bernardo do Campo, SP</p>
-                                <p class="logistics-delivery-meta">Motoboy: Lucas • Distância: ~5,6 km</p>
-                            </div>
-                            <div class="logistics-actions">
-                                <span class="logistics-status-pill logistics-status-pending">Pendente</span>
-                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Ver rota #1055')">Ver rota</button>
-                                <button type="button" class="btn btn-primary btn-small" onclick="handleLogisticsPlaceholderAction('Confirmar entrega #1055')">Confirmar Entrega</button>
-                                <button type="button" class="btn btn-secondary btn-small" onclick="handleLogisticsPlaceholderAction('Reportar problema #1055')">Reportar Problema</button>
-                            </div>
-                        </article>
-                    </div>
+                    <div id="logisticsDeliveryList" class="logistics-delivery-list"></div>
                 </section>
             </div>
 
@@ -4551,6 +4491,7 @@
         let pendingExistingCustomer = null;
         let adminCustomerFilters = { name: '', phone: '' };
         let adminOrderFilters = { numeroPedido: '' };
+        let logisticsDataCache = [];
         let pendingPostIdentificationAction = null;
 
         function applyTheme(theme) {
@@ -6481,6 +6422,11 @@
                     }
                 });
             });
+            safeRun('bind logisticsDeliveryList click', () => {
+                document.getElementById('logisticsDeliveryList')?.addEventListener('click', (event) => {
+                    handleLogisticsListAction(event);
+                });
+            });
             safeRun('bind customersTable click', () => {
                 document.getElementById('customersTable')?.addEventListener('click', (event) => {
                     const button = event.target.closest('.js-admin-customer-action');
@@ -8126,9 +8072,251 @@ async function calcularFrete(cep) {
             openAdminPanel();
         }
 
+        function toLogisticsDate(rawDate) {
+            if (!rawDate) return null;
+            const parsed = new Date(rawDate);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+
+        function resolveOrderMainService(order = {}) {
+            if (order.modelo_dispositivo) return String(order.modelo_dispositivo);
+            if (order.servico) return String(order.servico);
+            try {
+                const items = typeof order.itens_json === 'string' ? JSON.parse(order.itens_json) : order.itens_json;
+                if (Array.isArray(items) && items[0]) {
+                    const first = items[0];
+                    return [first.modelo_dispositivo, first.servico, first.name].find(Boolean) || 'Serviço não informado';
+                }
+            } catch (error) {
+                console.warn('Falha ao ler itens_json para logística:', error);
+            }
+            return 'Serviço não informado';
+        }
+
+        function normalizeLogisticsStatus(order = {}) {
+            const normalized = normalizeOperationalStatus(order.status).toUpperCase();
+            if (normalized.includes('AGENDAR_COLETA')) return 'coleta_agendada';
+            if (normalized.includes('MANUTENCAO_CONCLUIDA') || normalized.includes('AGENDAR_DEVOLUCAO') || normalized.includes('EM_TRANSITO')) return 'em_transito';
+            if (normalized.includes('FINALIZADO') || normalized.includes('ENTREGUE')) return 'entregue';
+            if (normalized.includes('REPROVADA')) return 'problema';
+            return 'pendente';
+        }
+
+        function mapOrderToLogisticsItem(order = {}) {
+            const logisticsDate = toLogisticsDate(order.previsao_entrega || order.created_at);
+            const shippingType = order.tipo_envio || '';
+            const logisticsStatus = normalizeLogisticsStatus(order);
+            return {
+                id: String(order.id || ''),
+                numeroPedido: order.numero_pedido != null ? String(order.numero_pedido) : '-',
+                clienteNome: order.cliente_nome || 'Cliente não informado',
+                endereco: order.endereco || 'Endereço não informado',
+                aparelhoOuServico: resolveOrderMainService(order),
+                tipoEnvio: getShippingServiceLabel(shippingType),
+                statusLogistico: logisticsStatus,
+                statusRaw: order.status || '',
+                dataLogistica: logisticsDate,
+                distanciaKm: Number(order.distancia_km),
+                motoboy: null,
+                podeConfirmar: logisticsStatus !== 'entregue',
+                podeReportarProblema: logisticsStatus !== 'entregue',
+                source: order
+            };
+        }
+
+        function isLogisticsRelevantOrder(order = {}) {
+            const hasAddress = Boolean(String(order.endereco || '').trim());
+            const hasShippingType = ['retirada_entrega', 'so_retirada', 'so_entrega'].includes(String(order.tipo_envio || '').trim());
+            const normalizedStatus = normalizeOperationalStatus(order.status).toUpperCase();
+            const statusLooksLogistic = ['COLETA', 'DEVOLUCAO', 'ENTREGUE', 'FINALIZADO', 'MANUTENCAO_CONCLUIDA', 'PEDIDO_EM_ANALISE'].some((token) => normalizedStatus.includes(token));
+            return hasAddress || hasShippingType || statusLooksLogistic;
+        }
+
+        function getLogisticsStatusPresentation(status) {
+            const dict = {
+                em_transito: { label: 'Em trânsito', className: 'logistics-status-transit' },
+                pendente: { label: 'Pendente', className: 'logistics-status-pending' },
+                coleta_agendada: { label: 'Coleta agendada', className: 'logistics-status-scheduled' },
+                entregue: { label: 'Entregue', className: 'logistics-status-completed' },
+                problema: { label: 'Problema', className: 'logistics-status-pending' }
+            };
+            return dict[status] || dict.pendente;
+        }
+
+        function formatLogisticsDateBadge() {
+            return new Intl.DateTimeFormat('pt-BR', {
+                weekday: 'long',
+                day: '2-digit',
+                month: '2-digit'
+            }).format(new Date());
+        }
+
+        function buildLogisticsCalendar(items = []) {
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const firstWeekday = monthStart.getDay();
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const previousMonthDays = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+            const daysByDate = {};
+            items.forEach((item) => {
+                if (!item.dataLogistica) return;
+                const key = item.dataLogistica.toISOString().slice(0, 10);
+                daysByDate[key] = (daysByDate[key] || 0) + 1;
+            });
+
+            const weekdays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+            const cells = weekdays.map((day) => `<span class="logistics-weekday">${day}</span>`);
+            for (let i = 0; i < firstWeekday; i += 1) {
+                cells.push(`<span class="logistics-day muted">${previousMonthDays - firstWeekday + i + 1}</span>`);
+            }
+            for (let day = 1; day <= daysInMonth; day += 1) {
+                const date = new Date(now.getFullYear(), now.getMonth(), day);
+                const key = date.toISOString().slice(0, 10);
+                const count = daysByDate[key] || 0;
+                const classes = ['logistics-day'];
+                if (count > 0) classes.push('has-pending');
+                if (day === now.getDate()) classes.push('highlight');
+                cells.push(`<span class="${classes.join(' ')}">${day}${count > 0 ? `<small class="logistics-day-count">${count}</small>` : ''}</span>`);
+            }
+            const tail = (7 - (cells.length % 7)) % 7;
+            for (let i = 1; i <= tail; i += 1) {
+                cells.push(`<span class="logistics-day muted">${i}</span>`);
+            }
+            return { html: cells.join(''), countDays: Object.keys(daysByDate).length };
+        }
+
+        function renderLogisticsDeliveries(items = []) {
+            const deliveryList = document.getElementById('logisticsDeliveryList');
+            if (!deliveryList) return;
+            if (!items.length) {
+                deliveryList.innerHTML = '<article class="logistics-delivery-item"><p class="logistics-delivery-meta">Nenhum pedido logístico encontrado com os filtros atuais.</p></article>';
+                return;
+            }
+
+            deliveryList.innerHTML = items.map((item) => {
+                const statusUi = getLogisticsStatusPresentation(item.statusLogistico);
+                const distanceText = Number.isFinite(item.distanciaKm) && item.distanciaKm > 0 ? ` • Distância: ~${item.distanciaKm.toFixed(1).replace('.', ',')} km` : '';
+                const serviceSafe = escapeHtml(item.aparelhoOuServico || 'Serviço não informado');
+                return `
+                    <article class="logistics-delivery-item">
+                        <div>
+                            <p style="margin:0 0 0.2rem 0; font-weight:700;">Pedido #${escapeHtml(item.numeroPedido)} — ${serviceSafe}</p>
+                            <p class="logistics-delivery-meta">Cliente: ${escapeHtml(item.clienteNome)} • ${escapeHtml(item.endereco)}</p>
+                            <p class="logistics-delivery-meta">Envio: ${escapeHtml(item.tipoEnvio || 'Não informado')}${distanceText}</p>
+                        </div>
+                        <div class="logistics-actions">
+                            <span class="logistics-status-pill ${statusUi.className}">${escapeHtml(statusUi.label)}</span>
+                            <button type="button" class="btn btn-secondary btn-small js-logistics-action" data-action="route" data-id="${escapeHtml(item.id)}">Ver rota</button>
+                            <button type="button" class="btn btn-primary btn-small js-logistics-action" data-action="confirm" data-id="${escapeHtml(item.id)}" ${item.podeConfirmar ? '' : 'disabled'}>Confirmar Entrega</button>
+                            <button type="button" class="btn btn-secondary btn-small js-logistics-action" data-action="issue" data-id="${escapeHtml(item.id)}" ${item.podeReportarProblema ? '' : 'disabled'}>Reportar Problema</button>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        async function loadLogisticsData() {
+            const client = ensureSupabaseClient(true);
+            if (!client) return [];
+            const { data, error } = await client.from('pedidos').select('*').order('created_at', { ascending: false }).limit(250);
+            if (error) throw error;
+            return (data || []).filter(isLogisticsRelevantOrder).map(mapOrderToLogisticsItem);
+        }
+
+        function renderLogisticsSummary(items = []) {
+            const pending = items.filter((item) => ['pendente', 'coleta_agendada', 'problema', 'em_transito'].includes(item.statusLogistico));
+            const inTransit = items.filter((item) => item.statusLogistico === 'em_transito');
+            const deliveredToday = items.filter((item) => item.statusLogistico === 'entregue' && item.dataLogistica && item.dataLogistica.toDateString() === new Date().toDateString());
+            const kmTotal = items.reduce((acc, item) => acc + (Number.isFinite(item.distanciaKm) ? item.distanciaKm : 0), 0);
+
+            document.getElementById('logisticsCardMotoboys').textContent = String(Math.max(1, inTransit.length || 0));
+            document.getElementById('logisticsCardMotoboysHint').textContent = inTransit.length ? `${inTransit.length} pedido(s) em trânsito no momento.` : 'Fallback por ausência de escala de motoboys.';
+            document.getElementById('logisticsCardPending').textContent = String(pending.length);
+            document.getElementById('logisticsCardPendingHint').textContent = pending.length ? `${pending.length} pedido(s) com pendência logística.` : 'Nenhuma pendência logística identificada.';
+            document.getElementById('logisticsCardDeliveredToday').textContent = String(deliveredToday.length);
+            document.getElementById('logisticsCardDeliveredTodayHint').textContent = 'Baseado em status entregue/finalizado com data logística do dia.';
+            document.getElementById('logisticsCardKm').textContent = `${kmTotal.toFixed(1).replace('.', ',')} km`;
+            document.getElementById('logisticsCardKmHint').textContent = 'Somatório parcial de distancia_km dos pedidos logísticos.';
+        }
+
+        async function loadLogisticsTab() {
+            try {
+                logisticsDataCache = await loadLogisticsData();
+                renderLogisticsSummary(logisticsDataCache);
+                renderLogisticsDeliveries(logisticsDataCache);
+
+                const dateBadge = document.getElementById('logisticsDateBadge');
+                if (dateBadge) dateBadge.textContent = formatLogisticsDateBadge();
+                const calendarMonthLabel = document.getElementById('logisticsCalendarMonthLabel');
+                if (calendarMonthLabel) {
+                    calendarMonthLabel.textContent = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric' }).format(new Date());
+                }
+                const calendar = buildLogisticsCalendar(logisticsDataCache);
+                const calendarGrid = document.getElementById('logisticsCalendarGrid');
+                if (calendarGrid) calendarGrid.innerHTML = calendar.html;
+                const calendarHint = document.getElementById('logisticsCalendarHint');
+                if (calendarHint) calendarHint.textContent = `${calendar.countDays} dia(s) com entregas/coletas previstas neste mês.`;
+
+                const mapHint = document.getElementById('logisticsMapHint');
+                if (mapHint) mapHint.textContent = logisticsDataCache.length ? `Pontos baseados em ${logisticsDataCache.length} pedido(s) logístico(s) reais.` : 'Sem pedidos logísticos para mapear.';
+                const routeTags = document.getElementById('logisticsRouteTags');
+                if (routeTags) {
+                    const uniqueAddresses = [...new Set(logisticsDataCache.map((item) => item.endereco).filter(Boolean))].slice(0, 3);
+                    routeTags.innerHTML = uniqueAddresses.length
+                        ? uniqueAddresses.map((address) => `<span>${escapeHtml(address)}</span>`).join('')
+                        : '<span>Sem pontos de rota no momento</span>';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar logística:', error);
+                showAlert('Não foi possível carregar a logística com dados reais.', 'error');
+            }
+        }
+
+        async function updateLogisticsOrderStatus(orderId, status, observation = '') {
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+            const payload = { status };
+            if (observation) {
+                const found = logisticsDataCache.find((item) => item.id === String(orderId));
+                const currentNotes = String(found?.source?.observacoes || '');
+                payload.observacoes = [currentNotes, `[Logística ${new Date().toISOString()}] ${observation}`].filter(Boolean).join(' | ');
+            }
+            const { error } = await client.from('pedidos').update(payload).eq('id', orderId);
+            if (error) throw error;
+        }
+
+        async function handleLogisticsListAction(event) {
+            const button = event.target.closest('.js-logistics-action');
+            if (!button) return;
+            const id = String(button.dataset.id || '');
+            const action = button.dataset.action;
+            const item = logisticsDataCache.find((entry) => entry.id === id);
+            if (!item) return;
+
+            if (action === 'route') {
+                handleLogisticsPlaceholderAction(`Ver rota #${item.numeroPedido} (${item.endereco})`);
+                return;
+            }
+            if (action === 'confirm') {
+                await updateLogisticsOrderStatus(id, 'FINALIZADO', 'Entrega confirmada via aba Logística.');
+                showAlert(`Entrega do pedido #${item.numeroPedido} confirmada.`, 'success');
+                await loadLogisticsTab();
+                await loadOrdersTable();
+                return;
+            }
+            if (action === 'issue') {
+                const message = prompt(`Informe o problema da entrega #${item.numeroPedido}:`);
+                if (!message) return;
+                await updateLogisticsOrderStatus(id, 'AGENDAR_DEVOLUCAO', `Problema reportado: ${message}`);
+                showAlert(`Problema registrado para o pedido #${item.numeroPedido}.`, 'warning');
+                await loadLogisticsTab();
+                await loadOrdersTable();
+            }
+        }
+
         function handleLogisticsPlaceholderAction(actionLabel) {
-            console.log(`[Logística] ação placeholder: ${actionLabel}`);
-            showAlert(`Ação "${actionLabel}" será conectada no próximo lote.`, 'warning');
+            console.log(`[Logística] ação controlada: ${actionLabel}`);
+            showAlert(`Ação "${actionLabel}" conectada parcialmente neste lote.`, 'info');
         }
 
         function switchAdminTab(tabName, ev = null) {
@@ -8160,6 +8348,8 @@ async function calcularFrete(cep) {
                 loadCustomersTable();
             } else if (tabName === 'despesas') {
                 loadExpensesTable();
+            } else if (tabName === 'logistics') {
+                loadLogisticsTab();
             }
         }
 
