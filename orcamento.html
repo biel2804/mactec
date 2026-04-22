@@ -1891,6 +1891,105 @@
             padding: 1.2rem 0.6rem;
             background: rgba(15, 23, 42, 0.45);
         }
+        #adminPanel #service-orders .os-kanban-section {
+            margin-bottom: 2rem;
+            display: grid;
+            gap: 0.95rem;
+        }
+        #adminPanel #service-orders .os-list-panel {
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(16, 27, 46, 0.9), rgba(11, 20, 36, 0.94));
+            box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.08);
+            padding: 0.7rem 0.8rem 0.5rem;
+        }
+        #adminPanel #service-orders .os-list-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.65rem;
+            margin-bottom: 0.5rem;
+        }
+        #adminPanel #service-orders .os-list-header h3 {
+            margin: 0;
+            color: #d8e7ff;
+            font-size: 0.98rem;
+            font-weight: 650;
+            letter-spacing: 0.01em;
+        }
+        #adminPanel #service-orders .os-list-view-all-btn {
+            height: 30px;
+            padding: 0 10px;
+            font-size: 0.77rem;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.55);
+            border-color: rgba(148, 163, 184, 0.34);
+        }
+        #adminPanel #service-orders .os-list-table-container {
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 0.45rem;
+            background: rgba(8, 15, 28, 0.55);
+        }
+        #adminPanel #service-orders .os-list-table thead th {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #9bb2d4;
+            padding: 0.55rem 0.8rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+            background: rgba(12, 20, 34, 0.7);
+        }
+        #adminPanel #service-orders .os-list-table tbody td {
+            padding: 0.55rem 0.8rem;
+            font-size: 0.83rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            color: #d6e5ff;
+            vertical-align: middle;
+        }
+        #adminPanel #service-orders .os-list-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        #adminPanel #service-orders .os-list-table tbody tr:hover td {
+            background: rgba(37, 99, 235, 0.08);
+        }
+        #adminPanel #service-orders .os-list-table .os-list-empty {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 0.95rem;
+        }
+        #adminPanel #service-orders .os-status-badge {
+            --status-color: #6b7280;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0.18rem 0.58rem;
+            font-size: 0.74rem;
+            font-weight: 650;
+            color: #e7f0ff;
+            border: 1px solid color-mix(in srgb, var(--status-color) 54%, #ffffff 22%);
+            background: color-mix(in srgb, var(--status-color) 26%, rgba(15, 23, 42, 0.9));
+            white-space: nowrap;
+        }
+        #adminPanel #service-orders .os-list-actions {
+            display: flex;
+            gap: 0.35rem;
+            align-items: center;
+        }
+        #adminPanel #service-orders .os-list-action-btn {
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 7px;
+            font-size: 0.75rem;
+            font-weight: 650;
+        }
+        #adminPanel #service-orders .os-list-meta {
+            margin: 0;
+            font-size: 0.78rem;
+            color: #8fa7cb;
+        }
         #adminPanel #service-orders .os-photos-section {
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -3587,29 +3686,35 @@
                     </div>
                 </div>
 
-                <div id="serviceOrdersKanbanSection" style="margin-bottom: 2rem;">
+                <div id="serviceOrdersKanbanSection" class="os-kanban-section">
                     <div id="serviceOrdersKanbanBoard" class="os-kanban-board"></div>
-                    <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Listar Ordens de Serviço</h3>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>O.S. #</th>
-                                    <th>Cliente</th>
-                                    <th>Dispositivo</th>
-                                    <th>Defeito</th>
-                                    <th>Status</th>
-                                    <th>Data</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="serviceOrdersTable">
-                                <tr>
-                                    <td colspan="7" style="text-align: center; color: var(--text-secondary);">Carregando ordens de serviço...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <section class="os-list-panel" aria-label="Lista de ordens de serviço">
+                        <div class="os-list-header">
+                            <h3>Lista de Ordens de Serviço</h3>
+                            <button type="button" class="btn btn-secondary os-list-view-all-btn" onclick="loadServiceOrdersTable()">Ver todas</button>
+                        </div>
+                        <div class="table-container os-list-table-container">
+                            <table class="os-list-table">
+                                <thead>
+                                    <tr>
+                                        <th>O.S. #</th>
+                                        <th>Cliente</th>
+                                        <th>Dispositivo</th>
+                                        <th>Defeito</th>
+                                        <th>Status</th>
+                                        <th>Data</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="serviceOrdersTable">
+                                    <tr>
+                                        <td colspan="7" class="os-list-empty">Carregando ordens de serviço...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p id="serviceOrdersListMeta" class="os-list-meta">Mostrando 0 de 0 resultados</p>
+                    </section>
                 </div>
             </div>
 
@@ -9149,10 +9254,12 @@ async function getMelhorEnvioShipping(cep, type) {
                 if (error) throw error;
 
                 const tbody = document.getElementById('serviceOrdersTable');
+                const listMeta = document.getElementById('serviceOrdersListMeta');
                 tbody.innerHTML = '';
 
                 if (!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Nenhuma ordem de serviço encontrada</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="os-list-empty">Nenhuma ordem de serviço encontrada</td></tr>';
+                    if (listMeta) listMeta.textContent = 'Mostrando 0 de 0 resultados';
                     updateServiceOrderSummary([]);
                     renderServiceOrdersKanban([]);
                     return;
@@ -9160,6 +9267,9 @@ async function getMelhorEnvioShipping(cep, type) {
 
                 updateServiceOrderSummary(data);
                 renderServiceOrdersKanban(data);
+                if (listMeta) {
+                    listMeta.textContent = `Mostrando 1 a ${data.length} de ${data.length} resultados`;
+                }
 
                 data.forEach(os => {
                     const brand = (os.marca || '').trim();
@@ -9171,11 +9281,13 @@ async function getMelhorEnvioShipping(cep, type) {
                         <td>${escapeHtml(os.cliente_nome || 'Não informado')}</td>
                         <td>${escapeHtml(deviceLabel)}</td>
                         <td>${escapeHtml(os.servico || 'Não informado')}</td>
-                        <td><span style="background: ${getStatusColor(os.status)}; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem;">${formatStatus(os.status)}</span></td>
+                        <td><span class="os-status-badge" style="--status-color: ${getStatusColor(os.status)};">${formatStatus(os.status)}</span></td>
                         <td>${os.data_criacao ? new Date(os.data_criacao).toLocaleDateString('pt-BR') : '-'}</td>
                         <td>
-                            <button class="btn btn-primary js-service-order-action" data-action="edit" data-id="${os.id}" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">Editar</button>
-                            <button class="btn btn-secondary js-service-order-action" data-action="print" data-id="${os.id}" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">PDF</button>
+                            <div class="os-list-actions">
+                                <button class="btn btn-primary os-list-action-btn js-service-order-action" data-action="edit" data-id="${os.id}">Editar</button>
+                                <button class="btn btn-secondary os-list-action-btn js-service-order-action" data-action="print" data-id="${os.id}">PDF</button>
+                            </div>
                         </td>
                     `;
                 });
