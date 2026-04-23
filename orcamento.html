@@ -9914,6 +9914,15 @@ async function getMelhorEnvioShipping(cep, type) {
         const MOBILE_PREVIEW_MAX_WIDTH = 768;
         const SERVICE_ORDER_PHOTOS_BUCKET = 'os-photos';
         const SERVICE_ORDER_PRINT_MAX_PHOTOS = 4;
+        const SERVICE_ORDER_PRINT_MIN_PHOTOS = 1;
+        const SERVICE_ORDER_A4_HEIGHT_PX = 1122;
+        const SERVICE_ORDER_PRINT_BODY_MARGIN_PX = 40;
+        const SERVICE_ORDER_PRINT_RESERVED_FIXED_HEIGHT_PX = 730;
+        const SERVICE_ORDER_PRINT_PHOTO_SECTION_FIXED_HEIGHT_PX = 58;
+        const SERVICE_ORDER_PRINT_PHOTO_TILE_HEIGHT_PX = 125;
+        const SERVICE_ORDER_PRINT_PHOTO_GAP_PX = 8;
+        const SERVICE_ORDER_PRINT_OBSERVATION_CHARS_PER_LINE = 92;
+        const SERVICE_ORDER_PRINT_LINE_HEIGHT_PX = 18;
         let currentServiceOrderPhotos = [];
         let isServiceOrderPhotoUploadRunning = false;
 
@@ -10666,17 +10675,24 @@ async function getMelhorEnvioShipping(cep, type) {
 
         function buildServiceOrderPrintableHtml(data) {
             const printablePhotos = Array.isArray(data?.printable_photos) ? data.printable_photos : [];
+            const photoLimit = calculateServiceOrderPrintablePhotoLimit(data, printablePhotos.length);
+            const photosForPrint = printablePhotos.slice(0, photoLimit);
+            const photoGridSizeClass = photosForPrint.length <= 2 ? 2 : 4;
             const photoSectionHtml = printablePhotos.length
                 ? `
                         <div class="section photo-section">
                             <h3>Registro Fotográfico do Aparelho</h3>
-                            <div class="photo-grid photo-grid-${Math.min(printablePhotos.length, SERVICE_ORDER_PRINT_MAX_PHOTOS)}">
-                                ${printablePhotos.map((photo) => `
+                            <div class="photo-grid photo-grid-${photoGridSizeClass}">
+                                ${photosForPrint.map((photo) => `
                                     <figure class="photo-item">
-                                        <img src="${escapeHtml(photo.url || '')}" alt="Foto da O.S.">
+                                        <img src="${escapeHtml(photo.url || '')}" alt="Foto da O.S." onerror="this.closest('figure')?.classList.add('photo-item-error'); this.style.display='none';">
                                     </figure>
                                 `).join('')}
                             </div>
+                            ${printablePhotos.length > photosForPrint.length
+                                ? `<p class="photo-limit-note">Exibindo ${photosForPrint.length} de ${printablePhotos.length} fotos para preservar o layout em uma página A4.</p>`
+                                : ''
+                            }
                         </div>
                     `
                 : '';
@@ -10701,7 +10717,10 @@ async function getMelhorEnvioShipping(cep, type) {
                             .photo-grid-3,
                             .photo-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
                             .photo-item { margin: 0; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; background: #fff; }
+                            .photo-item-error { min-height: 80px; background: #f8fafc; position: relative; }
+                            .photo-item-error::after { content: 'Imagem indisponível'; display: block; color: #64748b; font-size: 11px; text-align: center; padding-top: 32px; }
                             .photo-item img { width: 100%; height: 125px; object-fit: cover; display: block; }
+                            .photo-limit-note { margin: 8px 0 0; font-size: 11px; color: #64748b; }
                             .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
                         </style>
                     </head>
@@ -10756,6 +10775,33 @@ async function getMelhorEnvioShipping(cep, type) {
                     </body>
                     </html>
                 `;
+        }
+
+        function calculateServiceOrderPrintablePhotoLimit(data, totalPhotos) {
+            const safeTotalPhotos = Math.max(0, Math.min(Number(totalPhotos) || 0, SERVICE_ORDER_PRINT_MAX_PHOTOS));
+            if (!safeTotalPhotos) return 0;
+
+            const observationText = String(data?.observacoes || '').trim();
+            const estimatedObservationLines = observationText
+                ? Math.max(1, Math.ceil(observationText.length / SERVICE_ORDER_PRINT_OBSERVATION_CHARS_PER_LINE))
+                : 0;
+            const estimatedObservationHeight = estimatedObservationLines * SERVICE_ORDER_PRINT_LINE_HEIGHT_PX;
+
+            const printableHeight = SERVICE_ORDER_A4_HEIGHT_PX - SERVICE_ORDER_PRINT_BODY_MARGIN_PX;
+            const freeSpacePx = Math.max(
+                0,
+                printableHeight - (SERVICE_ORDER_PRINT_RESERVED_FIXED_HEIGHT_PX + estimatedObservationHeight)
+            );
+
+            const photoRowsCapacity = Math.floor(
+                Math.max(0, freeSpacePx - SERVICE_ORDER_PRINT_PHOTO_SECTION_FIXED_HEIGHT_PX + SERVICE_ORDER_PRINT_PHOTO_GAP_PX) /
+                (SERVICE_ORDER_PRINT_PHOTO_TILE_HEIGHT_PX + SERVICE_ORDER_PRINT_PHOTO_GAP_PX)
+            );
+            const maxPhotosBySpace = photoRowsCapacity >= 2 ? 4 : (photoRowsCapacity >= 1 ? 2 : 0);
+            return Math.max(
+                Math.min(safeTotalPhotos, maxPhotosBySpace),
+                safeTotalPhotos > 0 ? SERVICE_ORDER_PRINT_MIN_PHOTOS : 0
+            );
         }
 
         function buildServiceOrderPdfBlob(data) {
