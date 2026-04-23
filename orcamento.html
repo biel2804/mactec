@@ -6602,8 +6602,12 @@
                     const photoId = String(button.dataset.photoId || '');
                     const storagePath = String(button.dataset.storagePath || '');
                     if (!photoId) return;
-                    await removeServiceOrderPhoto(photoId, storagePath);
-                    await refreshServiceOrderPhotosSection();
+                    try {
+                        await removeServiceOrderPhoto(photoId, storagePath);
+                        await refreshServiceOrderPhotosSection();
+                    } catch (error) {
+                        showAlert(`Erro ao remover foto: ${error.message}`, 'error');
+                    }
                 });
             });
             safeRun('bind serviceOrdersTable click', () => {
@@ -9911,14 +9915,41 @@ async function getMelhorEnvioShipping(cep, type) {
         const SERVICE_ORDER_PHOTOS_BUCKET = 'os-photos';
         const SERVICE_ORDER_PRINT_MAX_PHOTOS = 4;
         let currentServiceOrderPhotos = [];
+        let isServiceOrderPhotoUploadRunning = false;
 
         function isMobileServiceOrderViewport() {
             return window.innerWidth <= MOBILE_PREVIEW_MAX_WIDTH;
         }
 
+        function parsePersistedServiceOrderId(rawValue) {
+            const normalized = String(rawValue || '').trim();
+            if (!normalized) return null;
+            if (!/^\d+$/.test(normalized)) return null;
+            const numericValue = Number(normalized);
+            if (!Number.isInteger(numericValue) || numericValue <= 0) return null;
+            return String(numericValue);
+        }
+
         function getCurrentServiceOrderIdForPhotos() {
-            const editingId = document.getElementById('editingServiceOrderId')?.value?.trim();
-            return editingId || (currentServiceOrderId ? String(currentServiceOrderId) : '');
+            const editingId = parsePersistedServiceOrderId(document.getElementById('editingServiceOrderId')?.value);
+            if (editingId) return editingId;
+            return parsePersistedServiceOrderId(currentServiceOrderId);
+        }
+
+        async function assertServiceOrderExists(serviceOrderId) {
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+            const parsedId = parsePersistedServiceOrderId(serviceOrderId);
+            if (!parsedId) throw new Error('Salve a O.S. antes do upload de fotos.');
+            const { data, error } = await client
+                .from('ordens_servico')
+                .select('id')
+                .eq('id', parsedId)
+                .limit(1)
+                .maybeSingle();
+            if (error) throw error;
+            if (!data?.id) throw new Error('A O.S. precisa estar salva no banco antes do upload de fotos.');
+            return parsedId;
         }
 
         function sanitizePhotoFileName(fileName = 'arquivo.jpg') {
@@ -9988,12 +10019,15 @@ async function getMelhorEnvioShipping(cep, type) {
                 renderServiceOrderPhotos([]);
                 return;
             }
-            photosInput.disabled = false;
-            hint.textContent = `Envie fotos do aparelho para a O.S. #${serviceOrderId}.`;
             try {
+                await assertServiceOrderExists(serviceOrderId);
+                photosInput.disabled = isServiceOrderPhotoUploadRunning;
+                hint.textContent = `Envie fotos do aparelho para a O.S. #${serviceOrderId}.`;
                 const photos = await listServiceOrderPhotos(serviceOrderId);
                 renderServiceOrderPhotos(photos);
             } catch (error) {
+                photosInput.disabled = true;
+                hint.textContent = 'Salve a O.S. primeiro para habilitar upload de fotos.';
                 renderServiceOrderPhotos([]);
                 showAlert('Não foi possível carregar as fotos da O.S.', 'warning');
             }
@@ -10002,10 +10036,13 @@ async function getMelhorEnvioShipping(cep, type) {
         async function uploadPhotoToServiceOrder(serviceOrderId, file) {
             const client = ensureSupabaseClient(true);
             if (!client) throw new Error('Supabase não configurado.');
-            if (!serviceOrderId) throw new Error('Salve a O.S. antes do upload de fotos.');
+            const persistedServiceOrderId = await assertServiceOrderExists(serviceOrderId);
+            if (!file || !String(file.type || '').startsWith('image/')) {
+                throw new Error('Selecione apenas arquivos de imagem.');
+            }
             const maxOrder = currentServiceOrderPhotos.reduce((max, item) => Math.max(max, Number(item.ordem || 0)), 0);
             const fileName = sanitizePhotoFileName(file?.name || 'imagem.jpg');
-            const storagePath = `os-${serviceOrderId}/${Date.now()}-${fileName}`;
+            const storagePath = `os-${persistedServiceOrderId}/${Date.now()}-${fileName}`;
             const { error: uploadError } = await client.storage
                 .from(SERVICE_ORDER_PHOTOS_BUCKET)
                 .upload(storagePath, file, { upsert: false, contentType: file?.type || 'image/jpeg' });
@@ -10014,7 +10051,7 @@ async function getMelhorEnvioShipping(cep, type) {
             const { error: insertError } = await client
                 .from('ordens_servico_fotos')
                 .insert([{
-                    os_id: serviceOrderId,
+                    os_id: persistedServiceOrderId,
                     storage_path: storagePath,
                     ordem: maxOrder + 1,
                     legenda: null
@@ -10034,7 +10071,12 @@ async function getMelhorEnvioShipping(cep, type) {
                 event.target.value = '';
                 return;
             }
+            const hint = document.getElementById('osPhotosHint');
+            const photosInput = document.getElementById('osPhotosInput');
             try {
+                isServiceOrderPhotoUploadRunning = true;
+                if (photosInput) photosInput.disabled = true;
+                if (hint) hint.textContent = 'Enviando fotos... aguarde.';
                 for (const file of files) {
                     await uploadPhotoToServiceOrder(serviceOrderId, file);
                 }
@@ -10043,6 +10085,9 @@ async function getMelhorEnvioShipping(cep, type) {
                 await refreshServiceOrderPhotosSection();
             } catch (error) {
                 showAlert(`Erro ao enviar foto: ${error.message}`, 'error');
+            } finally {
+                isServiceOrderPhotoUploadRunning = false;
+                await refreshServiceOrderPhotosSection();
             }
         }
 
