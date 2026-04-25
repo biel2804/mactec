@@ -256,34 +256,92 @@
   }
 
   async function sendManualReply() {
-    const textarea = document.getElementById('waReplyInput');
-    if (!textarea) return;
-    const text = textarea.value.trim();
+    const input = document.getElementById('waReplyInput');
+    const sendBtn = document.getElementById('waSendReplyBtn');
+    if (!input || !sendBtn) return;
 
-    if (!state.activeConversationId || !state.activeConversation) {
-      showStatus('Selecione uma conversa antes de enviar.', 'error');
+    const conversationId = state.activeConversationId;
+    const phone = state.activeConversation?.telefone || state.activeConversation?.phone || '';
+    const text = input.value.trim();
+
+    if (!conversationId || !state.activeConversation) {
+      showWhatsAppFeedback('Nenhuma conversa selecionada.', 'error');
+      return;
+    }
+
+    if (!phone) {
+      showWhatsAppFeedback('Telefone da conversa não encontrado.', 'error');
       return;
     }
 
     if (!text) {
-      showStatus('Digite uma resposta manual para enviar.', 'error');
+      showWhatsAppFeedback('Digite uma mensagem antes de enviar.', 'warning');
       return;
     }
 
-    try {
-      await window.WhatsAppAdminApi.sendManualWhatsAppMessage(
-        state.activeConversationId,
-        state.activeConversation.telefone,
-        text
-      );
+    const originalBtnText = sendBtn.textContent;
 
-      textarea.value = '';
-      showStatus('Mensagem manual registrada com sucesso.', 'success');
-      await refreshConversations({ keepSelection: true, refreshMessages: true });
+    try {
+      sendBtn.disabled = true;
+      input.disabled = true;
+      sendBtn.textContent = 'Enviando...';
+
+      const result = await window.WhatsAppAdminApi.sendManualWhatsAppMessage(conversationId, phone, text);
+
+      await loadMessages(conversationId);
+      await loadConversations({ keepSource: true });
+
+      input.value = '';
+
+      const chatMessages = document.getElementById('waMessageHistory');
+      if (chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      const status = result?.delivery?.status;
+
+      if (status === 'sent') {
+        showWhatsAppFeedback('Mensagem enviada com sucesso.', 'success');
+      } else if (status === 'not_configured') {
+        showWhatsAppFeedback('Mensagem salva no painel, mas o envio real não está configurado.', 'warning');
+      } else if (status === 'failed') {
+        showWhatsAppFeedback('Mensagem salva, mas falhou no envio real.', 'error');
+      } else if (status === 'error') {
+        showWhatsAppFeedback('Mensagem salva, mas ocorreu erro no envio real.', 'error');
+      } else {
+        showWhatsAppFeedback('Mensagem registrada com sucesso.', 'success');
+      }
     } catch (error) {
-      console.error(error);
-      showStatus(`Erro ao enviar resposta: ${error.message || error}`, 'error');
+      console.error('Erro ao enviar resposta manual:', error);
+      showWhatsAppFeedback('Não foi possível enviar a mensagem manual.', 'error');
+    } finally {
+      sendBtn.disabled = false;
+      input.disabled = false;
+      sendBtn.textContent = originalBtnText;
+      input.focus();
     }
+  }
+
+  function showWhatsAppFeedback(message, type = 'success') {
+    const statusEl = document.getElementById('waPageStatus');
+    if (!statusEl) return;
+    const colorMap = {
+      success: '#22c55e',
+      warning: '#f59e0b',
+      error: '#ef4444'
+    };
+
+    statusEl.textContent = message;
+    statusEl.dataset.type = type;
+    statusEl.style.color = colorMap[type] || colorMap.success;
+
+    clearTimeout(showWhatsAppFeedback._timer);
+    showWhatsAppFeedback._timer = setTimeout(() => {
+      if (!statusEl) return;
+      statusEl.textContent = '';
+      statusEl.style.color = '';
+      statusEl.dataset.type = 'info';
+    }, 5000);
   }
 
   async function refreshConversations(options = {}) {
