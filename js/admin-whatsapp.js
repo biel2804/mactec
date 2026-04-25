@@ -10,7 +10,11 @@
     pollingConversationsTimer: null,
     pollingMessagesTimer: null,
     isLoadingConversations: false,
-    isLoadingMessages: false
+    isLoadingMessages: false,
+    context: {
+      tags: [],
+      notes: []
+    }
   };
 
   function safeText(value, fallback = '') {
@@ -47,6 +51,21 @@
     });
   }
 
+  function formatCurrency(value) {
+    const numeric = Number(value || 0);
+    if (!Number.isFinite(numeric)) return 'R$ 0,00';
+    return numeric.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function parseCurrencyInput(value) {
+    const sanitized = safeText(value).replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+    const numeric = Number(sanitized);
+    if (!Number.isFinite(numeric) || numeric < 0) {
+      return null;
+    }
+    return Number(numeric.toFixed(2));
+  }
+
   function getConversationName(conversation) {
     const name = safeText(conversation?.nome_cliente).trim();
     if (name) return name;
@@ -59,6 +78,13 @@
 
   function getModeLabel(mode) {
     return mode === 'manual' ? 'Manual' : 'Automático';
+  }
+
+  function getConversationStageLabel(conversation) {
+    if (conversation?.kanban_column_id) {
+      return `Coluna ${conversation.kanban_column_id.slice(0, 8)}`;
+    }
+    return 'Sem etapa definida';
   }
 
   function showStatus(message, type = 'info') {
@@ -91,12 +117,16 @@
         } else {
           state.activeConversationId = null;
           state.activeConversation = null;
+          state.context.tags = [];
+          state.context.notes = [];
           renderEmptyChatState();
+          renderConversationContextPanel(null);
         }
       } else {
         state.activeConversation = list.find((item) => item.id === state.activeConversationId) || null;
         if (state.activeConversation) {
           renderChatHeader(state.activeConversation);
+          renderConversationContextPanel(state.activeConversation);
         }
       }
 
@@ -158,7 +188,11 @@
     renderConversationList(state.filteredConversations);
     if (state.activeConversation) {
       renderChatHeader(state.activeConversation);
-      await loadMessages(conversationId);
+      renderConversationContextPanel(state.activeConversation);
+      await Promise.all([
+        loadMessages(conversationId),
+        loadConversationContext(conversationId)
+      ]);
     }
   }
 
@@ -174,6 +208,30 @@
       showStatus(`Erro ao carregar mensagens: ${error.message || error}`, 'error');
     } finally {
       state.isLoadingMessages = false;
+    }
+  }
+
+  async function loadConversationContext(conversationId) {
+    if (!conversationId) return;
+
+    try {
+      const [tags, notes] = await Promise.all([
+        window.WhatsAppAdminApi.fetchConversationTags(conversationId),
+        window.WhatsAppAdminApi.fetchConversationNotes(conversationId)
+      ]);
+
+      state.context.tags = Array.isArray(tags) ? tags : [];
+      state.context.notes = Array.isArray(notes) ? notes : [];
+
+      renderConversationTags(state.context.tags);
+      renderConversationNotes(state.context.notes);
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao carregar contexto CRM: ${error.message || error}`, 'error');
+      state.context.tags = [];
+      state.context.notes = [];
+      renderConversationTags([]);
+      renderConversationNotes([]);
     }
   }
 
@@ -209,6 +267,130 @@
       const nextMode = isManual ? 'auto' : 'manual';
       toggleConversationMode(nextMode);
     });
+  }
+
+  function renderConversationContextPanel(conversation) {
+    const panel = document.getElementById('waConversationContextPanel');
+    if (!panel) return;
+
+    if (!conversation) {
+      panel.innerHTML = '<div class="wa-context-empty">Selecione uma conversa para visualizar contexto CRM.</div>';
+      return;
+    }
+
+    panel.innerHTML = `
+      <div class="wa-context-header">
+        <strong>Contexto da conversa</strong>
+        <span class="wa-context-stage">Etapa: ${getConversationStageLabel(conversation)}</span>
+      </div>
+
+      <div class="wa-context-block">
+        <label for="waDealValueInput">Valor do negócio</label>
+        <div class="wa-context-inline">
+          <input id="waDealValueInput" class="wa-context-input" type="text" inputmode="decimal" value="${Number(conversation.valor_negocio || 0).toFixed(2).replace('.', ',')}" />
+          <button id="waSaveDealValueBtn" class="wa-btn wa-btn-secondary" type="button">Salvar</button>
+        </div>
+        <small class="wa-context-help">Atual: ${formatCurrency(conversation.valor_negocio || 0)}</small>
+      </div>
+
+      <div class="wa-context-block">
+        <label>Etiquetas</label>
+        <div id="waContextTags" class="wa-context-tags"></div>
+      </div>
+
+      <div class="wa-context-block">
+        <label for="waInternalNoteInput">Notas internas</label>
+        <textarea id="waInternalNoteInput" class="wa-context-textarea" placeholder="Registrar observação interna..."></textarea>
+        <div class="wa-context-note-actions">
+          <button id="waSaveNoteBtn" class="wa-btn wa-btn-secondary" type="button">Salvar nota</button>
+        </div>
+        <div id="waContextNotes" class="wa-context-notes"></div>
+      </div>
+    `;
+
+    renderConversationTags(state.context.tags);
+    renderConversationNotes(state.context.notes);
+
+    document.getElementById('waSaveNoteBtn')?.addEventListener('click', handleSaveConversationNote);
+    document.getElementById('waSaveDealValueBtn')?.addEventListener('click', handleUpdateDealValue);
+  }
+
+  function renderConversationTags(tags) {
+    const tagsContainer = document.getElementById('waContextTags');
+    if (!tagsContainer) return;
+
+    if (!Array.isArray(tags) || !tags.length) {
+      tagsContainer.innerHTML = '<span class="wa-context-empty-inline">Sem etiquetas.</span>';
+      return;
+    }
+
+    tagsContainer.innerHTML = tags.map((tag) => {
+      const color = safeText(tag.cor).trim() || '#22c55e';
+      return `<span class="wa-tag-chip" style="border-color:${color};color:${color};">${safeText(tag.nome)}</span>`;
+    }).join('');
+  }
+
+  function renderConversationNotes(notes) {
+    const notesContainer = document.getElementById('waContextNotes');
+    if (!notesContainer) return;
+
+    if (!Array.isArray(notes) || !notes.length) {
+      notesContainer.innerHTML = '<div class="wa-context-empty-inline">Sem notas internas.</div>';
+      return;
+    }
+
+    notesContainer.innerHTML = notes.map((note) => `
+      <article class="wa-note-item">
+        <p>${safeText(note.conteudo)}</p>
+        <footer>${safeText(note.criado_por, 'admin')} · ${formatMessageDate(note.created_at)}</footer>
+      </article>
+    `).join('');
+  }
+
+  async function handleSaveConversationNote() {
+    const selected = getSelectedConversation();
+    const noteInput = document.getElementById('waInternalNoteInput');
+    if (!selected || !noteInput) return;
+
+    const content = noteInput.value.trim();
+    if (!content) {
+      showStatus('Digite uma nota antes de salvar.', 'error');
+      return;
+    }
+
+    try {
+      await window.WhatsAppAdminApi.saveConversationNote(selected.id, content);
+      noteInput.value = '';
+      await loadConversationContext(selected.id);
+      showStatus('Nota interna salva com sucesso.', 'success');
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao salvar nota: ${error.message || error}`, 'error');
+    }
+  }
+
+  async function handleUpdateDealValue() {
+    const selected = getSelectedConversation();
+    const valueInput = document.getElementById('waDealValueInput');
+    if (!selected || !valueInput) return;
+
+    const parsedValue = parseCurrencyInput(valueInput.value);
+    if (parsedValue === null) {
+      showStatus('Informe um valor de negócio válido.', 'error');
+      return;
+    }
+
+    try {
+      const updatedConversation = await window.WhatsAppAdminApi.updateConversationDealValue(selected.id, parsedValue);
+      state.activeConversation = updatedConversation;
+      state.filteredConversations = state.filteredConversations.map((item) => item.id === updatedConversation.id ? updatedConversation : item);
+      state.conversations = state.conversations.map((item) => item.id === updatedConversation.id ? updatedConversation : item);
+      renderConversationContextPanel(updatedConversation);
+      showStatus('Valor do negócio atualizado com sucesso.', 'success');
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao atualizar valor: ${error.message || error}`, 'error');
+    }
   }
 
   function renderMessages(messages) {
@@ -362,9 +544,11 @@
       if (stillExists) {
         state.activeConversation = stillExists;
         renderChatHeader(stillExists);
+        renderConversationContextPanel(stillExists);
         if (options.refreshMessages !== false) {
           await loadMessages(state.activeConversationId);
         }
+        await loadConversationContext(state.activeConversationId);
       }
     }
   }
@@ -435,6 +619,7 @@
 
   async function initAdminWhatsAppPage() {
     bindEvents();
+    renderConversationContextPanel(null);
     await loadConversations();
     startWhatsAppPolling();
     showStatus('Central pronta para uso.', 'success');
@@ -447,7 +632,13 @@
   window.renderConversationList = renderConversationList;
   window.selectConversation = selectConversation;
   window.loadMessages = loadMessages;
+  window.loadConversationContext = loadConversationContext;
   window.renderChatHeader = renderChatHeader;
+  window.renderConversationContextPanel = renderConversationContextPanel;
+  window.renderConversationTags = renderConversationTags;
+  window.renderConversationNotes = renderConversationNotes;
+  window.handleSaveConversationNote = handleSaveConversationNote;
+  window.handleUpdateDealValue = handleUpdateDealValue;
   window.renderMessages = renderMessages;
   window.renderEmptyChatState = renderEmptyChatState;
   window.toggleConversationMode = toggleConversationMode;
