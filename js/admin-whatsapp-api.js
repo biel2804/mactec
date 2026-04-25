@@ -32,7 +32,7 @@
     const client = ensureSupabaseClient();
     const { data, error } = await client
       .from('whatsapp_conversas')
-      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em')
+      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at')
       .order('ultima_interacao_em', { ascending: false });
 
     if (error) throw error;
@@ -73,13 +73,90 @@
     return Array.isArray(data) ? data : [];
   }
 
+  async function fetchConversationTags(conversationId) {
+    if (!conversationId) return [];
+    const client = ensureSupabaseClient();
+
+    const { data, error } = await client
+      .from('whatsapp_conversa_tags')
+      .select('tag_id, whatsapp_tags(nome, cor, ativo)')
+      .eq('conversa_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    return (Array.isArray(data) ? data : []).map((row) => ({
+      id: row.tag_id,
+      nome: row.whatsapp_tags?.nome || '',
+      cor: row.whatsapp_tags?.cor || null,
+      ativo: row.whatsapp_tags?.ativo !== false
+    })).filter((tag) => tag.nome);
+  }
+
+  async function fetchConversationNotes(conversationId) {
+    if (!conversationId) return [];
+    const client = ensureSupabaseClient();
+
+    const { data, error } = await client
+      .from('whatsapp_conversa_notas')
+      .select('id, conversa_id, conteudo, criado_por, created_at, updated_at')
+      .eq('conversa_id', conversationId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function saveConversationNote(conversationId, content) {
+    const noteText = String(content || '').trim();
+    if (!conversationId) throw new Error('Conversa inválida para salvar nota.');
+    if (!noteText) throw new Error('Conteúdo da nota não pode ser vazio.');
+
+    const client = ensureSupabaseClient();
+    const { data, error } = await client
+      .from('whatsapp_conversa_notas')
+      .insert({
+        conversa_id: conversationId,
+        conteudo: noteText,
+        criado_por: 'admin'
+      })
+      .select('id, conversa_id, conteudo, criado_por, created_at, updated_at')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async function updateConversationDealValue(conversationId, value) {
+    if (!conversationId) throw new Error('Conversa inválida para atualizar valor.');
+
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || numericValue < 0) {
+      throw new Error('Valor de negócio inválido.');
+    }
+
+    const client = ensureSupabaseClient();
+    const { data, error } = await client
+      .from('whatsapp_conversas')
+      .update({
+        valor_negocio: numericValue,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', conversationId)
+      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   async function updateConversationMode(conversationId, newMode) {
     const client = ensureSupabaseClient();
     const { data, error } = await client
       .from('whatsapp_conversas')
       .update({ modo_atendimento: newMode })
       .eq('id', conversationId)
-      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em')
+      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at')
       .single();
 
     if (error) throw error;
@@ -112,7 +189,7 @@
         modo_atendimento: 'manual'
       })
       .eq('id', conversationId)
-      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em')
+      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at')
       .single();
 
     if (updateError) throw updateError;
@@ -176,6 +253,10 @@
   window.WhatsAppAdminApi = {
     fetchWhatsAppConversations,
     fetchWhatsAppMessages,
+    fetchConversationTags,
+    fetchConversationNotes,
+    saveConversationNote,
+    updateConversationDealValue,
     updateConversationMode,
     saveManualMessage,
     sendManualWhatsAppMessage
