@@ -58,15 +58,46 @@ create index if not exists idx_whatsapp_conversas_kanban_column_id
   on public.whatsapp_conversas(kanban_column_id);
 
 -- Backfill conservador: conversa sem coluna vai para "Novos"
-with novos as (
-  select id
-  from public.whatsapp_kanban_columns
-  where slug = 'novos'
-  order by ordem asc
-  limit 1
-)
-update public.whatsapp_conversas c
-set kanban_column_id = n.id,
-    updated_at = now()
-from novos n
-where c.kanban_column_id is null;
+do $$
+declare
+  has_updated_at boolean;
+begin
+  select exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'whatsapp_conversas'
+      and column_name = 'updated_at'
+  ) into has_updated_at;
+
+  if has_updated_at then
+    execute $sql$
+      with novos as (
+        select id
+        from public.whatsapp_kanban_columns
+        where slug = 'novos'
+        order by ordem asc
+        limit 1
+      )
+      update public.whatsapp_conversas c
+      set kanban_column_id = n.id,
+          updated_at = now()
+      from novos n
+      where c.kanban_column_id is null
+    $sql$;
+  else
+    execute $sql$
+      with novos as (
+        select id
+        from public.whatsapp_kanban_columns
+        where slug = 'novos'
+        order by ordem asc
+        limit 1
+      )
+      update public.whatsapp_conversas c
+      set kanban_column_id = n.id
+      from novos n
+      where c.kanban_column_id is null
+    $sql$;
+  end if;
+end $$;
