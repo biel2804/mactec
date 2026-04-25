@@ -535,3 +535,87 @@ html, body {
   color: var(--wa-muted);
   font-size: 0.75rem;
 }
+
+.wa-context-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.wa-context-inline-wide {
+  grid-template-columns: 1fr 180px;
+}
+
+.wa-context-list {
+  margin-top: 8px;
+  max-height: 200px;
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.wa-note-item.is-overdue {
+  border-color: rgba(239, 68, 68, 0.55);
+  background: rgba(127, 29, 29, 0.2);
+}
+
+.wa-overdue-badge {
+  margin-left: 8px;
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+.wa-kanban-admin-tools {
+  grid-column: 1 / -1;
+}
+
+.wa-kanban-column-create {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--wa-border);
+  border-radius: 10px;
+  background: #10191d;
+}
+
+.wa-kanban-column-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wa-fixed-badge {
+  border: 1px solid var(--wa-border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  color: var(--wa-muted);
+}
+
+.wa-column-toggle-btn {
+  border: 1px solid var(--wa-border);
+  background: transparent;
+  color: var(--wa-muted);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.wa-kanban-column-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--wa-border);
+}
+
+.wa-kanban-column-actions .wa-btn {
+  padding: 2px 8px;
+  font-size: 0.8rem;
+}
+
+.wa-kanban-column-body.is-drag-over {
+  outline: 1px dashed rgba(34, 197, 94, 0.8);
+  outline-offset: -3px;
+  border-radius: 8px;
+}

@@ -19,7 +19,13 @@
     },
     context: {
       tags: [],
-      notes: []
+      notes: [],
+      tasks: [],
+      reminders: [],
+      activities: []
+    },
+    drag: {
+      conversationId: null
     }
   };
 
@@ -61,6 +67,25 @@
     const numeric = Number(value || 0);
     if (!Number.isFinite(numeric)) return 'R$ 0,00';
     return numeric.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function formatDateTimeInput(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${d}T${hh}:${mm}`;
+  }
+
+  function isOverdue(value) {
+    if (!value) return false;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return false;
+    return date.getTime() < Date.now();
   }
 
   function parseCurrencyInput(value) {
@@ -182,38 +207,103 @@
       cardsByColumnId[targetColumnId].push(conversation);
     });
 
-    boardContainer.innerHTML = columns.map((column) => {
-      const cards = cardsByColumnId[column.id] || [];
-      const totalValue = cards.reduce((acc, item) => acc + Number(item.valor_negocio || 0), 0);
-      const body = cards.length
-        ? cards.map((conversation) => renderKanbanCard(conversation, columns)).join('')
-        : '<div class="wa-kanban-empty">Sem conversas nesta etapa.</div>';
+    boardContainer.innerHTML = `
+      <section class="wa-kanban-admin-tools">
+        <div class="wa-kanban-column-create">
+          <input id="waNewKanbanColumnInput" type="text" class="wa-context-input" placeholder="Nova coluna (ex: Pós-venda)" />
+          <button id="waCreateKanbanColumnBtn" class="wa-btn wa-btn-secondary" type="button">Criar coluna</button>
+        </div>
+      </section>
+      ${columns.map((column, index) => {
+        const cards = cardsByColumnId[column.id] || [];
+        const totalValue = cards.reduce((acc, item) => acc + Number(item.valor_negocio || 0), 0);
+        const body = cards.length
+          ? cards.map((conversation) => renderKanbanCard(conversation, columns)).join('')
+          : '<div class="wa-kanban-empty">Sem conversas nesta etapa.</div>';
 
-      return `
-        <article class="wa-kanban-column" data-column-id="${column.id}">
-          <header class="wa-kanban-column-header">
-            <strong>${escapeHtml(column.nome || 'Sem nome')}</strong>
-            <div class="wa-kanban-column-meta">
-              <span>${cards.length} cards</span>
-              <span>${formatCurrency(totalValue)}</span>
+        return `
+          <article class="wa-kanban-column" data-column-id="${column.id}">
+            <header class="wa-kanban-column-header">
+              <div class="wa-kanban-column-title-wrap">
+                <strong>${escapeHtml(column.nome || 'Sem nome')}</strong>
+                ${column.fixa_sistema ? '<span class="wa-fixed-badge">Fixa</span>' : '<button class="wa-column-toggle-btn" type="button" data-column-toggle="'+column.id+'">Inativar</button>'}
+              </div>
+              <div class="wa-kanban-column-meta">
+                <span>${cards.length} cards</span>
+                <span>${formatCurrency(totalValue)}</span>
+              </div>
+            </header>
+            <div class="wa-kanban-column-actions">
+              <button class="wa-btn wa-btn-secondary" type="button" data-column-up="${column.id}" ${index === 0 ? 'disabled' : ''}>↑</button>
+              <button class="wa-btn wa-btn-secondary" type="button" data-column-down="${column.id}" ${index === (columns.length - 1) ? 'disabled' : ''}>↓</button>
             </div>
-          </header>
-          <div class="wa-kanban-column-body">${body}</div>
-        </article>
-      `;
-    }).join('');
+            <div class="wa-kanban-column-body" data-kanban-dropzone="${column.id}">${body}</div>
+          </article>
+        `;
+      }).join('')}
+    `;
+
+    document.getElementById('waCreateKanbanColumnBtn')?.addEventListener('click', handleCreateKanbanColumn);
 
     boardContainer.querySelectorAll('[data-kanban-card-id]').forEach((cardButton) => {
       cardButton.addEventListener('click', () => {
         handleKanbanCardClick(cardButton.dataset.kanbanCardId);
       });
+
+      cardButton.addEventListener('dragstart', (event) => {
+        const conversationId = cardButton.dataset.kanbanCardId;
+        state.drag.conversationId = conversationId;
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', conversationId);
+      });
+
+      cardButton.addEventListener('dragend', () => {
+        state.drag.conversationId = null;
+      });
+    });
+
+    boardContainer.querySelectorAll('[data-kanban-dropzone]').forEach((dropzone) => {
+      dropzone.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        dropzone.classList.add('is-drag-over');
+      });
+
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('is-drag-over');
+      });
+
+      dropzone.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        dropzone.classList.remove('is-drag-over');
+        const conversationId = event.dataTransfer.getData('text/plain') || state.drag.conversationId;
+        const columnId = dropzone.dataset.kanbanDropzone;
+        await handleConversationCardDrop(conversationId, columnId);
+      });
     });
 
     boardContainer.querySelectorAll('[data-kanban-move-id]').forEach((selectEl) => {
-      selectEl.addEventListener('change', (event) => {
+      selectEl.addEventListener('change', async (event) => {
         const conversationId = selectEl.dataset.kanbanMoveId;
         const columnId = event.target.value;
-        handleConversationMoveToColumn(conversationId, columnId);
+        await handleConversationCardDrop(conversationId, columnId);
+      });
+    });
+
+    boardContainer.querySelectorAll('[data-column-up]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        await handleShiftColumnOrder(button.dataset.columnUp, -1);
+      });
+    });
+
+    boardContainer.querySelectorAll('[data-column-down]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        await handleShiftColumnOrder(button.dataset.columnDown, 1);
+      });
+    });
+
+    boardContainer.querySelectorAll('[data-column-toggle]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        await handleToggleKanbanColumn(button.dataset.columnToggle);
       });
     });
   }
@@ -239,7 +329,7 @@
       : '<span class="wa-item-badge">Auto</span>';
 
     return `
-      <button class="wa-kanban-card" data-kanban-card-id="${conversation.id}" type="button">
+      <button class="wa-kanban-card" draggable="true" data-kanban-card-id="${conversation.id}" type="button">
         <div class="wa-kanban-card-head">
           <div class="wa-avatar">${getInitial(name)}</div>
           <div class="wa-kanban-card-main">
@@ -267,7 +357,7 @@
     showStatus('Conversa selecionada a partir do Kanban.', 'success');
   }
 
-  async function handleConversationMoveToColumn(conversationId, columnId) {
+  async function handleConversationCardDrop(conversationId, columnId) {
     if (!conversationId || !columnId) return;
 
     try {
@@ -278,6 +368,7 @@
       if (state.activeConversationId === updated.id) {
         state.activeConversation = updated;
         renderConversationContextPanel(updated);
+        await loadConversationContext(updated.id);
       }
 
       await loadKanbanBoard();
@@ -287,6 +378,65 @@
       console.error(error);
       showStatus(`Erro ao mover conversa: ${error.message || error}`, 'error');
       await loadKanbanBoard();
+    }
+  }
+
+  async function handleCreateKanbanColumn() {
+    const input = document.getElementById('waNewKanbanColumnInput');
+    if (!input) return;
+    const nome = input.value.trim();
+
+    if (!nome) {
+      showStatus('Informe o nome da nova coluna.', 'error');
+      return;
+    }
+
+    try {
+      await window.WhatsAppAdminApi.createKanbanColumn({ nome });
+      input.value = '';
+      await loadKanbanBoard();
+      showStatus('Coluna criada com sucesso.', 'success');
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao criar coluna: ${error.message || error}`, 'error');
+    }
+  }
+
+  async function handleShiftColumnOrder(columnId, direction) {
+    const columns = state.kanban.columns || [];
+    const index = columns.findIndex((item) => item.id === columnId);
+    if (index < 0) return;
+
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= columns.length) return;
+
+    const current = columns[index];
+    const target = columns[targetIndex];
+
+    try {
+      await Promise.all([
+        window.WhatsAppAdminApi.updateKanbanColumn(current.id, { ordem: target.ordem }),
+        window.WhatsAppAdminApi.updateKanbanColumn(target.id, { ordem: current.ordem })
+      ]);
+      await loadKanbanBoard();
+      showStatus('Ordem das colunas atualizada.', 'success');
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao reordenar colunas: ${error.message || error}`, 'error');
+    }
+  }
+
+  async function handleToggleKanbanColumn(columnId) {
+    const column = (state.kanban.columns || []).find((item) => item.id === columnId);
+    if (!column || column.fixa_sistema) return;
+
+    try {
+      await window.WhatsAppAdminApi.updateKanbanColumn(columnId, { ativo: false });
+      await loadKanbanBoard();
+      showStatus('Coluna inativada com sucesso.', 'success');
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao inativar coluna: ${error.message || error}`, 'error');
     }
   }
 
@@ -315,6 +465,9 @@
           state.activeConversation = null;
           state.context.tags = [];
           state.context.notes = [];
+          state.context.tasks = [];
+          state.context.reminders = [];
+          state.context.activities = [];
           renderEmptyChatState();
           renderConversationContextPanel(null);
         }
@@ -415,23 +568,38 @@
     if (!conversationId) return;
 
     try {
-      const [tags, notes] = await Promise.all([
+      const [tags, notes, tasks, reminders, activities] = await Promise.all([
         window.WhatsAppAdminApi.fetchConversationTags(conversationId),
-        window.WhatsAppAdminApi.fetchConversationNotes(conversationId)
+        window.WhatsAppAdminApi.fetchConversationNotes(conversationId),
+        window.WhatsAppAdminApi.fetchConversationTasks(conversationId),
+        window.WhatsAppAdminApi.fetchConversationReminders(conversationId),
+        window.WhatsAppAdminApi.fetchConversationActivities(conversationId)
       ]);
 
       state.context.tags = Array.isArray(tags) ? tags : [];
       state.context.notes = Array.isArray(notes) ? notes : [];
+      state.context.tasks = Array.isArray(tasks) ? tasks : [];
+      state.context.reminders = Array.isArray(reminders) ? reminders : [];
+      state.context.activities = Array.isArray(activities) ? activities : [];
 
       renderConversationTags(state.context.tags);
       renderConversationNotes(state.context.notes);
+      renderConversationTasks(state.context.tasks);
+      renderConversationReminders(state.context.reminders);
+      renderConversationActivities(state.context.activities);
     } catch (error) {
       console.error(error);
       showStatus(`Erro ao carregar contexto CRM: ${error.message || error}`, 'error');
       state.context.tags = [];
       state.context.notes = [];
+      state.context.tasks = [];
+      state.context.reminders = [];
+      state.context.activities = [];
       renderConversationTags([]);
       renderConversationNotes([]);
+      renderConversationTasks([]);
+      renderConversationReminders([]);
+      renderConversationActivities([]);
     }
   }
 
@@ -484,35 +652,72 @@
         <span class="wa-context-stage">Etapa: ${getConversationStageLabel(conversation)}</span>
       </div>
 
-      <div class="wa-context-block">
-        <label for="waDealValueInput">Valor do negócio</label>
-        <div class="wa-context-inline">
-          <input id="waDealValueInput" class="wa-context-input" type="text" inputmode="decimal" value="${Number(conversation.valor_negocio || 0).toFixed(2).replace('.', ',')}" />
-          <button id="waSaveDealValueBtn" class="wa-btn wa-btn-secondary" type="button">Salvar</button>
+      <div class="wa-context-grid">
+        <div class="wa-context-block">
+          <label for="waDealValueInput">Valor do negócio</label>
+          <div class="wa-context-inline">
+            <input id="waDealValueInput" class="wa-context-input" type="text" inputmode="decimal" value="${Number(conversation.valor_negocio || 0).toFixed(2).replace('.', ',')}" />
+            <button id="waSaveDealValueBtn" class="wa-btn wa-btn-secondary" type="button">Salvar</button>
+          </div>
+          <small class="wa-context-help">Atual: ${formatCurrency(conversation.valor_negocio || 0)}</small>
         </div>
-        <small class="wa-context-help">Atual: ${formatCurrency(conversation.valor_negocio || 0)}</small>
-      </div>
 
-      <div class="wa-context-block">
-        <label>Etiquetas</label>
-        <div id="waContextTags" class="wa-context-tags"></div>
-      </div>
-
-      <div class="wa-context-block">
-        <label for="waInternalNoteInput">Notas internas</label>
-        <textarea id="waInternalNoteInput" class="wa-context-textarea" placeholder="Registrar observação interna..."></textarea>
-        <div class="wa-context-note-actions">
-          <button id="waSaveNoteBtn" class="wa-btn wa-btn-secondary" type="button">Salvar nota</button>
+        <div class="wa-context-block">
+          <label>Etiquetas</label>
+          <div id="waContextTags" class="wa-context-tags"></div>
         </div>
-        <div id="waContextNotes" class="wa-context-notes"></div>
+
+        <div class="wa-context-block">
+          <label for="waInternalNoteInput">Notas internas</label>
+          <textarea id="waInternalNoteInput" class="wa-context-textarea" placeholder="Registrar observação interna..."></textarea>
+          <div class="wa-context-note-actions">
+            <button id="waSaveNoteBtn" class="wa-btn wa-btn-secondary" type="button">Salvar nota</button>
+          </div>
+          <div id="waContextNotes" class="wa-context-notes"></div>
+        </div>
+
+        <div class="wa-context-block">
+          <label for="waTaskTitleInput">Tarefas</label>
+          <div class="wa-context-inline wa-context-inline-wide">
+            <input id="waTaskTitleInput" class="wa-context-input" type="text" placeholder="Título da tarefa" />
+            <input id="waTaskDueInput" class="wa-context-input" type="datetime-local" />
+          </div>
+          <textarea id="waTaskDescriptionInput" class="wa-context-textarea" placeholder="Descrição da tarefa (opcional)"></textarea>
+          <div class="wa-context-note-actions">
+            <button id="waSaveTaskBtn" class="wa-btn wa-btn-secondary" type="button">Adicionar tarefa</button>
+          </div>
+          <div id="waContextTasks" class="wa-context-list"></div>
+        </div>
+
+        <div class="wa-context-block">
+          <label for="waReminderTitleInput">Lembretes</label>
+          <div class="wa-context-inline wa-context-inline-wide">
+            <input id="waReminderTitleInput" class="wa-context-input" type="text" placeholder="Título do lembrete" />
+            <input id="waReminderDateInput" class="wa-context-input" type="datetime-local" />
+          </div>
+          <div class="wa-context-note-actions">
+            <button id="waSaveReminderBtn" class="wa-btn wa-btn-secondary" type="button">Adicionar lembrete</button>
+          </div>
+          <div id="waContextReminders" class="wa-context-list"></div>
+        </div>
+
+        <div class="wa-context-block">
+          <label>Atividade recente</label>
+          <div id="waContextActivities" class="wa-context-list"></div>
+        </div>
       </div>
     `;
 
     renderConversationTags(state.context.tags);
     renderConversationNotes(state.context.notes);
+    renderConversationTasks(state.context.tasks);
+    renderConversationReminders(state.context.reminders);
+    renderConversationActivities(state.context.activities);
 
     document.getElementById('waSaveNoteBtn')?.addEventListener('click', handleSaveConversationNote);
     document.getElementById('waSaveDealValueBtn')?.addEventListener('click', handleUpdateDealValue);
+    document.getElementById('waSaveTaskBtn')?.addEventListener('click', handleSaveConversationTask);
+    document.getElementById('waSaveReminderBtn')?.addEventListener('click', handleSaveConversationReminder);
   }
 
   function renderConversationTags(tags) {
@@ -547,6 +752,87 @@
     `).join('');
   }
 
+  function renderConversationTasks(tasks) {
+    const tasksContainer = document.getElementById('waContextTasks');
+    if (!tasksContainer) return;
+
+    if (!Array.isArray(tasks) || !tasks.length) {
+      tasksContainer.innerHTML = '<div class="wa-context-empty-inline">Sem tarefas.</div>';
+      return;
+    }
+
+    tasksContainer.innerHTML = tasks.map((task) => {
+      const isDone = task.status === 'concluida';
+      const overdue = !isDone && isOverdue(task.vencimento_em);
+      return `
+        <article class="wa-note-item ${overdue ? 'is-overdue' : ''}">
+          <p><strong>${escapeHtml(task.titulo)}</strong></p>
+          ${task.descricao ? `<p>${escapeHtml(task.descricao)}</p>` : ''}
+          <footer>
+            <span>Status: ${isDone ? 'Concluída' : 'Pendente'}</span>
+            <span>${task.vencimento_em ? ` · Vence em ${formatMessageDate(task.vencimento_em)}` : ''}</span>
+            ${overdue ? '<span class="wa-overdue-badge">Vencida</span>' : ''}
+          </footer>
+          ${isDone ? '' : `<div class="wa-context-note-actions"><button class="wa-btn wa-btn-secondary" type="button" data-task-complete="${task.id}">Marcar concluída</button></div>`}
+        </article>
+      `;
+    }).join('');
+
+    tasksContainer.querySelectorAll('[data-task-complete]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        try {
+          await window.WhatsAppAdminApi.updateConversationTask(button.dataset.taskComplete, { status: 'concluida' });
+          const selected = getSelectedConversation();
+          if (selected?.id) await loadConversationContext(selected.id);
+          showStatus('Tarefa marcada como concluída.', 'success');
+        } catch (error) {
+          console.error(error);
+          showStatus(`Erro ao concluir tarefa: ${error.message || error}`, 'error');
+        }
+      });
+    });
+  }
+
+  function renderConversationReminders(reminders) {
+    const remindersContainer = document.getElementById('waContextReminders');
+    if (!remindersContainer) return;
+
+    if (!Array.isArray(reminders) || !reminders.length) {
+      remindersContainer.innerHTML = '<div class="wa-context-empty-inline">Sem lembretes.</div>';
+      return;
+    }
+
+    remindersContainer.innerHTML = reminders.map((reminder) => {
+      const overdue = reminder.status === 'ativo' && isOverdue(reminder.lembrar_em);
+      return `
+        <article class="wa-note-item ${overdue ? 'is-overdue' : ''}">
+          <p><strong>${escapeHtml(reminder.titulo)}</strong></p>
+          <footer>
+            ${formatMessageDate(reminder.lembrar_em)} · ${escapeHtml(reminder.status || 'ativo')}
+            ${overdue ? '<span class="wa-overdue-badge">Atrasado</span>' : ''}
+          </footer>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function renderConversationActivities(activities) {
+    const activitiesContainer = document.getElementById('waContextActivities');
+    if (!activitiesContainer) return;
+
+    if (!Array.isArray(activities) || !activities.length) {
+      activitiesContainer.innerHTML = '<div class="wa-context-empty-inline">Sem atividades recentes.</div>';
+      return;
+    }
+
+    activitiesContainer.innerHTML = activities.map((activity) => `
+      <article class="wa-note-item">
+        <p>${escapeHtml(activity.descricao || activity.tipo || 'Atividade')}</p>
+        <footer>${formatMessageDate(activity.created_at)} · ${escapeHtml(activity.tipo || 'evento')}</footer>
+      </article>
+    `).join('');
+  }
+
   async function handleSaveConversationNote() {
     const selected = getSelectedConversation();
     const noteInput = document.getElementById('waInternalNoteInput');
@@ -569,6 +855,73 @@
     }
   }
 
+  async function handleSaveConversationTask() {
+    const selected = getSelectedConversation();
+    const titleInput = document.getElementById('waTaskTitleInput');
+    const descInput = document.getElementById('waTaskDescriptionInput');
+    const dueInput = document.getElementById('waTaskDueInput');
+
+    if (!selected || !titleInput || !descInput || !dueInput) return;
+
+    const titulo = titleInput.value.trim();
+    if (!titulo) {
+      showStatus('Informe um título para a tarefa.', 'error');
+      return;
+    }
+
+    try {
+      await window.WhatsAppAdminApi.saveConversationTask(selected.id, {
+        titulo,
+        descricao: descInput.value.trim() || null,
+        vencimento_em: dueInput.value ? new Date(dueInput.value).toISOString() : null
+      });
+      titleInput.value = '';
+      descInput.value = '';
+      dueInput.value = '';
+      await loadConversationContext(selected.id);
+      await loadConversations({ keepSource: true });
+      showStatus('Tarefa salva com sucesso.', 'success');
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao salvar tarefa: ${error.message || error}`, 'error');
+    }
+  }
+
+  async function handleSaveConversationReminder() {
+    const selected = getSelectedConversation();
+    const titleInput = document.getElementById('waReminderTitleInput');
+    const dateInput = document.getElementById('waReminderDateInput');
+
+    if (!selected || !titleInput || !dateInput) return;
+
+    const titulo = titleInput.value.trim();
+    const lembrarEm = dateInput.value;
+
+    if (!titulo) {
+      showStatus('Informe um título para o lembrete.', 'error');
+      return;
+    }
+
+    if (!lembrarEm) {
+      showStatus('Informe data e hora para o lembrete.', 'error');
+      return;
+    }
+
+    try {
+      await window.WhatsAppAdminApi.saveConversationReminder(selected.id, {
+        titulo,
+        lembrar_em: new Date(lembrarEm).toISOString()
+      });
+      titleInput.value = '';
+      dateInput.value = '';
+      await loadConversationContext(selected.id);
+      showStatus('Lembrete salvo com sucesso.', 'success');
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao salvar lembrete: ${error.message || error}`, 'error');
+    }
+  }
+
   async function handleUpdateDealValue() {
     const selected = getSelectedConversation();
     const valueInput = document.getElementById('waDealValueInput');
@@ -586,6 +939,8 @@
       state.filteredConversations = state.filteredConversations.map((item) => item.id === updatedConversation.id ? updatedConversation : item);
       state.conversations = state.conversations.map((item) => item.id === updatedConversation.id ? updatedConversation : item);
       renderConversationContextPanel(updatedConversation);
+      await loadConversationContext(updatedConversation.id);
+      if (state.viewMode === 'kanban') await loadKanbanBoard();
       showStatus('Valor do negócio atualizado com sucesso.', 'success');
     } catch (error) {
       console.error(error);
@@ -844,7 +1199,12 @@
   window.renderConversationContextPanel = renderConversationContextPanel;
   window.renderConversationTags = renderConversationTags;
   window.renderConversationNotes = renderConversationNotes;
+  window.renderConversationTasks = renderConversationTasks;
+  window.renderConversationReminders = renderConversationReminders;
+  window.renderConversationActivities = renderConversationActivities;
   window.handleSaveConversationNote = handleSaveConversationNote;
+  window.handleSaveConversationTask = handleSaveConversationTask;
+  window.handleSaveConversationReminder = handleSaveConversationReminder;
   window.handleUpdateDealValue = handleUpdateDealValue;
   window.renderMessages = renderMessages;
   window.renderEmptyChatState = renderEmptyChatState;
@@ -854,7 +1214,8 @@
   window.loadKanbanBoard = loadKanbanBoard;
   window.renderKanbanBoard = renderKanbanBoard;
   window.handleKanbanCardClick = handleKanbanCardClick;
-  window.handleConversationMoveToColumn = handleConversationMoveToColumn;
+  window.handleConversationCardDrop = handleConversationCardDrop;
+  window.handleCreateKanbanColumn = handleCreateKanbanColumn;
   window.refreshConversations = refreshConversations;
   window.startWhatsAppPolling = startWhatsAppPolling;
   window.stopWhatsAppPolling = stopWhatsAppPolling;
