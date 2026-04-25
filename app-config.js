@@ -19,4 +19,7 @@ window.APP_CONFIG = {
 
     // URL da Edge Function de frete (API key de geocoding fica só no backend)
     FREIGHT_FUNCTION_URL: "https://dvkcxpwhbpiltqovveue.supabase.co/functions/v1/calcular-frete",
+
+    // Endpoint real para envio manual de WhatsApp no painel admin
+    WHATSAPP_ADMIN_SEND_ENDPOINT: "https://falsify-wool-relenting.ngrok-free.dev/webhook/send-whatsapp-admin",
 };

@@ -260,11 +260,12 @@
     const sendBtn = document.getElementById('waSendReplyBtn');
     if (!input || !sendBtn) return;
 
-    const conversationId = state.activeConversationId;
-    const phone = state.activeConversation?.telefone || state.activeConversation?.phone || '';
+    const selected = getSelectedConversation();
+    const conversationId = selected?.id;
+    const phone = selected?.telefone || selected?.phone || '';
     const text = input.value.trim();
 
-    if (!conversationId || !state.activeConversation) {
+    if (!conversationId) {
       showWhatsAppFeedback('Nenhuma conversa selecionada.', 'error');
       return;
     }
@@ -320,6 +321,14 @@
       sendBtn.textContent = originalBtnText;
       input.focus();
     }
+  }
+
+  function getSelectedConversation() {
+    if (!state.activeConversationId) return null;
+    return state.filteredConversations.find((item) => item.id === state.activeConversationId)
+      || state.conversations.find((item) => item.id === state.activeConversationId)
+      || state.activeConversation
+      || null;
   }
 
   function showWhatsAppFeedback(message, type = 'success') {
