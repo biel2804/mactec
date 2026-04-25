@@ -11,6 +11,12 @@
     pollingMessagesTimer: null,
     isLoadingConversations: false,
     isLoadingMessages: false,
+    isLoadingKanban: false,
+    viewMode: 'conversations',
+    kanban: {
+      columns: [],
+      tagsByConversationId: {}
+    },
     context: {
       tags: [],
       notes: []
@@ -81,10 +87,18 @@
   }
 
   function getConversationStageLabel(conversation) {
-    if (conversation?.kanban_column_id) {
-      return `Coluna ${conversation.kanban_column_id.slice(0, 8)}`;
-    }
-    return 'Sem etapa definida';
+    if (!conversation?.kanban_column_id) return 'Sem etapa definida';
+    const column = state.kanban.columns.find((item) => item.id === conversation.kanban_column_id);
+    return column?.nome || 'Etapa não encontrada';
+  }
+
+  function escapeHtml(value) {
+    return safeText(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
   }
 
   function showStatus(message, type = 'info') {
@@ -92,6 +106,188 @@
     if (!statusEl) return;
     statusEl.textContent = message;
     statusEl.dataset.type = type;
+  }
+
+  function setWhatsAppViewMode(mode) {
+    const nextMode = mode === 'kanban' ? 'kanban' : 'conversations';
+    state.viewMode = nextMode;
+
+    const conversationsPanel = document.getElementById('waConversationsView');
+    const kanbanPanel = document.getElementById('waKanbanView');
+    const conversationsBtn = document.getElementById('waViewConversationsBtn');
+    const kanbanBtn = document.getElementById('waViewKanbanBtn');
+
+    const isKanban = nextMode === 'kanban';
+
+    if (conversationsPanel) conversationsPanel.hidden = isKanban;
+    if (kanbanPanel) kanbanPanel.hidden = !isKanban;
+
+    conversationsBtn?.classList.toggle('active', !isKanban);
+    kanbanBtn?.classList.toggle('active', isKanban);
+
+    if (isKanban) {
+      loadKanbanBoard();
+    }
+  }
+
+  async function loadKanbanBoard() {
+    if (state.isLoadingKanban) return;
+    state.isLoadingKanban = true;
+
+    const boardContainer = document.getElementById('waKanbanBoard');
+    if (boardContainer) {
+      boardContainer.innerHTML = '<div class="wa-kanban-empty">Carregando board...</div>';
+    }
+
+    try {
+      const [columns, boardData] = await Promise.all([
+        window.WhatsAppAdminApi.fetchKanbanColumns(),
+        window.WhatsAppAdminApi.fetchKanbanBoardData(state.currentSearch, state.currentFilter)
+      ]);
+
+      state.kanban.columns = Array.isArray(columns) ? columns : [];
+      state.kanban.tagsByConversationId = boardData?.tagsByConversationId || {};
+
+      renderKanbanBoard(state.kanban.columns, boardData?.conversations || []);
+    } catch (error) {
+      console.error(error);
+      if (boardContainer) {
+        boardContainer.innerHTML = `<div class="wa-kanban-empty">Erro ao carregar Kanban: ${escapeHtml(error?.message || String(error))}</div>`;
+      }
+    } finally {
+      state.isLoadingKanban = false;
+    }
+  }
+
+  function renderKanbanBoard(columns, conversations) {
+    const boardContainer = document.getElementById('waKanbanBoard');
+    if (!boardContainer) return;
+
+    if (!Array.isArray(columns) || !columns.length) {
+      boardContainer.innerHTML = '<div class="wa-kanban-empty">Nenhuma coluna Kanban ativa.</div>';
+      return;
+    }
+
+    const cardsByColumnId = {};
+    columns.forEach((column) => {
+      cardsByColumnId[column.id] = [];
+    });
+
+    const fallbackColumnId = columns[0]?.id || null;
+    (Array.isArray(conversations) ? conversations : []).forEach((conversation) => {
+      const targetColumnId = conversation.kanban_column_id && cardsByColumnId[conversation.kanban_column_id]
+        ? conversation.kanban_column_id
+        : fallbackColumnId;
+      if (!targetColumnId) return;
+      cardsByColumnId[targetColumnId].push(conversation);
+    });
+
+    boardContainer.innerHTML = columns.map((column) => {
+      const cards = cardsByColumnId[column.id] || [];
+      const totalValue = cards.reduce((acc, item) => acc + Number(item.valor_negocio || 0), 0);
+      const body = cards.length
+        ? cards.map((conversation) => renderKanbanCard(conversation, columns)).join('')
+        : '<div class="wa-kanban-empty">Sem conversas nesta etapa.</div>';
+
+      return `
+        <article class="wa-kanban-column" data-column-id="${column.id}">
+          <header class="wa-kanban-column-header">
+            <strong>${escapeHtml(column.nome || 'Sem nome')}</strong>
+            <div class="wa-kanban-column-meta">
+              <span>${cards.length} cards</span>
+              <span>${formatCurrency(totalValue)}</span>
+            </div>
+          </header>
+          <div class="wa-kanban-column-body">${body}</div>
+        </article>
+      `;
+    }).join('');
+
+    boardContainer.querySelectorAll('[data-kanban-card-id]').forEach((cardButton) => {
+      cardButton.addEventListener('click', () => {
+        handleKanbanCardClick(cardButton.dataset.kanbanCardId);
+      });
+    });
+
+    boardContainer.querySelectorAll('[data-kanban-move-id]').forEach((selectEl) => {
+      selectEl.addEventListener('change', (event) => {
+        const conversationId = selectEl.dataset.kanbanMoveId;
+        const columnId = event.target.value;
+        handleConversationMoveToColumn(conversationId, columnId);
+      });
+    });
+  }
+
+  function renderKanbanCard(conversation, columns) {
+    const name = getConversationName(conversation);
+    const tags = state.kanban.tagsByConversationId[conversation.id] || [];
+    const tagsHtml = tags.length
+      ? tags.map((tag) => {
+        const color = safeText(tag.cor).trim() || '#22c55e';
+        return `<span class="wa-kanban-tag" style="border-color:${escapeHtml(color)};color:${escapeHtml(color)};">${escapeHtml(tag.nome)}</span>`;
+      }).join('')
+      : '<span class="wa-kanban-tag">Sem etiqueta</span>';
+
+    const optionsHtml = columns.map((column) => `
+      <option value="${column.id}" ${column.id === conversation.kanban_column_id ? 'selected' : ''}>
+        ${escapeHtml(column.nome)}
+      </option>
+    `).join('');
+
+    const modeBadge = conversation.modo_atendimento === 'manual'
+      ? '<span class="wa-item-badge waiting">Manual</span>'
+      : '<span class="wa-item-badge">Auto</span>';
+
+    return `
+      <button class="wa-kanban-card" data-kanban-card-id="${conversation.id}" type="button">
+        <div class="wa-kanban-card-head">
+          <div class="wa-avatar">${getInitial(name)}</div>
+          <div class="wa-kanban-card-main">
+            <strong class="wa-kanban-card-title">${escapeHtml(name)}</strong>
+            <span class="wa-kanban-card-phone">${escapeHtml(formatPhone(conversation.telefone))}</span>
+            <span class="wa-kanban-card-preview">${escapeHtml(safeText(conversation.ultima_mensagem, 'Sem mensagens'))}</span>
+          </div>
+        </div>
+        <div class="wa-kanban-tags">${tagsHtml}</div>
+        <div class="wa-kanban-card-footer">
+          <span class="wa-kanban-value">${formatCurrency(conversation.valor_negocio || 0)}</span>
+          ${modeBadge}
+        </div>
+      </button>
+      <select class="wa-kanban-move-select" data-kanban-move-id="${conversation.id}">
+        ${optionsHtml}
+      </select>
+    `;
+  }
+
+  async function handleKanbanCardClick(conversationId) {
+    if (!conversationId) return;
+    await selectConversation(conversationId);
+    setWhatsAppViewMode('conversations');
+    showStatus('Conversa selecionada a partir do Kanban.', 'success');
+  }
+
+  async function handleConversationMoveToColumn(conversationId, columnId) {
+    if (!conversationId || !columnId) return;
+
+    try {
+      const updated = await window.WhatsAppAdminApi.updateConversationKanbanColumn(conversationId, columnId);
+
+      state.filteredConversations = state.filteredConversations.map((item) => item.id === updated.id ? updated : item);
+      state.conversations = state.conversations.map((item) => item.id === updated.id ? updated : item);
+      if (state.activeConversationId === updated.id) {
+        state.activeConversation = updated;
+        renderConversationContextPanel(updated);
+      }
+
+      await loadKanbanBoard();
+      renderConversationList(state.filteredConversations);
+      showStatus('Etapa da conversa atualizada com sucesso.', 'success');
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao mover conversa: ${error.message || error}`, 'error');
+      await loadKanbanBoard();
+    }
   }
 
   async function loadConversations(options = {}) {
@@ -134,6 +330,10 @@
       if (totalLabel) totalLabel.textContent = `${list.length} conversas`;
       const updatedLabel = document.getElementById('waUpdatedAt');
       if (updatedLabel) updatedLabel.textContent = 'Atualizado agora';
+
+      if (state.viewMode === 'kanban') {
+        loadKanbanBoard();
+      }
     } catch (error) {
       console.error(error);
       showStatus(`Erro ao carregar conversas: ${error.message || error}`, 'error');
@@ -615,10 +815,17 @@
     document.getElementById('waBackToAdminBtn')?.addEventListener('click', goBackToAdmin);
     document.getElementById('waGoHomeBtn')?.addEventListener('click', goHome);
     document.getElementById('waLogoutBtn')?.addEventListener('click', logoutAdmin);
+
+    document.querySelectorAll('[data-view-mode]').forEach((button) => {
+      button.addEventListener('click', () => {
+        setWhatsAppViewMode(button.dataset.viewMode || 'conversations');
+      });
+    });
   }
 
   async function initAdminWhatsAppPage() {
     bindEvents();
+    setWhatsAppViewMode('conversations');
     renderConversationContextPanel(null);
     await loadConversations();
     startWhatsAppPolling();
@@ -643,6 +850,11 @@
   window.renderEmptyChatState = renderEmptyChatState;
   window.toggleConversationMode = toggleConversationMode;
   window.sendManualReply = sendManualReply;
+  window.setWhatsAppViewMode = setWhatsAppViewMode;
+  window.loadKanbanBoard = loadKanbanBoard;
+  window.renderKanbanBoard = renderKanbanBoard;
+  window.handleKanbanCardClick = handleKanbanCardClick;
+  window.handleConversationMoveToColumn = handleConversationMoveToColumn;
   window.refreshConversations = refreshConversations;
   window.startWhatsAppPolling = startWhatsAppPolling;
   window.stopWhatsAppPolling = stopWhatsAppPolling;

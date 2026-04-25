@@ -48,18 +48,28 @@
       </aside>
 
       <section class="wa-chat">
-        <div id="waChatHeader" class="wa-chat-header"></div>
-        <div id="waConversationContextPanel" class="wa-conversation-context-panel"></div>
-        <div id="waMessageHistory" class="wa-message-history"></div>
-
-        <div class="wa-reply-box">
-          <div class="wa-reply-toolbar">📎 😊</div>
-          <div class="wa-reply-row">
-            <textarea id="waReplyInput" class="wa-reply-textarea" placeholder="Digite a resposta manual..."></textarea>
-            <button id="waSendReplyBtn" class="wa-btn wa-btn-primary" type="button">Enviar</button>
-          </div>
-          <div id="waPageStatus" class="wa-page-status" data-type="info"></div>
+        <div class="wa-view-switch" role="tablist" aria-label="Alternar visão">
+          <button id="waViewConversationsBtn" class="wa-view-tab active" data-view-mode="conversations" type="button">Conversas</button>
+          <button id="waViewKanbanBtn" class="wa-view-tab" data-view-mode="kanban" type="button">Kanban</button>
         </div>
+        <section id="waConversationsView" class="wa-view-panel wa-view-panel-conversations">
+          <div id="waChatHeader" class="wa-chat-header"></div>
+          <div id="waConversationContextPanel" class="wa-conversation-context-panel"></div>
+          <div id="waMessageHistory" class="wa-message-history"></div>
+
+          <div class="wa-reply-box">
+            <div class="wa-reply-toolbar">📎 😊</div>
+            <div class="wa-reply-row">
+              <textarea id="waReplyInput" class="wa-reply-textarea" placeholder="Digite a resposta manual..."></textarea>
+              <button id="waSendReplyBtn" class="wa-btn wa-btn-primary" type="button">Enviar</button>
+            </div>
+            <div id="waPageStatus" class="wa-page-status" data-type="info"></div>
+          </div>
+        </section>
+
+        <section id="waKanbanView" class="wa-view-panel wa-view-panel-kanban" hidden>
+          <div id="waKanbanBoard" class="wa-kanban-board"></div>
+        </section>
       </section>
     </main>
   </div>
