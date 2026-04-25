@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Central de Conversas WhatsApp | MacTec Support</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="stylesheet" href="/css/admin-whatsapp.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/app-config.js"></script>
+  <script src="/js/admin-whatsapp-api.js" defer></script>
+  <script src="/js/admin-whatsapp.js" defer></script>
+</head>
+<body>
+  <div class="wa-page">
+    <header class="wa-header">
+      <div class="wa-header-title">
+        <span aria-hidden="true">💬</span>
+        <span>Central de Conversas WhatsApp</span>
+      </div>
+      <div class="wa-header-actions">
+        <button id="waBackToAdminBtn" class="wa-btn wa-btn-secondary" type="button">Voltar ao Painel</button>
+        <button id="waGoHomeBtn" class="wa-btn wa-btn-secondary" type="button">Home</button>
+        <button id="waLogoutBtn" class="wa-btn wa-btn-secondary" type="button">Sair</button>
+      </div>
+    </header>
+
+    <main class="wa-layout">
+      <aside class="wa-sidebar">
+        <div class="wa-sidebar-top">
+          <div class="wa-search-row">
+            <input id="waSearchInput" class="wa-search-input" type="text" placeholder="Buscar por nome ou telefone" />
+            <button class="wa-filter-icon" type="button" aria-label="Filtros">☰</button>
+          </div>
+          <div class="wa-filter-tabs">
+            <button class="wa-filter-tab active" data-filter="all" type="button">Todas</button>
+            <button class="wa-filter-tab" data-filter="unread" type="button">Não lidas</button>
+            <button class="wa-filter-tab" data-filter="waiting" type="button">Aguardando</button>
+          </div>
+        </div>
+
+        <div id="waConversationList" class="wa-conversation-list"></div>
+
+        <footer class="wa-sidebar-footer">
+          <span id="waTotalConversations">0 conversas</span>
+          <span id="waUpdatedAt">Atualizado agora</span>
+        </footer>
+      </aside>
+
+      <section class="wa-chat">
+        <div id="waChatHeader" class="wa-chat-header"></div>
+        <div id="waMessageHistory" class="wa-message-history"></div>
+
+        <div class="wa-reply-box">
+          <div class="wa-reply-toolbar">📎 😊</div>
+          <div class="wa-reply-row">
+            <textarea id="waReplyInput" class="wa-reply-textarea" placeholder="Digite a resposta manual..."></textarea>
+            <button id="waSendReplyBtn" class="wa-btn wa-btn-primary" type="button">Enviar</button>
+          </div>
+          <div id="waPageStatus" class="wa-page-status" data-type="info"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof window.initAdminWhatsAppPage === 'function') {
+        window.initAdminWhatsAppPage();
+      }
+    });
+  </script>
+</body>
+</html>
