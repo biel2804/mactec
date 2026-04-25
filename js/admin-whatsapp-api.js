@@ -163,6 +163,77 @@
     return data;
   }
 
+  async function fetchKanbanColumns() {
+    const client = ensureSupabaseClient();
+    const { data, error } = await client
+      .from('whatsapp_kanban_columns')
+      .select('id, nome, slug, ordem, cor, ativo, fixa_sistema')
+      .eq('ativo', true)
+      .order('ordem', { ascending: true });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function fetchKanbanBoardData(searchTerm = '', filter = 'all') {
+    const conversations = await fetchWhatsAppConversations(searchTerm, filter);
+    const conversationIds = conversations.map((item) => item.id).filter(Boolean);
+
+    if (!conversationIds.length) {
+      return { conversations: [], tagsByConversationId: {} };
+    }
+
+    const client = ensureSupabaseClient();
+    const { data, error } = await client
+      .from('whatsapp_conversa_tags')
+      .select('conversa_id, tag_id, whatsapp_tags(nome, cor, ativo)')
+      .in('conversa_id', conversationIds)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    const tagsByConversationId = {};
+    (Array.isArray(data) ? data : []).forEach((row) => {
+      const conversationId = row.conversa_id;
+      if (!conversationId) return;
+
+      if (!Array.isArray(tagsByConversationId[conversationId])) {
+        tagsByConversationId[conversationId] = [];
+      }
+
+      const tagName = row.whatsapp_tags?.nome;
+      if (!tagName) return;
+
+      tagsByConversationId[conversationId].push({
+        id: row.tag_id,
+        nome: tagName,
+        cor: row.whatsapp_tags?.cor || null,
+        ativo: row.whatsapp_tags?.ativo !== false
+      });
+    });
+
+    return { conversations, tagsByConversationId };
+  }
+
+  async function updateConversationKanbanColumn(conversationId, columnId) {
+    if (!conversationId) throw new Error('Conversa inválida para atualizar etapa.');
+    if (!columnId) throw new Error('Coluna inválida para atualizar etapa.');
+
+    const client = ensureSupabaseClient();
+    const { data, error } = await client
+      .from('whatsapp_conversas')
+      .update({
+        kanban_column_id: columnId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', conversationId)
+      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   async function saveManualMessage(conversationId, phone, text) {
     const client = ensureSupabaseClient();
     const payloadText = String(text || '').trim();
@@ -258,6 +329,9 @@
     saveConversationNote,
     updateConversationDealValue,
     updateConversationMode,
+    fetchKanbanColumns,
+    fetchKanbanBoardData,
+    updateConversationKanbanColumn,
     saveManualMessage,
     sendManualWhatsAppMessage
   };
