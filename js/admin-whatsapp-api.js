@@ -125,6 +125,7 @@
 
     const endpoint = APP_CONFIG.WHATSAPP_ADMIN_SEND_ENDPOINT || APP_CONFIG.WHATSAPP_SEND_ENDPOINT || '';
     if (!endpoint) {
+      console.warn('WhatsApp manual send endpoint não configurado.');
       return { ...result, delivery: { status: 'not_configured' } };
     }
 
@@ -135,10 +136,23 @@
           'Content-Type': 'application/json',
           ...(SUPABASE_KEY ? { apikey: SUPABASE_KEY } : {})
         },
-        body: JSON.stringify({ conversationId, phone, text })
+        body: JSON.stringify({
+          conversa_id: conversationId,
+          telefone: phone,
+          mensagem: text,
+          origem: 'admin'
+        })
       });
 
-      const payload = await response.json().catch(() => null);
+      const rawText = await response.text();
+      let payload = null;
+
+      try {
+        payload = rawText ? JSON.parse(rawText) : null;
+      } catch (_parseError) {
+        payload = rawText || null;
+      }
+
       return {
         ...result,
         delivery: {
@@ -148,12 +162,12 @@
         }
       };
     } catch (error) {
-      console.warn('Falha no disparo externo do WhatsApp:', error);
+      console.error('Falha no envio manual do WhatsApp:', error);
       return {
         ...result,
         delivery: {
-          status: 'failed',
-          error: error?.message || 'Erro desconhecido'
+          status: 'error',
+          error: error?.message || 'Falha desconhecida no envio manual'
         }
       };
     }
