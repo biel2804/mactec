@@ -25,7 +25,30 @@
       </div>
     </header>
 
-    <main class="wa-layout">
+    <main class="wa-shell">
+      <aside class="wa-product-nav" aria-label="Navegação principal">
+        <div class="wa-product-brand">
+          <span class="wa-product-brand-logo" aria-hidden="true">🛠️</span>
+          <div>
+            <strong>MacTec</strong>
+            <span>Support Suite</span>
+          </div>
+        </div>
+
+        <nav class="wa-product-menu">
+          <button class="wa-product-menu-item active" data-product-area="conversations" type="button"><span>💬</span><span>Conversas</span></button>
+          <button class="wa-product-menu-item" data-product-area="kanban" type="button"><span>🧩</span><span>Kanban</span></button>
+          <button class="wa-product-menu-item" data-product-area="contatos" type="button"><span>👥</span><span>Contatos</span></button>
+          <button class="wa-product-menu-item" data-product-area="etiquetas" type="button"><span>🏷️</span><span>Etiquetas</span></button>
+          <button class="wa-product-menu-item" data-product-area="tarefas" type="button"><span>✅</span><span>Tarefas</span></button>
+          <button class="wa-product-menu-item" data-product-area="lembretes" type="button"><span>⏰</span><span>Lembretes</span></button>
+          <button class="wa-product-menu-item" data-product-area="relatorios" type="button"><span>📊</span><span>Relatórios</span></button>
+          <button class="wa-product-menu-item" data-product-area="automacao" type="button"><span>⚙️</span><span>Automação</span></button>
+          <button class="wa-product-menu-item" data-product-area="configuracoes" type="button"><span>🔧</span><span>Configurações</span></button>
+          <button class="wa-product-menu-item" data-product-area="ajuda" type="button"><span>❓</span><span>Ajuda</span></button>
+        </nav>
+      </aside>
+
       <aside class="wa-sidebar">
         <div class="wa-sidebar-top">
           <div class="wa-search-row">
@@ -47,29 +70,45 @@
         </footer>
       </aside>
 
-      <section class="wa-chat">
-        <div class="wa-view-switch" role="tablist" aria-label="Alternar visão">
-          <button id="waViewConversationsBtn" class="wa-view-tab active" data-view-mode="conversations" type="button">Conversas</button>
-          <button id="waViewKanbanBtn" class="wa-view-tab" data-view-mode="kanban" type="button">Kanban</button>
-        </div>
-        <section id="waConversationsView" class="wa-view-panel wa-view-panel-conversations">
-          <div id="waChatHeader" class="wa-chat-header"></div>
-          <div id="waConversationContextPanel" class="wa-conversation-context-panel"></div>
-          <div id="waMessageHistory" class="wa-message-history"></div>
-
-          <div class="wa-reply-box">
-            <div class="wa-reply-toolbar">📎 😊</div>
-            <div class="wa-reply-row">
-              <textarea id="waReplyInput" class="wa-reply-textarea" placeholder="Digite a resposta manual..."></textarea>
-              <button id="waSendReplyBtn" class="wa-btn wa-btn-primary" type="button">Enviar</button>
-            </div>
-            <div id="waPageStatus" class="wa-page-status" data-type="info"></div>
+      <section class="wa-workspace" data-workspace-focus="conversations">
+        <div class="wa-workspace-head">
+          <div class="wa-view-switch" role="tablist" aria-label="Alternar foco do módulo">
+            <button id="waViewConversationsBtn" class="wa-view-tab active" data-view-mode="conversations" type="button">Atendimento</button>
+            <button id="waViewKanbanBtn" class="wa-view-tab" data-view-mode="kanban" type="button">CRM / Kanban</button>
           </div>
-        </section>
+          <div class="wa-placeholder-strip" aria-label="Módulos auxiliares preparados">
+            <span>Contatos</span>
+            <span>Etiquetas</span>
+            <span>Tarefas</span>
+            <span>Lembretes</span>
+            <span>Relatórios</span>
+          </div>
+        </div>
 
-        <section id="waKanbanView" class="wa-view-panel wa-view-panel-kanban" hidden>
-          <div id="waKanbanBoard" class="wa-kanban-board"></div>
-        </section>
+        <div class="wa-workspace-grid">
+          <section id="waConversationsView" class="wa-view-panel wa-view-panel-conversations">
+            <div id="waChatHeader" class="wa-chat-header"></div>
+            <div id="waConversationContextPanel" class="wa-conversation-context-panel"></div>
+            <div id="waMessageHistory" class="wa-message-history"></div>
+
+            <div class="wa-reply-box">
+              <div class="wa-reply-toolbar">📎 😊</div>
+              <div class="wa-reply-row">
+                <textarea id="waReplyInput" class="wa-reply-textarea" placeholder="Digite a resposta manual..."></textarea>
+                <button id="waSendReplyBtn" class="wa-btn wa-btn-primary" type="button">Enviar</button>
+              </div>
+              <div id="waPageStatus" class="wa-page-status" data-type="info"></div>
+            </div>
+          </section>
+
+          <section id="waKanbanView" class="wa-view-panel wa-view-panel-kanban">
+            <div class="wa-kanban-panel-head">
+              <strong>Pipeline CRM</strong>
+              <small>Conversas e estágio comercial coexistem nesta visão</small>
+            </div>
+            <div id="waKanbanBoard" class="wa-kanban-board"></div>
+          </section>
+        </div>
       </section>
     </main>
   </div>
