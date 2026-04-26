@@ -26,6 +26,7 @@
     </header>
 
     <main class="wa-shell" data-current-view="conversas">
+      <button id="waMainSidebarToggleBtn" class="wa-shell-sidebar-toggle" type="button" aria-label="Recolher ou expandir menu principal">☰</button>
       <aside class="wa-product-nav" aria-label="Navegação principal">
         <div class="wa-product-brand">
           <span class="wa-product-brand-logo" aria-hidden="true">🛠️</span>
@@ -72,16 +73,22 @@
 
       <section class="wa-workspace">
         <section id="waViewConversas" class="wa-workspace-view">
-          <div id="waChatHeader" class="wa-chat-header"></div>
-          <div id="waConversationContextPanel" class="wa-conversation-context-panel"></div>
-          <div id="waMessageHistory" class="wa-message-history"></div>
-          <div class="wa-reply-box">
-            <div class="wa-reply-toolbar">📎 😊</div>
-            <div class="wa-reply-row">
-              <textarea id="waReplyInput" class="wa-reply-textarea" placeholder="Digite a resposta manual..."></textarea>
-              <button id="waSendReplyBtn" class="wa-btn wa-btn-primary" type="button">Enviar</button>
+          <div class="wa-conversations-layout">
+            <div class="wa-conversation-main">
+              <div id="waChatHeader" class="wa-chat-header"></div>
+              <div id="waMessageHistory" class="wa-message-history"></div>
+              <div class="wa-reply-box">
+                <div class="wa-reply-toolbar">📎 😊</div>
+                <div class="wa-reply-row">
+                  <textarea id="waReplyInput" class="wa-reply-textarea" placeholder="Digite a resposta manual..."></textarea>
+                  <button id="waSendReplyBtn" class="wa-btn wa-btn-primary" type="button">Enviar</button>
+                </div>
+                <div id="waPageStatus" class="wa-page-status" data-type="info"></div>
+              </div>
             </div>
-            <div id="waPageStatus" class="wa-page-status" data-type="info"></div>
+            <aside id="waConversationContextDrawer" class="wa-conversation-context-drawer" aria-label="Contexto da conversa" aria-hidden="true">
+              <div id="waConversationContextPanel" class="wa-conversation-context-panel"></div>
+            </aside>
           </div>
         </section>
 
