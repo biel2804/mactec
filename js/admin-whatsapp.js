@@ -855,12 +855,35 @@
   }
 
   function toggleAttachmentMenu(event) {
+    event?.preventDefault();
     event?.stopPropagation();
     if (state.isAttachmentMenuOpen) {
       closeAttachmentMenu();
       return;
     }
     openAttachmentMenu();
+  }
+
+  function bindAttachmentMenuEvents() {
+    const attachmentButton = document.getElementById('waAttachmentToggleBtn');
+    const attachmentMenu = document.getElementById('waAttachmentMenu');
+
+    attachmentButton?.addEventListener('click', toggleAttachmentMenu);
+
+    attachmentMenu?.addEventListener('click', (event) => {
+      const optionButton = event.target.closest('[data-attachment-option]');
+      if (!optionButton) return;
+      event.preventDefault();
+      showWhatsAppFeedback('Envio de mídia será integrado na próxima etapa.', 'warning');
+      closeAttachmentMenu();
+    });
+
+    document.addEventListener('click', (event) => {
+      const clickedInsideAttachmentArea = event.target.closest('.wa-reply-actions');
+      if (!clickedInsideAttachmentArea) {
+        closeAttachmentMenu();
+      }
+    });
   }
 
   function renderConversationTags(tags) {
@@ -1460,18 +1483,7 @@
     document.getElementById('waLogoutBtn')?.addEventListener('click', logoutAdmin);
     document.getElementById('waMainSidebarToggleBtn')?.addEventListener('click', toggleMainSidebar);
     document.getElementById('waThemeToggleBtn')?.addEventListener('click', toggleTheme);
-    document.getElementById('waAttachmentToggleBtn')?.addEventListener('click', toggleAttachmentMenu);
-    document.getElementById('waAttachmentMenu')?.addEventListener('click', (event) => {
-      const optionButton = event.target.closest('[data-attachment-option]');
-      if (!optionButton) return;
-      event.preventDefault();
-      showWhatsAppFeedback('Envio de mídia será integrado na próxima etapa.', 'warning');
-      closeAttachmentMenu();
-    });
-    document.addEventListener('click', (event) => {
-      const actionsContainer = event.target.closest('.wa-reply-actions');
-      if (!actionsContainer) closeAttachmentMenu();
-    });
+    bindAttachmentMenuEvents();
     bindSidebarWorkspaceNavigation();
     document.getElementById('waTasksModuleSaveBtn')?.addEventListener('click', handleSaveTaskFromModuleView);
     document.getElementById('waRemindersModuleSaveBtn')?.addEventListener('click', handleSaveReminderFromModuleView);
