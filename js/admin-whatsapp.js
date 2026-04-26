@@ -12,7 +12,7 @@
     isLoadingConversations: false,
     isLoadingMessages: false,
     isLoadingKanban: false,
-    viewMode: 'conversations',
+    currentWorkspaceView: 'conversas',
     kanban: {
       columns: [],
       tagsByConversationId: {}
@@ -133,32 +133,49 @@
     statusEl.dataset.type = type;
   }
 
-  function setWhatsAppViewMode(mode) {
-    const nextMode = mode === 'kanban' ? 'kanban' : 'conversations';
-    state.viewMode = nextMode;
+  const VIEW_IDS = {
+    conversas: 'waViewConversas',
+    kanban: 'waViewKanban',
+    contatos: 'waViewContatos',
+    etiquetas: 'waViewEtiquetas',
+    tarefas: 'waViewTarefas',
+    lembretes: 'waViewLembretes',
+    relatorios: 'waViewRelatorios',
+    automacao: 'waViewAutomacao',
+    configuracoes: 'waViewConfiguracoes',
+    ajuda: 'waViewAjuda'
+  };
 
-    const workspace = document.querySelector('.wa-workspace');
-    const conversationsBtn = document.getElementById('waViewConversationsBtn');
-    const kanbanBtn = document.getElementById('waViewKanbanBtn');
-    const productNavButtons = document.querySelectorAll('[data-product-area]');
+  function renderWorkspaceView() {
+    Object.entries(VIEW_IDS).forEach(([viewName, id]) => {
+      const section = document.getElementById(id);
+      if (!section) return;
+      section.hidden = viewName !== state.currentWorkspaceView;
+    });
 
-    const isKanban = nextMode === 'kanban';
-
-    if (workspace) {
-      workspace.dataset.workspaceFocus = nextMode;
+    const shell = document.querySelector('.wa-shell');
+    if (shell) {
+      shell.dataset.currentView = state.currentWorkspaceView;
     }
+  }
 
-    conversationsBtn?.classList.toggle('active', !isKanban);
-    kanbanBtn?.classList.toggle('active', isKanban);
-    productNavButtons.forEach((button) => {
-      const area = button.dataset.productArea;
-      button.classList.toggle('active', area === nextMode);
+  function setWorkspaceView(viewName) {
+    const nextView = VIEW_IDS[viewName] ? viewName : 'conversas';
+    state.currentWorkspaceView = nextView;
+
+    document.querySelectorAll('[data-workspace-view]').forEach((button) => {
+      button.classList.toggle('active', button.dataset.workspaceView === nextView);
     });
 
-    loadKanbanBoard().catch((error) => {
-      console.error(error);
-      showStatus(`Falha ao carregar Kanban: ${error?.message || error}`, 'error');
-    });
+    renderWorkspaceView();
+    renderAuxiliaryViews();
+
+    if (nextView === 'kanban') {
+      loadKanbanBoard().catch((error) => {
+        console.error(error);
+        showStatus(`Falha ao carregar Kanban: ${error?.message || error}`, 'error');
+      });
+    }
   }
 
   async function loadKanbanBoard() {
@@ -359,9 +376,14 @@
 
   async function handleKanbanCardClick(conversationId) {
     if (!conversationId) return;
-    await selectConversation(conversationId);
-    setWhatsAppViewMode('conversations');
-    showStatus('Conversa selecionada a partir do Kanban.', 'success');
+    state.activeConversationId = conversationId;
+    state.activeConversation = state.filteredConversations.find((item) => item.id === conversationId) || null;
+    renderConversationList(state.filteredConversations);
+    if (state.activeConversation?.id) {
+      await loadConversationContext(state.activeConversation.id);
+      renderAuxiliaryViews();
+    }
+    showStatus('Card selecionado no Kanban.', 'success');
   }
 
   async function handleConversationCardDrop(conversationId, columnId) {
@@ -477,6 +499,7 @@
           state.context.activities = [];
           renderEmptyChatState();
           renderConversationContextPanel(null);
+          renderAuxiliaryViews();
         }
       } else {
         state.activeConversation = list.find((item) => item.id === state.activeConversationId) || null;
@@ -490,8 +513,9 @@
       if (totalLabel) totalLabel.textContent = `${list.length} conversas`;
       const updatedLabel = document.getElementById('waUpdatedAt');
       if (updatedLabel) updatedLabel.textContent = 'Atualizado agora';
+      renderAuxiliaryViews();
 
-      if (state.viewMode === 'kanban') {
+      if (state.currentWorkspaceView === 'kanban') {
         loadKanbanBoard().catch((error) => {
           console.error(error);
           showStatus(`Falha ao atualizar Kanban: ${error?.message || error}`, 'error');
@@ -599,6 +623,7 @@
       renderConversationTasks(state.context.tasks);
       renderConversationReminders(state.context.reminders);
       renderConversationActivities(state.context.activities);
+      renderAuxiliaryViews();
     } catch (error) {
       console.error(error);
       showStatus(`Erro ao carregar contexto CRM: ${error.message || error}`, 'error');
@@ -934,6 +959,71 @@
     }
   }
 
+  async function handleSaveTaskFromModuleView() {
+    const selected = getSelectedConversation();
+    const titleInput = document.getElementById('waTasksModuleTitleInput');
+    const descInput = document.getElementById('waTasksModuleDescriptionInput');
+    const dueInput = document.getElementById('waTasksModuleDueInput');
+    if (!selected || !titleInput || !descInput || !dueInput) {
+      showStatus('Selecione uma conversa para adicionar tarefa.', 'error');
+      return;
+    }
+
+    const titulo = titleInput.value.trim();
+    if (!titulo) {
+      showStatus('Informe um título para a tarefa.', 'error');
+      return;
+    }
+
+    try {
+      await window.WhatsAppAdminApi.saveConversationTask(selected.id, {
+        titulo,
+        descricao: descInput.value.trim() || null,
+        vencimento_em: dueInput.value ? new Date(dueInput.value).toISOString() : null
+      });
+      titleInput.value = '';
+      descInput.value = '';
+      dueInput.value = '';
+      await loadConversationContext(selected.id);
+      renderAuxiliaryViews();
+      showStatus('Tarefa adicionada no módulo de tarefas.', 'success');
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao salvar tarefa: ${error.message || error}`, 'error');
+    }
+  }
+
+  async function handleSaveReminderFromModuleView() {
+    const selected = getSelectedConversation();
+    const titleInput = document.getElementById('waRemindersModuleTitleInput');
+    const dateInput = document.getElementById('waRemindersModuleDateInput');
+    if (!selected || !titleInput || !dateInput) {
+      showStatus('Selecione uma conversa para adicionar lembrete.', 'error');
+      return;
+    }
+
+    const titulo = titleInput.value.trim();
+    if (!titulo || !dateInput.value) {
+      showStatus('Informe título e data para o lembrete.', 'error');
+      return;
+    }
+
+    try {
+      await window.WhatsAppAdminApi.saveConversationReminder(selected.id, {
+        titulo,
+        lembrar_em: new Date(dateInput.value).toISOString()
+      });
+      titleInput.value = '';
+      dateInput.value = '';
+      await loadConversationContext(selected.id);
+      renderAuxiliaryViews();
+      showStatus('Lembrete adicionado no módulo de lembretes.', 'success');
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao salvar lembrete: ${error.message || error}`, 'error');
+    }
+  }
+
   async function handleUpdateDealValue() {
     const selected = getSelectedConversation();
     const valueInput = document.getElementById('waDealValueInput');
@@ -952,11 +1042,83 @@
       state.conversations = state.conversations.map((item) => item.id === updatedConversation.id ? updatedConversation : item);
       renderConversationContextPanel(updatedConversation);
       await loadConversationContext(updatedConversation.id);
-      if (state.viewMode === 'kanban') await loadKanbanBoard();
+      if (state.currentWorkspaceView === 'kanban') await loadKanbanBoard();
       showStatus('Valor do negócio atualizado com sucesso.', 'success');
     } catch (error) {
       console.error(error);
       showStatus(`Erro ao atualizar valor: ${error.message || error}`, 'error');
+    }
+  }
+
+  function renderAuxiliaryViews() {
+    const selected = getSelectedConversation();
+    const name = selected ? getConversationName(selected) : 'Nenhum contato selecionado';
+
+    const contactsList = document.getElementById('waContactsListView');
+    if (contactsList) {
+      if (!state.filteredConversations.length) {
+        contactsList.innerHTML = '<div class="wa-empty-module">Nenhum contato disponível.</div>';
+      } else {
+        contactsList.innerHTML = `
+          <h3 class="wa-module-title">Contatos disponíveis</h3>
+          <div class="wa-context-list">
+            ${state.filteredConversations.map((conversation) => `
+              <article class="wa-note-item">
+                <p><strong>${escapeHtml(getConversationName(conversation))}</strong></p>
+                <footer>${escapeHtml(formatPhone(conversation.telefone))}</footer>
+              </article>
+            `).join('')}
+          </div>
+        `;
+      }
+    }
+
+    const contactDetail = document.getElementById('waContactDetailPanel');
+    if (contactDetail) {
+      contactDetail.innerHTML = selected ? `
+        <h3 class="wa-module-title">Contato selecionado</h3>
+        <article class="wa-note-item">
+          <p><strong>${escapeHtml(name)}</strong></p>
+          <footer>${escapeHtml(formatPhone(selected.telefone))} · ${escapeHtml(getConversationStageLabel(selected))}</footer>
+        </article>
+      ` : '<div class="wa-empty-module">Selecione uma conversa para exibir detalhes.</div>';
+    }
+
+    const tagsModule = document.getElementById('waTagsModuleList');
+    if (tagsModule) {
+      const tags = state.context.tags || [];
+      tagsModule.innerHTML = `
+        <h3 class="wa-module-title">Etiquetas de ${escapeHtml(name)}</h3>
+        <div class="wa-context-tags">
+          ${tags.length ? tags.map((tag) => `<span class="wa-tag-chip" style="border-color:${escapeHtml(safeText(tag.cor).trim() || '#22c55e')};color:${escapeHtml(safeText(tag.cor).trim() || '#22c55e')};">${escapeHtml(tag.nome)}</span>`).join('') : '<span class="wa-context-empty-inline">Sem etiquetas vinculadas.</span>'}
+        </div>
+      `;
+    }
+
+    const tasksModule = document.getElementById('waTasksModuleList');
+    if (tasksModule) {
+      tasksModule.innerHTML = `
+        <h3 class="wa-module-title">Tarefas de ${escapeHtml(name)}</h3>
+        <div class="wa-context-list">${(state.context.tasks || []).length ? (state.context.tasks || []).map((task) => `
+          <article class="wa-note-item">
+            <p><strong>${escapeHtml(task.titulo)}</strong></p>
+            <footer>${escapeHtml(task.status || 'pendente')} ${task.vencimento_em ? `· ${escapeHtml(formatMessageDate(task.vencimento_em))}` : ''}</footer>
+          </article>
+        `).join('') : '<div class="wa-context-empty-inline">Sem tarefas cadastradas.</div>'}</div>
+      `;
+    }
+
+    const remindersModule = document.getElementById('waRemindersModuleList');
+    if (remindersModule) {
+      remindersModule.innerHTML = `
+        <h3 class="wa-module-title">Lembretes de ${escapeHtml(name)}</h3>
+        <div class="wa-context-list">${(state.context.reminders || []).length ? (state.context.reminders || []).map((reminder) => `
+          <article class="wa-note-item">
+            <p><strong>${escapeHtml(reminder.titulo)}</strong></p>
+            <footer>${escapeHtml(formatMessageDate(reminder.lembrar_em))} · ${escapeHtml(reminder.status || 'ativo')}</footer>
+          </article>
+        `).join('') : '<div class="wa-context-empty-inline">Sem lembretes cadastrados.</div>'}</div>
+      `;
     }
   }
 
@@ -1157,6 +1319,14 @@
     window.location.href = '/admin-login.html?status=logout';
   }
 
+  function bindSidebarWorkspaceNavigation() {
+    document.querySelectorAll('[data-workspace-view]').forEach((button) => {
+      button.addEventListener('click', () => {
+        setWorkspaceView(button.dataset.workspaceView || 'conversas');
+      });
+    });
+  }
+
   function bindEvents() {
     document.getElementById('waSearchInput')?.addEventListener('input', (event) => {
       state.currentSearch = event.target.value || '';
@@ -1182,34 +1352,16 @@
     document.getElementById('waBackToAdminBtn')?.addEventListener('click', goBackToAdmin);
     document.getElementById('waGoHomeBtn')?.addEventListener('click', goHome);
     document.getElementById('waLogoutBtn')?.addEventListener('click', logoutAdmin);
-
-    document.querySelectorAll('[data-view-mode]').forEach((button) => {
-      button.addEventListener('click', () => {
-        setWhatsAppViewMode(button.dataset.viewMode || 'conversations');
-      });
-    });
-
-    document.querySelectorAll('[data-product-area]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const area = button.dataset.productArea || '';
-        if (area === 'conversations' || area === 'kanban') {
-          setWhatsAppViewMode(area);
-          return;
-        }
-
-        document.querySelectorAll('[data-product-area]').forEach((item) => item.classList.remove('active'));
-        button.classList.add('active');
-        showStatus(`Módulo ${area} preparado visualmente nesta etapa.`, 'info');
-      });
-    });
+    bindSidebarWorkspaceNavigation();
+    document.getElementById('waTasksModuleSaveBtn')?.addEventListener('click', handleSaveTaskFromModuleView);
+    document.getElementById('waRemindersModuleSaveBtn')?.addEventListener('click', handleSaveReminderFromModuleView);
   }
 
   async function initAdminWhatsAppPage() {
     bindEvents();
-    setWhatsAppViewMode('conversations');
+    setWorkspaceView('conversas');
     renderConversationContextPanel(null);
     await loadConversations();
-    await loadKanbanBoard();
     startWhatsAppPolling();
     showStatus('Central pronta para uso.', 'success');
   }
@@ -1237,7 +1389,9 @@
   window.renderEmptyChatState = renderEmptyChatState;
   window.toggleConversationMode = toggleConversationMode;
   window.sendManualReply = sendManualReply;
-  window.setWhatsAppViewMode = setWhatsAppViewMode;
+  window.setWorkspaceView = setWorkspaceView;
+  window.renderWorkspaceView = renderWorkspaceView;
+  window.bindSidebarWorkspaceNavigation = bindSidebarWorkspaceNavigation;
   window.loadKanbanBoard = loadKanbanBoard;
   window.renderKanbanBoard = renderKanbanBoard;
   window.handleKanbanCardClick = handleKanbanCardClick;
