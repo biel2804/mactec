@@ -151,7 +151,10 @@
     kanbanBtn?.classList.toggle('active', isKanban);
 
     if (isKanban) {
-      loadKanbanBoard();
+      loadKanbanBoard().catch((error) => {
+        console.error(error);
+        showStatus(`Falha ao carregar Kanban: ${error?.message || error}`, 'error');
+      });
     }
   }
 
@@ -177,8 +180,9 @@
     } catch (error) {
       console.error(error);
       if (boardContainer) {
-        boardContainer.innerHTML = `<div class="wa-kanban-empty">Erro ao carregar Kanban: ${escapeHtml(error?.message || String(error))}</div>`;
+        boardContainer.innerHTML = '<div class="wa-kanban-empty">Kanban indisponível no momento. A lista de conversas segue ativa.</div>';
       }
+      showStatus(`Kanban com falha parcial: ${error?.message || error}`, 'error');
     } finally {
       state.isLoadingKanban = false;
     }
@@ -485,10 +489,15 @@
       if (updatedLabel) updatedLabel.textContent = 'Atualizado agora';
 
       if (state.viewMode === 'kanban') {
-        loadKanbanBoard();
+        loadKanbanBoard().catch((error) => {
+          console.error(error);
+          showStatus(`Falha ao atualizar Kanban: ${error?.message || error}`, 'error');
+        });
       }
     } catch (error) {
       console.error(error);
+      state.filteredConversations = [];
+      renderConversationList([]);
       showStatus(`Erro ao carregar conversas: ${error.message || error}`, 'error');
     } finally {
       state.isLoadingConversations = false;
