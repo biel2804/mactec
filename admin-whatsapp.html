@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Central de Conversas WhatsApp | MacTec Support</title>
+  <script>
+    (function () {
+      const saved = localStorage.getItem('theme');
+      const initialTheme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+      document.documentElement.setAttribute('data-theme', initialTheme);
+    })();
+  </script>
   <link rel="icon" type="image/png" href="/assets/logo.png" />
   <link rel="stylesheet" href="/css/admin-whatsapp.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -15,10 +22,11 @@
   <div class="wa-page">
     <header class="wa-header">
       <div class="wa-header-title">
-        <span aria-hidden="true">💬</span>
+        <img src="/assets/icons/whatsapp-header-icon.svg" alt="" class="wa-header-icon" aria-hidden="true" />
         <span>Central de Conversas WhatsApp</span>
       </div>
       <div class="wa-header-actions">
+        <button id="waThemeToggleBtn" class="wa-btn wa-btn-secondary wa-theme-toggle-btn" type="button" aria-label="Alternar tema" title="Alternar tema">🌙</button>
         <button id="waBackToAdminBtn" class="wa-btn wa-btn-secondary" type="button">Voltar ao Painel</button>
         <button id="waGoHomeBtn" class="wa-btn wa-btn-secondary" type="button">Home</button>
         <button id="waLogoutBtn" class="wa-btn wa-btn-secondary" type="button">Sair</button>
@@ -78,8 +86,20 @@
               <div id="waChatHeader" class="wa-chat-header"></div>
               <div id="waMessageHistory" class="wa-message-history"></div>
               <div class="wa-reply-box">
-                <div class="wa-reply-toolbar">📎 😊</div>
                 <div class="wa-reply-row">
+                  <div class="wa-reply-actions">
+                    <button id="waAttachmentToggleBtn" class="wa-attach-btn" type="button" aria-label="Abrir menu de anexos" aria-expanded="false">➕</button>
+                    <div id="waAttachmentMenu" class="wa-attachment-menu" hidden>
+                      <button class="wa-attachment-option" type="button" data-attachment-option="Documento">📄 Documento</button>
+                      <button class="wa-attachment-option" type="button" data-attachment-option="Fotos e vídeos">🖼️ Fotos e vídeos</button>
+                      <button class="wa-attachment-option" type="button" data-attachment-option="Câmera">📷 Câmera</button>
+                      <button class="wa-attachment-option" type="button" data-attachment-option="Áudio">🎵 Áudio</button>
+                      <button class="wa-attachment-option" type="button" data-attachment-option="Contato">👤 Contato</button>
+                      <button class="wa-attachment-option" type="button" data-attachment-option="Enquete">📊 Enquete</button>
+                      <button class="wa-attachment-option" type="button" data-attachment-option="Evento">📅 Evento</button>
+                      <button class="wa-attachment-option" type="button" data-attachment-option="Nova figurinha">🧩 Nova figurinha</button>
+                    </div>
+                  </div>
                   <textarea id="waReplyInput" class="wa-reply-textarea" placeholder="Digite a resposta manual..."></textarea>
                   <button id="waSendReplyBtn" class="wa-btn wa-btn-primary" type="button">Enviar</button>
                 </div>

@@ -28,7 +28,9 @@
     },
     drag: {
       conversationId: null
-    }
+    },
+    theme: 'dark',
+    isAttachmentMenuOpen: false
   };
 
   function safeText(value, fallback = '') {
@@ -107,6 +109,30 @@
 
   function getInitial(name) {
     return safeText(name).trim().charAt(0).toUpperCase() || 'C';
+  }
+
+  function getConversationAvatarUrl(conversation) {
+    const possibleFields = [
+      conversation?.avatar_url,
+      conversation?.foto_perfil_url,
+      conversation?.photo_url,
+      conversation?.profile_picture_url,
+      conversation?.imagem_url
+    ];
+    return possibleFields.find((value) => safeText(value).trim()) || '';
+  }
+
+  function renderAvatarHtml(conversation, fallbackName) {
+    const initial = getInitial(fallbackName);
+    const avatarUrl = safeText(getConversationAvatarUrl(conversation)).trim();
+    if (!avatarUrl) {
+      return `<div class="wa-avatar"><span class="wa-avatar-fallback">${initial}</span></div>`;
+    }
+    return `
+      <div class="wa-avatar">
+        <img src="${escapeHtml(avatarUrl)}" alt="Foto de ${escapeHtml(fallbackName)}" loading="lazy" onerror="this.remove(); this.parentElement.innerHTML='<span class=&quot;wa-avatar-fallback&quot;>${escapeHtml(initial)}</span>';" />
+      </div>
+    `;
   }
 
   function getModeLabel(mode) {
@@ -550,7 +576,7 @@
         : '';
       return `
         <button class="wa-conversation-item${activeClass}" data-id="${conversation.id}">
-          <div class="wa-avatar">${getInitial(name)}</div>
+          ${renderAvatarHtml(conversation, name)}
           <div class="wa-item-main">
             <div class="wa-item-top">
               <strong>${name}</strong>
@@ -652,7 +678,7 @@
 
     container.innerHTML = `
       <div class="wa-chat-contact">
-        <div class="wa-avatar">${getInitial(name)}</div>
+        ${renderAvatarHtml(conversation, name)}
         <div>
           <strong>${name}</strong>
           <p>${formatPhone(conversation.telefone)}</p>
@@ -794,6 +820,47 @@
 
   function toggleMainSidebar() {
     setMainSidebarCollapsed(!state.isMainSidebarCollapsed);
+  }
+
+  function applyTheme(theme) {
+    const nextTheme = theme === 'light' ? 'light' : 'dark';
+    state.theme = nextTheme;
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    localStorage.setItem('theme', nextTheme);
+    const button = document.getElementById('waThemeToggleBtn');
+    if (!button) return;
+    button.textContent = nextTheme === 'dark' ? '🌙' : '☀️';
+    button.title = nextTheme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro';
+    button.setAttribute('aria-label', button.title);
+  }
+
+  function toggleTheme() {
+    applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+  }
+
+  function closeAttachmentMenu() {
+    state.isAttachmentMenuOpen = false;
+    const menu = document.getElementById('waAttachmentMenu');
+    const button = document.getElementById('waAttachmentToggleBtn');
+    if (menu) menu.hidden = true;
+    if (button) button.setAttribute('aria-expanded', 'false');
+  }
+
+  function openAttachmentMenu() {
+    state.isAttachmentMenuOpen = true;
+    const menu = document.getElementById('waAttachmentMenu');
+    const button = document.getElementById('waAttachmentToggleBtn');
+    if (menu) menu.hidden = false;
+    if (button) button.setAttribute('aria-expanded', 'true');
+  }
+
+  function toggleAttachmentMenu(event) {
+    event?.stopPropagation();
+    if (state.isAttachmentMenuOpen) {
+      closeAttachmentMenu();
+      return;
+    }
+    openAttachmentMenu();
   }
 
   function renderConversationTags(tags) {
@@ -1392,15 +1459,31 @@
     document.getElementById('waGoHomeBtn')?.addEventListener('click', goHome);
     document.getElementById('waLogoutBtn')?.addEventListener('click', logoutAdmin);
     document.getElementById('waMainSidebarToggleBtn')?.addEventListener('click', toggleMainSidebar);
+    document.getElementById('waThemeToggleBtn')?.addEventListener('click', toggleTheme);
+    document.getElementById('waAttachmentToggleBtn')?.addEventListener('click', toggleAttachmentMenu);
+    document.getElementById('waAttachmentMenu')?.addEventListener('click', (event) => {
+      const optionButton = event.target.closest('[data-attachment-option]');
+      if (!optionButton) return;
+      event.preventDefault();
+      showWhatsAppFeedback('Envio de mídia será integrado na próxima etapa.', 'warning');
+      closeAttachmentMenu();
+    });
+    document.addEventListener('click', (event) => {
+      const actionsContainer = event.target.closest('.wa-reply-actions');
+      if (!actionsContainer) closeAttachmentMenu();
+    });
     bindSidebarWorkspaceNavigation();
     document.getElementById('waTasksModuleSaveBtn')?.addEventListener('click', handleSaveTaskFromModuleView);
     document.getElementById('waRemindersModuleSaveBtn')?.addEventListener('click', handleSaveReminderFromModuleView);
   }
 
   async function initAdminWhatsAppPage() {
+    const savedTheme = localStorage.getItem('theme');
+    applyTheme(savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'dark');
     bindEvents();
     setWorkspaceView('conversas');
     closeConversationContextDrawer();
+    closeAttachmentMenu();
     setMainSidebarCollapsed(false);
     renderConversationContextPanel(null);
     await loadConversations();
