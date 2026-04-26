@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termos de Garantia | MacTec Support</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --text: #e2e8f0;
+            --text-muted: #cbd5e1;
+            --card-bg: rgba(15, 23, 42, 0.72);
+            --card-border: rgba(148, 163, 184, 0.24);
+            --accent-start: #22d3ee;
+            --accent-end: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 50%, #020617 100%);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        .garantia-card {
+            width: min(860px, 100%);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 18px 45px rgba(2, 6, 23, 0.5);
+            padding: 2rem clamp(1.2rem, 3vw, 2.5rem);
+        }
+
+        .garantia-selo {
+            display: block;
+            width: min(100%, 180px);
+            max-width: 180px;
+            margin: 0 auto 1.25rem;
+            height: auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: clamp(1.45rem, 3.8vw, 2rem);
+            margin-bottom: 1.75rem;
+        }
+
+        .termos {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .item {
+            background: rgba(30, 41, 59, 0.55);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-radius: 14px;
+            padding: 1rem;
+        }
+
+        .item h2 {
+            font-size: 1.05rem;
+            margin-bottom: 0.55rem;
+            color: #67e8f9;
+        }
+
+        .item p,
+        .item li {
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 0.96rem;
+        }
+
+        .item ul {
+            margin-left: 1.1rem;
+            display: grid;
+            gap: 0.3rem;
+        }
+
+        .cta-wrap {
+            margin-top: 1.75rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .cta-btn {
+            text-decoration: none;
+            color: #0b1120;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+            border-radius: 999px;
+            padding: 0.8rem 1.4rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 10px 24px rgba(34, 211, 238, 0.25);
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(34, 197, 94, 0.32);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <main class="garantia-card" aria-label="Termos de garantia MacTec Support">
+        <img class="garantia-selo" src="/assets/SELO_GARANTIA.png" alt="Selo de garantia MacTec Support">
+        <h1>Termos de Garantia</h1>
+
+        <section class="termos">
+            <article class="item">
+                <h2>1. Prazo e Validade</h2>
+                <p>A garantia é de 90 dias, conforme o Código de Defesa do Consumidor, iniciando na data de entrega do aparelho e aplicada exclusivamente ao serviço ou peça descrita na Ordem de Serviço.</p>
+            </article>
+
+            <article class="item">
+                <h2>2. Cobertura Técnica</h2>
+                <p>A cobertura abrange o funcionamento da peça substituída ou do serviço executado. Importante: a garantia será encerrada caso haja sinais de manipulação, remoção de cola OCA, abertura do aparelho ou tentativa de reparo por terceiros.</p>
+            </article>
+
+            <article class="item">
+                <h2>3. Itens não inclusos</h2>
+                <ul>
+                    <li>Lentes, antenas e carcaças</li>
+                    <li>Películas protetoras e acessórios externos</li>
+                    <li>Cabos, fones, carregadores e suportes</li>
+                    <li>Danos por desgaste natural de uso</li>
+                </ul>
+            </article>
+
+            <article class="item">
+                <h2>4. Perda de Garantia</h2>
+                <p>A garantia será invalidada em casos de:</p>
+                <ul>
+                    <li>Quedas, trincas, riscos, manchas internas por pressão ou flex rasgado</li>
+                    <li>Contato com líquidos, umidade, poeira excessiva ou calor</li>
+                    <li>Rompimento de lacres ou abertura por terceiros</li>
+                    <li>Problemas causados por software, atualizações ou aplicativos indevidos</li>
+                </ul>
+            </article>
+
+            <article class="item">
+                <h2>5. Observações finais</h2>
+                <p>A MacTec Support não se responsabiliza por arquivos, fotos, senhas ou dados do aparelho. Recomenda-se backup antes do reparo. Para acionar a garantia, o cliente deve apresentar a Ordem de Serviço.</p>
+            </article>
+        </section>
+
+        <div class="cta-wrap">
+            <a class="cta-btn" href="https://wa.me/5511945462973" target="_blank" rel="noopener noreferrer">Falar com a MacTec</a>
+        </div>
+
+        <footer>
+            <p>© 2026 MacTec Support - Todos os direitos reservados.</p>
+            <p>www.mactecsupport.com.br</p>
+        </footer>
+    </main>
+</body>
+</html>
