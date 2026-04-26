@@ -839,38 +839,45 @@
   }
 
   function closeAttachmentMenu() {
+    const attachmentToggleBtn = document.getElementById('waAttachmentToggleBtn');
+    const attachmentMenu = document.getElementById('waAttachmentMenu');
+    if (!attachmentToggleBtn || !attachmentMenu) return;
+    attachmentMenu.hidden = true;
+    attachmentToggleBtn.setAttribute('aria-expanded', 'false');
     state.isAttachmentMenuOpen = false;
-    const menu = document.getElementById('waAttachmentMenu');
-    const button = document.getElementById('waAttachmentToggleBtn');
-    if (menu) menu.hidden = true;
-    if (button) button.setAttribute('aria-expanded', 'false');
   }
 
   function openAttachmentMenu() {
+    const attachmentToggleBtn = document.getElementById('waAttachmentToggleBtn');
+    const attachmentMenu = document.getElementById('waAttachmentMenu');
+    if (!attachmentToggleBtn || !attachmentMenu) return;
+    attachmentMenu.hidden = false;
+    attachmentToggleBtn.setAttribute('aria-expanded', 'true');
     state.isAttachmentMenuOpen = true;
-    const menu = document.getElementById('waAttachmentMenu');
-    const button = document.getElementById('waAttachmentToggleBtn');
-    if (menu) menu.hidden = false;
-    if (button) button.setAttribute('aria-expanded', 'true');
   }
 
   function toggleAttachmentMenu(event) {
-    event?.preventDefault();
-    event?.stopPropagation();
-    if (state.isAttachmentMenuOpen) {
-      closeAttachmentMenu();
+    const attachmentMenu = document.getElementById('waAttachmentMenu');
+    if (!attachmentMenu) return;
+    event.stopPropagation();
+    if (attachmentMenu.hidden === true) {
+      openAttachmentMenu();
       return;
     }
-    openAttachmentMenu();
+    closeAttachmentMenu();
   }
 
   function bindAttachmentMenuEvents() {
+    if (bindAttachmentMenuEvents.isBound) return;
+
     const attachmentButton = document.getElementById('waAttachmentToggleBtn');
     const attachmentMenu = document.getElementById('waAttachmentMenu');
+    if (!attachmentButton || !attachmentMenu) return;
 
-    attachmentButton?.addEventListener('click', toggleAttachmentMenu);
+    attachmentButton.addEventListener('click', toggleAttachmentMenu);
 
-    attachmentMenu?.addEventListener('click', (event) => {
+    attachmentMenu.addEventListener('click', (event) => {
+      event.stopPropagation();
       const optionButton = event.target.closest('[data-attachment-option]');
       if (!optionButton) return;
       event.preventDefault();
@@ -884,6 +891,14 @@
         closeAttachmentMenu();
       }
     });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeAttachmentMenu();
+      }
+    });
+
+    bindAttachmentMenuEvents.isBound = true;
   }
 
   function renderConversationTags(tags) {

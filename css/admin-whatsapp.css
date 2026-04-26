@@ -482,6 +482,9 @@ html, body {
   gap: 4px;
   z-index: 12;
 }
+.wa-attachment-menu[hidden] {
+  display: none !important;
+}
 .wa-attachment-option {
   border: 1px solid transparent;
   background: transparent;
