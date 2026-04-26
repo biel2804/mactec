@@ -87,13 +87,9 @@ html, body {
 }
 
 .wa-shell-sidebar-toggle {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 30;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 100%;
+  min-height: 30px;
+  border-radius: 8px;
   border: 1px solid var(--wa-border);
   background: #0f171b;
   color: var(--wa-muted);
@@ -123,8 +119,8 @@ html, body {
   padding: 8px 4px;
 }
 
-.wa-shell.is-main-sidebar-collapsed .wa-product-brand > div {
-  display: none;
+.wa-shell.is-main-sidebar-collapsed .wa-product-brand-logo {
+  width: 48px;
 }
 
 .wa-shell.is-main-sidebar-collapsed .wa-product-menu-item {
@@ -138,24 +134,21 @@ html, body {
 
 .wa-product-brand {
   display: flex;
-  gap: 8px;
-  padding: 8px;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 8px;
   border: 1px solid var(--wa-border);
   border-radius: 8px;
   background: #10191d;
+  min-height: 58px;
 }
 
 .wa-product-brand-logo {
   width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  background: rgba(34, 197, 94, 0.14);
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
-
-.wa-product-brand strong { display: block; font-size: 0.8rem; }
-.wa-product-brand span { color: var(--wa-muted); font-size: 0.68rem; }
 
 .wa-product-menu { display: grid; gap: 4px; overflow: auto; }
 
@@ -662,8 +655,9 @@ html, body {
   .wa-sidebar { min-height: 36vh; border-right: 0; border-bottom: 1px solid var(--wa-border); }
   .wa-module-grid-2 { grid-template-columns: 1fr; }
   .wa-shell-sidebar-toggle {
-    position: static;
-    margin: 8px 8px 0;
+    width: auto;
+    align-self: flex-start;
+    padding: 0 10px;
   }
   .wa-conversations-layout,
   .wa-conversations-layout.is-context-open { grid-template-columns: 1fr; }
