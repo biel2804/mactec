@@ -137,25 +137,28 @@
     const nextMode = mode === 'kanban' ? 'kanban' : 'conversations';
     state.viewMode = nextMode;
 
-    const conversationsPanel = document.getElementById('waConversationsView');
-    const kanbanPanel = document.getElementById('waKanbanView');
+    const workspace = document.querySelector('.wa-workspace');
     const conversationsBtn = document.getElementById('waViewConversationsBtn');
     const kanbanBtn = document.getElementById('waViewKanbanBtn');
+    const productNavButtons = document.querySelectorAll('[data-product-area]');
 
     const isKanban = nextMode === 'kanban';
 
-    if (conversationsPanel) conversationsPanel.hidden = isKanban;
-    if (kanbanPanel) kanbanPanel.hidden = !isKanban;
+    if (workspace) {
+      workspace.dataset.workspaceFocus = nextMode;
+    }
 
     conversationsBtn?.classList.toggle('active', !isKanban);
     kanbanBtn?.classList.toggle('active', isKanban);
+    productNavButtons.forEach((button) => {
+      const area = button.dataset.productArea;
+      button.classList.toggle('active', area === nextMode);
+    });
 
-    if (isKanban) {
-      loadKanbanBoard().catch((error) => {
-        console.error(error);
-        showStatus(`Falha ao carregar Kanban: ${error?.message || error}`, 'error');
-      });
-    }
+    loadKanbanBoard().catch((error) => {
+      console.error(error);
+      showStatus(`Falha ao carregar Kanban: ${error?.message || error}`, 'error');
+    });
   }
 
   async function loadKanbanBoard() {
@@ -1185,6 +1188,20 @@
         setWhatsAppViewMode(button.dataset.viewMode || 'conversations');
       });
     });
+
+    document.querySelectorAll('[data-product-area]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const area = button.dataset.productArea || '';
+        if (area === 'conversations' || area === 'kanban') {
+          setWhatsAppViewMode(area);
+          return;
+        }
+
+        document.querySelectorAll('[data-product-area]').forEach((item) => item.classList.remove('active'));
+        button.classList.add('active');
+        showStatus(`Módulo ${area} preparado visualmente nesta etapa.`, 'info');
+      });
+    });
   }
 
   async function initAdminWhatsAppPage() {
@@ -1192,6 +1209,7 @@
     setWhatsAppViewMode('conversations');
     renderConversationContextPanel(null);
     await loadConversations();
+    await loadKanbanBoard();
     startWhatsAppPolling();
     showStatus('Central pronta para uso.', 'success');
   }
