@@ -28,6 +28,25 @@
     return String(value || '').trim().toLowerCase();
   }
 
+  function isMissingColumnError(error) {
+    const message = String(error?.message || '').toLowerCase();
+    return message.includes('does not exist') && message.includes('column');
+  }
+
+  function normalizeConversationRow(row) {
+    const source = row && typeof row === 'object' ? row : {};
+    const fallbackUpdatedAt = source.updated_at || source.ultima_interacao_em || source.criado_em || null;
+    const normalizedDealValue = Number(source.valor_negocio);
+
+    return {
+      ...source,
+      kanban_column_id: source.kanban_column_id || null,
+      valor_negocio: Number.isFinite(normalizedDealValue) ? normalizedDealValue : 0,
+      prioridade: source.prioridade || 'normal',
+      updated_at: fallbackUpdatedAt
+    };
+  }
+
   async function appendConversationActivity(conversationId, type, description, meta = null) {
     if (!conversationId || !type || !description) return;
     const client = ensureSupabaseClient();
@@ -50,15 +69,27 @@
 
   async function fetchWhatsAppConversations(searchTerm = '', filter = 'all') {
     const client = ensureSupabaseClient();
-    const { data, error } = await client
+    const primaryQuery = await client
       .from('whatsapp_conversas')
       .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at')
       .order('ultima_interacao_em', { ascending: false });
+    let data = primaryQuery.data;
+    let error = primaryQuery.error;
+
+    if (error && isMissingColumnError(error)) {
+      console.warn('Schema de conversas incompleto; aplicando fallback defensivo.', error);
+      const fallbackQuery = await client
+        .from('whatsapp_conversas')
+        .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em')
+        .order('ultima_interacao_em', { ascending: false });
+      data = fallbackQuery.data;
+      error = fallbackQuery.error;
+    }
 
     if (error) throw error;
 
     const term = normalizeTerm(searchTerm);
-    let rows = Array.isArray(data) ? data : [];
+    let rows = (Array.isArray(data) ? data : []).map(normalizeConversationRow);
 
     const conversationIds = rows.map((row) => row.id).filter(Boolean);
     const [tagsRows, notesRows, openTaskRows, columnsRows] = conversationIds.length
@@ -87,10 +118,10 @@
         { data: [], error: null }
       ];
 
-    if (tagsRows.error) throw tagsRows.error;
-    if (notesRows.error) throw notesRows.error;
-    if (openTaskRows.error) throw openTaskRows.error;
-    if (columnsRows.error) throw columnsRows.error;
+    if (tagsRows.error) console.warn('Falha ao carregar tags para busca contextual:', tagsRows.error);
+    if (notesRows.error) console.warn('Falha ao carregar notas para busca contextual:', notesRows.error);
+    if (openTaskRows.error) console.warn('Falha ao carregar tarefas para busca contextual:', openTaskRows.error);
+    if (columnsRows.error) console.warn('Falha ao carregar colunas do Kanban para busca contextual:', columnsRows.error);
 
     const columnNameById = {};
     (columnsRows.data || []).forEach((column) => {
@@ -123,7 +154,7 @@
     });
 
     rows = rows.map((row) => ({
-      ...row,
+      ...normalizeConversationRow(row),
       __searchMeta: {
         tags: tagsByConversation[row.id] || [],
         notes: notesByConversation[row.id] || [],
@@ -281,7 +312,10 @@
       .eq('ativo', true)
       .order('ordem', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.warn('Falha ao carregar colunas Kanban. Retornando fallback vazio.', error);
+      return [];
+    }
     return Array.isArray(data) ? data : [];
   }
 
@@ -345,7 +379,13 @@
   }
 
   async function fetchKanbanBoardData(searchTerm = '', filter = 'all') {
-    const conversations = await fetchWhatsAppConversations(searchTerm, filter);
+    let conversations = [];
+    try {
+      conversations = await fetchWhatsAppConversations(searchTerm, filter);
+    } catch (error) {
+      console.warn('Falha ao carregar conversas do Kanban. Retornando fallback vazio.', error);
+      return { conversations: [], tagsByConversationId: {} };
+    }
     const conversationIds = conversations.map((item) => item.id).filter(Boolean);
 
     if (!conversationIds.length) {
@@ -359,7 +399,10 @@
       .in('conversa_id', conversationIds)
       .order('created_at', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.warn('Falha ao carregar tags do Kanban. Retornando conversas sem tags.', error);
+      return { conversations, tagsByConversationId: {} };
+    }
 
     const tagsByConversationId = {};
     (Array.isArray(data) ? data : []).forEach((row) => {
