@@ -66,7 +66,26 @@ html, body {
   display: grid;
   grid-template-columns: 165px 255px 1fr;
   min-height: 0;
+  position: relative;
 }
+
+.wa-shell-sidebar-toggle {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 30;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--wa-border);
+  background: #0f171b;
+  color: var(--wa-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.wa-shell-sidebar-toggle:hover { border-color: var(--wa-green); color: var(--wa-green); }
 
 .wa-product-nav {
   border-right: 1px solid var(--wa-border);
@@ -76,6 +95,28 @@ html, body {
   flex-direction: column;
   padding: 10px 8px;
   gap: 10px;
+}
+
+.wa-shell.is-main-sidebar-collapsed {
+  grid-template-columns: 70px 255px 1fr;
+}
+
+.wa-shell.is-main-sidebar-collapsed .wa-product-brand {
+  justify-content: center;
+  padding: 8px 4px;
+}
+
+.wa-shell.is-main-sidebar-collapsed .wa-product-brand > div {
+  display: none;
+}
+
+.wa-shell.is-main-sidebar-collapsed .wa-product-menu-item {
+  justify-content: center;
+  padding: 7px 4px;
+}
+
+.wa-shell.is-main-sidebar-collapsed .wa-product-menu-item span:last-child {
+  display: none;
 }
 
 .wa-product-brand {
@@ -236,9 +277,27 @@ html, body {
 .wa-workspace-view:not([hidden]) { display: block; }
 
 #waViewConversas {
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  display: block;
   height: 100%;
+}
+
+.wa-conversations-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 0;
+  height: 100%;
+  min-height: 0;
+  transition: grid-template-columns 0.2s ease;
+}
+
+.wa-conversations-layout.is-context-open {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.wa-conversation-main {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+  min-height: 0;
 }
 
 #waViewKanban,
@@ -290,11 +349,24 @@ html, body {
 .wa-status-badge.manual { color: #fcd34d; border-color: rgba(245, 158, 11, 0.6); background: rgba(245, 158, 11, 0.12); }
 
 .wa-conversation-context-panel {
-  border-bottom: 1px solid var(--wa-border);
+  border-left: 1px solid var(--wa-border);
   background: #0e161a;
   padding: 8px 10px;
-  max-height: 30vh;
+  height: 100%;
   overflow: auto;
+}
+
+.wa-conversation-context-drawer {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width 0.2s ease, opacity 0.2s ease;
+  min-height: 0;
+}
+
+.wa-conversations-layout.is-context-open .wa-conversation-context-drawer {
+  width: 320px;
+  opacity: 1;
 }
 
 .wa-context-header {
@@ -461,6 +533,17 @@ html, body {
   grid-template-columns: 165px 1fr;
 }
 
+.wa-shell.is-main-sidebar-collapsed[data-current-view="kanban"],
+.wa-shell.is-main-sidebar-collapsed[data-current-view="etiquetas"],
+.wa-shell.is-main-sidebar-collapsed[data-current-view="tarefas"],
+.wa-shell.is-main-sidebar-collapsed[data-current-view="lembretes"],
+.wa-shell.is-main-sidebar-collapsed[data-current-view="relatorios"],
+.wa-shell.is-main-sidebar-collapsed[data-current-view="automacao"],
+.wa-shell.is-main-sidebar-collapsed[data-current-view="configuracoes"],
+.wa-shell.is-main-sidebar-collapsed[data-current-view="ajuda"] {
+  grid-template-columns: 70px 1fr;
+}
+
 @media (max-width: 1200px) {
   .wa-shell { grid-template-columns: 150px 230px 1fr; }
 }
@@ -480,4 +563,16 @@ html, body {
   .wa-product-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wa-sidebar { min-height: 36vh; border-right: 0; border-bottom: 1px solid var(--wa-border); }
   .wa-module-grid-2 { grid-template-columns: 1fr; }
+  .wa-shell-sidebar-toggle {
+    position: static;
+    margin: 8px 8px 0;
+  }
+  .wa-conversations-layout,
+  .wa-conversations-layout.is-context-open { grid-template-columns: 1fr; }
+  .wa-conversation-context-drawer,
+  .wa-conversations-layout.is-context-open .wa-conversation-context-drawer {
+    width: 100%;
+    opacity: 1;
+    border-top: 1px solid var(--wa-border);
+  }
 }

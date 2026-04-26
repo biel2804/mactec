@@ -13,6 +13,8 @@
     isLoadingMessages: false,
     isLoadingKanban: false,
     currentWorkspaceView: 'conversas',
+    isConversationContextDrawerOpen: false,
+    isMainSidebarCollapsed: false,
     kanban: {
       columns: [],
       tagsByConversationId: {}
@@ -657,12 +659,14 @@
         </div>
       </div>
       <div class="wa-chat-actions">
+        <button class="wa-btn wa-btn-secondary" id="waToggleConversationContextBtn" type="button">Detalhes</button>
         <span class="wa-status-badge ${isManual ? 'manual' : 'auto'}">${getModeLabel(mode)}</span>
         <button class="wa-btn wa-btn-secondary" id="waToggleModeBtn">Modo automático: ${isManual ? 'OFF' : 'ON'}</button>
         <button class="wa-btn wa-btn-primary" id="waQuickModeBtn">${isManual ? 'Reativar automático' : 'Assumir manualmente'}</button>
       </div>
     `;
 
+    document.getElementById('waToggleConversationContextBtn')?.addEventListener('click', toggleConversationContextDrawer);
     document.getElementById('waToggleModeBtn')?.addEventListener('click', () => {
       const nextMode = isManual ? 'auto' : 'manual';
       toggleConversationMode(nextMode);
@@ -755,6 +759,41 @@
     document.getElementById('waSaveDealValueBtn')?.addEventListener('click', handleUpdateDealValue);
     document.getElementById('waSaveTaskBtn')?.addEventListener('click', handleSaveConversationTask);
     document.getElementById('waSaveReminderBtn')?.addEventListener('click', handleSaveConversationReminder);
+  }
+
+  function openConversationContextDrawer() {
+    state.isConversationContextDrawerOpen = true;
+    const layout = document.querySelector('.wa-conversations-layout');
+    const drawer = document.getElementById('waConversationContextDrawer');
+    if (layout) layout.classList.add('is-context-open');
+    if (drawer) drawer.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeConversationContextDrawer() {
+    state.isConversationContextDrawerOpen = false;
+    const layout = document.querySelector('.wa-conversations-layout');
+    const drawer = document.getElementById('waConversationContextDrawer');
+    if (layout) layout.classList.remove('is-context-open');
+    if (drawer) drawer.setAttribute('aria-hidden', 'true');
+  }
+
+  function toggleConversationContextDrawer() {
+    if (state.isConversationContextDrawerOpen) {
+      closeConversationContextDrawer();
+      return;
+    }
+    openConversationContextDrawer();
+  }
+
+  function setMainSidebarCollapsed(isCollapsed) {
+    const shell = document.querySelector('.wa-shell');
+    state.isMainSidebarCollapsed = Boolean(isCollapsed);
+    if (!shell) return;
+    shell.classList.toggle('is-main-sidebar-collapsed', state.isMainSidebarCollapsed);
+  }
+
+  function toggleMainSidebar() {
+    setMainSidebarCollapsed(!state.isMainSidebarCollapsed);
   }
 
   function renderConversationTags(tags) {
@@ -1352,6 +1391,7 @@
     document.getElementById('waBackToAdminBtn')?.addEventListener('click', goBackToAdmin);
     document.getElementById('waGoHomeBtn')?.addEventListener('click', goHome);
     document.getElementById('waLogoutBtn')?.addEventListener('click', logoutAdmin);
+    document.getElementById('waMainSidebarToggleBtn')?.addEventListener('click', toggleMainSidebar);
     bindSidebarWorkspaceNavigation();
     document.getElementById('waTasksModuleSaveBtn')?.addEventListener('click', handleSaveTaskFromModuleView);
     document.getElementById('waRemindersModuleSaveBtn')?.addEventListener('click', handleSaveReminderFromModuleView);
@@ -1360,6 +1400,8 @@
   async function initAdminWhatsAppPage() {
     bindEvents();
     setWorkspaceView('conversas');
+    closeConversationContextDrawer();
+    setMainSidebarCollapsed(false);
     renderConversationContextPanel(null);
     await loadConversations();
     startWhatsAppPolling();
@@ -1388,6 +1430,11 @@
   window.renderMessages = renderMessages;
   window.renderEmptyChatState = renderEmptyChatState;
   window.toggleConversationMode = toggleConversationMode;
+  window.toggleConversationContextDrawer = toggleConversationContextDrawer;
+  window.openConversationContextDrawer = openConversationContextDrawer;
+  window.closeConversationContextDrawer = closeConversationContextDrawer;
+  window.toggleMainSidebar = toggleMainSidebar;
+  window.setMainSidebarCollapsed = setMainSidebarCollapsed;
   window.sendManualReply = sendManualReply;
   window.setWorkspaceView = setWorkspaceView;
   window.renderWorkspaceView = renderWorkspaceView;
