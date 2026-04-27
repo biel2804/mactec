@@ -183,6 +183,10 @@
     return { key: statusKey, ...(map[statusKey] || map.aguardando_cliente) };
   }
 
+  function isConversationArchived(conversation) {
+    return conversation?.archived === true || conversation?.arquivada === true;
+  }
+
   function getPriorityBadge(conversation) {
     const priority = safeText(conversation?.prioridade, 'normal').trim().toLowerCase();
     if (!priority || ['normal', 'baixa', 'low'].includes(priority)) return '';
@@ -755,6 +759,7 @@
       const statusBadge = `<span class="wa-item-badge ${status.tone}">${status.label}</span>`;
       const priority = getPriorityBadge(conversation);
       const priorityBadge = priority ? `<span class="wa-item-badge ${priority.tone}">${priority.label}</span>` : '';
+      const archivedBadge = isConversationArchived(conversation) ? '<span class="wa-item-badge archived">Arquivada</span>' : '';
       return `
         <button class="wa-conversation-item${activeClass}" data-id="${conversation.id}">
           ${renderAvatarHtml(conversation, name)}
@@ -771,6 +776,7 @@
               ${modeBadge}
               ${statusBadge}
               ${priorityBadge}
+              ${archivedBadge}
             </div>
           </div>
         </button>
@@ -866,6 +872,7 @@
     const isManual = mode === 'manual';
     const status = getConversationOperationalState(conversation);
     const priority = getPriorityBadge(conversation);
+    const isArchived = isConversationArchived(conversation);
 
     container.innerHTML = `
       <div class="wa-chat-contact">
@@ -878,12 +885,14 @@
             <span class="wa-status-badge ${isManual ? 'manual' : 'auto'}">${getModeLabel(mode)}</span>
             <span class="wa-status-badge ${status.tone}">${status.label}</span>
             ${priority ? `<span class="wa-status-badge ${priority.tone}">${priority.label}</span>` : ''}
+            ${isArchived ? '<span class="wa-status-badge archived">Arquivada</span>' : ''}
           </div>
         </div>
       </div>
       <div class="wa-chat-actions" data-mode="${isManual ? 'manual' : 'auto'}">
         <span class="wa-mode-indicator ${isManual ? 'manual' : 'auto'}">${isManual ? 'Atendimento manual ativo' : 'Atendimento automático ativo'}</span>
         <button class="wa-btn wa-btn-secondary" id="waToggleConversationContextBtn" type="button">Contexto</button>
+        <button class="wa-btn wa-btn-secondary" id="waArchiveConversationBtn" type="button">${isArchived ? 'Desarquivar' : 'Arquivar'}</button>
         <button class="wa-btn wa-btn-secondary" id="waToggleModeBtn" type="button">Modo automático: ${isManual ? 'OFF' : 'ON'}</button>
         <button class="wa-btn wa-btn-primary" id="waQuickModeBtn" type="button">${isManual ? 'Reativar automático' : 'Assumir manualmente'}</button>
       </div>
@@ -894,6 +903,10 @@
       setMobileConversationView('list');
       closeConversationContextDrawer();
     });
+    document.getElementById('waArchiveConversationBtn')?.addEventListener('click', () => {
+      toggleConversationArchived(!isArchived);
+    });
+
     document.getElementById('waToggleModeBtn')?.addEventListener('click', () => {
       const nextMode = isManual ? 'auto' : 'manual';
       toggleConversationMode(nextMode);
@@ -1570,6 +1583,23 @@
     }
   }
 
+  async function toggleConversationArchived(archived) {
+    if (!state.activeConversationId) return;
+    const nextArchived = Boolean(archived);
+
+    try {
+      const updated = await window.WhatsAppAdminApi.updateConversationArchived(state.activeConversationId, nextArchived);
+      state.activeConversation = updated;
+      showStatus(nextArchived ? 'Conversa arquivada com sucesso.' : 'Conversa desarquivada com sucesso.', 'success');
+
+      const keepSelection = !nextArchived || state.currentFilter === 'archived';
+      await refreshConversations({ keepSelection, refreshMessages: !nextArchived });
+    } catch (error) {
+      console.error(error);
+      showStatus(`Erro ao ${nextArchived ? 'arquivar' : 'desarquivar'} conversa: ${error.message || error}`, 'error');
+    }
+  }
+
   async function sendManualReply() {
     const input = document.getElementById('waReplyInput');
     const sendBtn = document.getElementById('waSendReplyBtn');
@@ -1820,6 +1850,7 @@
   window.renderMessages = renderMessages;
   window.renderEmptyChatState = renderEmptyChatState;
   window.toggleConversationMode = toggleConversationMode;
+  window.toggleConversationArchived = toggleConversationArchived;
   window.toggleConversationContextDrawer = toggleConversationContextDrawer;
   window.openConversationContextDrawer = openConversationContextDrawer;
   window.closeConversationContextDrawer = closeConversationContextDrawer;

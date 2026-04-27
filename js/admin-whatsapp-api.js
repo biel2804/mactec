@@ -28,6 +28,31 @@
     return String(value || '').trim().toLowerCase();
   }
 
+  const CONVERSATION_SELECT_FIELDS = 'id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at, archived, arquivada';
+  const CONVERSATION_FALLBACK_FIELDS = 'id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at';
+  const ARCHIVE_STATE_STORAGE_KEY = 'waConversationArchiveState';
+
+  function loadArchiveStateOverrides() {
+    try {
+      const raw = window.localStorage.getItem(ARCHIVE_STATE_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_error) {
+      return {};
+    }
+  }
+
+  function saveArchiveStateOverride(conversationId, archived) {
+    if (!conversationId) return;
+    const current = loadArchiveStateOverrides();
+    current[String(conversationId)] = Boolean(archived);
+    try {
+      window.localStorage.setItem(ARCHIVE_STATE_STORAGE_KEY, JSON.stringify(current));
+    } catch (_error) {
+      // fallback local pode falhar em ambientes restritos de storage.
+    }
+  }
+
   function isMissingColumnError(error) {
     const message = String(error?.message || '').toLowerCase();
     return message.includes('does not exist') && message.includes('column');
@@ -43,7 +68,8 @@
       kanban_column_id: source.kanban_column_id || null,
       valor_negocio: Number.isFinite(normalizedDealValue) ? normalizedDealValue : 0,
       prioridade: source.prioridade || 'normal',
-      updated_at: fallbackUpdatedAt
+      updated_at: fallbackUpdatedAt,
+      archived: source.archived === true || source.arquivada === true
     };
   }
 
@@ -71,7 +97,7 @@
     const client = ensureSupabaseClient();
     const primaryQuery = await client
       .from('whatsapp_conversas')
-      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at')
+      .select(CONVERSATION_SELECT_FIELDS)
       .order('ultima_interacao_em', { ascending: false });
     let data = primaryQuery.data;
     let error = primaryQuery.error;
@@ -80,7 +106,7 @@
       console.warn('Schema de conversas incompleto; aplicando fallback defensivo.', error);
       const fallbackQuery = await client
         .from('whatsapp_conversas')
-        .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em')
+        .select(CONVERSATION_FALLBACK_FIELDS)
         .order('ultima_interacao_em', { ascending: false });
       data = fallbackQuery.data;
       error = fallbackQuery.error;
@@ -163,6 +189,15 @@
       }
     }));
 
+    const archiveOverrides = loadArchiveStateOverrides();
+    rows = rows.map((row) => {
+      const override = archiveOverrides[String(row.id)];
+      if (typeof override === 'boolean') {
+        return { ...row, archived: override };
+      }
+      return row;
+    });
+
     if (term) {
       rows = rows.filter((row) => {
         const fields = [
@@ -184,12 +219,16 @@
       });
     }
 
-    if (filter === 'waiting') {
-      rows = rows.filter((row) => row.modo_atendimento === 'manual');
-    }
-
-    if (filter === 'unread') {
-      rows = rows;
+    if (filter === 'archived') {
+      rows = rows.filter((row) => row.archived === true);
+    } else {
+      rows = rows.filter((row) => row.archived !== true);
+      if (filter === 'waiting') {
+        rows = rows.filter((row) => row.modo_atendimento === 'manual');
+      }
+      if (filter === 'unread') {
+        rows = rows;
+      }
     }
 
     return rows;
@@ -281,7 +320,7 @@
         updated_at: new Date().toISOString()
       })
       .eq('id', conversationId)
-      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at')
+      .select(CONVERSATION_SELECT_FIELDS)
       .single();
 
     if (error) throw error;
@@ -297,11 +336,59 @@
       .from('whatsapp_conversas')
       .update({ modo_atendimento: newMode })
       .eq('id', conversationId)
-      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at')
+      .select(CONVERSATION_SELECT_FIELDS)
       .single();
 
     if (error) throw error;
     return data;
+  }
+
+  async function updateConversationArchived(conversationId, archived) {
+    if (!conversationId) throw new Error('Conversa inválida para arquivamento.');
+
+    const client = ensureSupabaseClient();
+    const archivedValue = archived === true;
+
+    const payload = {
+      archived: archivedValue,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await client
+      .from('whatsapp_conversas')
+      .update(payload)
+      .eq('id', conversationId)
+      .select(CONVERSATION_SELECT_FIELDS)
+      .single();
+
+    if (error) {
+      if (!isMissingColumnError(error)) throw error;
+      console.warn('Coluna de arquivamento ausente no backend; mantendo estado local.', error);
+      saveArchiveStateOverride(conversationId, archivedValue);
+
+      const { data: fallbackData, error: fallbackError } = await client
+        .from('whatsapp_conversas')
+        .select(CONVERSATION_FALLBACK_FIELDS)
+        .eq('id', conversationId)
+        .single();
+
+      if (fallbackError) throw fallbackError;
+      return {
+        ...normalizeConversationRow(fallbackData),
+        archived: archivedValue
+      };
+    }
+
+    saveArchiveStateOverride(conversationId, archivedValue);
+
+    await appendConversationActivity(
+      conversationId,
+      archivedValue ? 'conversa_arquivada' : 'conversa_desarquivada',
+      archivedValue ? 'Conversa arquivada pelo operador' : 'Conversa desarquivada pelo operador',
+      { archived: archivedValue }
+    );
+
+    return normalizeConversationRow(data);
   }
 
   async function fetchKanbanColumns() {
@@ -447,7 +534,7 @@
         updated_at: new Date().toISOString()
       })
       .eq('id', conversationId)
-      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at')
+      .select(CONVERSATION_SELECT_FIELDS)
       .single();
 
     if (error) throw error;
@@ -615,7 +702,7 @@
         modo_atendimento: 'manual'
       })
       .eq('id', conversationId)
-      .select('id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at')
+      .select(CONVERSATION_SELECT_FIELDS)
       .single();
 
     if (updateError) throw updateError;
@@ -684,6 +771,7 @@
     saveConversationNote,
     updateConversationDealValue,
     updateConversationMode,
+    updateConversationArchived,
     fetchKanbanColumns,
     createKanbanColumn,
     updateKanbanColumn,
