@@ -679,14 +679,16 @@
     container.innerHTML = `
       <div class="wa-chat-contact">
         ${renderAvatarHtml(conversation, name)}
-        <div>
+        <div class="wa-chat-contact-meta">
           <strong>${name}</strong>
-          <p>${formatPhone(conversation.telefone)}</p>
+          <div class="wa-chat-contact-details">
+            <p>${formatPhone(conversation.telefone)}</p>
+            <span class="wa-status-badge ${isManual ? 'manual' : 'auto'}">${getModeLabel(mode)}</span>
+          </div>
         </div>
       </div>
       <div class="wa-chat-actions">
         <button class="wa-btn wa-btn-secondary" id="waToggleConversationContextBtn" type="button">Detalhes</button>
-        <span class="wa-status-badge ${isManual ? 'manual' : 'auto'}">${getModeLabel(mode)}</span>
         <button class="wa-btn wa-btn-secondary" id="waToggleModeBtn">Modo automático: ${isManual ? 'OFF' : 'ON'}</button>
         <button class="wa-btn wa-btn-primary" id="waQuickModeBtn">${isManual ? 'Reativar automático' : 'Assumir manualmente'}</button>
       </div>
