@@ -32,7 +32,16 @@
     theme: 'dark',
     isAttachmentMenuOpen: false,
     isMobileViewport: false,
-    mobileConversationView: 'list'
+    mobileConversationView: 'list',
+    runtime: {
+      appMode: false,
+      entry: 'admin',
+      navigation: {
+        backToAdmin: '/orcamento.html?admin=1',
+        home: '/',
+        logout: '/admin-login.html?status=logout'
+      }
+    }
   };
 
   function safeText(value, fallback = '') {
@@ -227,6 +236,69 @@
     statusEl.dataset.type = type;
   }
 
+
+
+  function getRuntimeConfig() {
+    const fallback = {
+      appMode: false,
+      entry: 'admin',
+      navigation: {
+        backToAdmin: '/orcamento.html?admin=1',
+        home: '/',
+        logout: '/admin-login.html?status=logout'
+      }
+    };
+    const runtime = window.AdminWhatsAppRuntime;
+    if (!runtime || typeof runtime !== 'object') return fallback;
+    return {
+      ...fallback,
+      ...runtime,
+      navigation: {
+        ...fallback.navigation,
+        ...(runtime.navigation || {})
+      }
+    };
+  }
+
+  function applyRuntimeExperience() {
+    state.runtime = getRuntimeConfig();
+    const page = document.querySelector('.wa-page');
+    const backBtn = document.getElementById('waBackToAdminBtn');
+    const homeBtn = document.getElementById('waGoHomeBtn');
+
+    if (page) {
+      page.dataset.appMode = state.runtime.appMode ? '1' : '0';
+      page.dataset.appEntry = state.runtime.entry || 'admin';
+    }
+
+    if (state.runtime.appMode) {
+      if (backBtn) backBtn.hidden = true;
+      if (homeBtn) homeBtn.hidden = true;
+    } else {
+      if (backBtn) backBtn.hidden = false;
+      if (homeBtn) homeBtn.hidden = false;
+    }
+  }
+
+  function shouldUseHashNavigation() {
+    return Boolean(state.runtime?.appMode || window.location.hash);
+  }
+
+  function getViewFromHash() {
+    if (!shouldUseHashNavigation()) return null;
+    const value = safeText(window.location.hash).replace('#', '').trim().toLowerCase();
+    return VIEW_IDS[value] ? value : null;
+  }
+
+  function syncHashWithView(viewName) {
+    if (!state.runtime?.appMode) return;
+    if (!VIEW_IDS[viewName]) return;
+    const nextHash = `#${viewName}`;
+    if (window.location.hash !== nextHash) {
+      history.replaceState(null, '', nextHash);
+    }
+  }
+
   const VIEW_IDS = {
     conversas: 'waViewConversas',
     kanban: 'waViewKanban',
@@ -297,6 +369,7 @@
     });
 
     renderWorkspaceView();
+    syncHashWithView(nextView);
     if (state.isMobileViewport) {
       setMobileConversationView(nextView === 'conversas' ? 'list' : 'chat');
     } else {
@@ -1639,15 +1712,21 @@
   }
 
   function goBackToAdmin() {
-    window.location.href = '/orcamento.html?admin=1';
+    const target = state.runtime.navigation.backToAdmin;
+    if (!target) return;
+    window.location.href = target;
   }
 
   function goHome() {
-    window.location.href = '/';
+    const target = state.runtime.navigation.home;
+    if (!target) return;
+    window.location.href = target;
   }
 
   function logoutAdmin() {
-    window.location.href = '/admin-login.html?status=logout';
+    const target = state.runtime.navigation.logout;
+    if (!target) return;
+    window.location.href = target;
   }
 
   function bindSidebarWorkspaceNavigation() {
@@ -1690,14 +1769,23 @@
     document.getElementById('waTasksModuleSaveBtn')?.addEventListener('click', handleSaveTaskFromModuleView);
     document.getElementById('waRemindersModuleSaveBtn')?.addEventListener('click', handleSaveReminderFromModuleView);
     window.addEventListener('resize', handleMobileViewportChange);
+    window.addEventListener('hashchange', () => {
+      if (!shouldUseHashNavigation()) return;
+      const hashView = getViewFromHash();
+      if (hashView && hashView !== state.currentWorkspaceView) {
+        setWorkspaceView(hashView);
+      }
+    });
   }
 
   async function initAdminWhatsAppPage() {
     const savedTheme = localStorage.getItem('theme');
     applyTheme(savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'dark');
+    applyRuntimeExperience();
     bindEvents();
     handleMobileViewportChange();
-    setWorkspaceView('conversas');
+    const initialHashView = getViewFromHash();
+    setWorkspaceView(initialHashView || 'conversas');
     closeConversationContextDrawer();
     closeAttachmentMenu();
     setMainSidebarCollapsed(false);
