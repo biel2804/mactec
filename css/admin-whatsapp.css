@@ -247,7 +247,7 @@ html, body {
   backdrop-filter: blur(8px);
 }
 
-.wa-filter-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.wa-filter-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
 
 .wa-filter-tab {
   border: 1px solid rgba(133, 145, 192, 0.26);
@@ -326,6 +326,7 @@ html, body {
 .wa-item-badge.waiting-team { border-color: rgba(245, 158, 11, 0.55); color: #fcd34d; background: rgba(245, 158, 11, 0.12); }
 .wa-item-badge.priority-high { border-color: rgba(248, 113, 113, 0.6); color: #fecaca; background: rgba(127, 29, 29, 0.35); }
 .wa-item-badge.priority-medium { border-color: rgba(251, 191, 36, 0.55); color: #fde68a; background: rgba(251, 191, 36, 0.12); }
+.wa-item-badge.archived { border-color: rgba(148, 163, 184, 0.5); color: #d4ddf8; background: rgba(51, 65, 85, 0.24); }
 
 .wa-sidebar-footer {
   padding: 8px 10px;
@@ -442,6 +443,7 @@ html, body {
 .wa-status-badge.waiting-team { color: #facc65; border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.08); }
 .wa-status-badge.priority-high { color: #fecaca; border-color: rgba(248, 113, 113, 0.6); background: rgba(127, 29, 29, 0.35); }
 .wa-status-badge.priority-medium { color: #fde68a; border-color: rgba(251, 191, 36, 0.55); background: rgba(251, 191, 36, 0.12); }
+.wa-status-badge.archived { color: #cbd5f5; border-color: rgba(148, 163, 184, 0.55); background: rgba(51, 65, 85, 0.25); }
 
 .wa-mode-indicator {
   border: 1px solid var(--wa-border);
