@@ -1,0 +1,22 @@
+Você é responsável por empacotar um app Android chamado **MacTec Messenger** usando como base a Central de Conversas WhatsApp da MacTec Support.
+
+Requisitos obrigatórios:
+1) Abrir diretamente a tela principal da central (entrada web: `/mactec-messenger.html?appMode=1`).
+2) Priorizar experiência mobile semelhante a mensageiro.
+3) Manter tema dark e identidade visual MacTec.
+4) Configurar nome do app, ícone e splash screen.
+5) Manter login/autenticação web já existente (sem novo backend).
+6) Garantir navegação estável e simples, evitando barras/wrappers/chrome desnecessários.
+7) Empacotar como WebView wrapper (ou alternativa equivalente) e entregar projeto Android compilável.
+8) Gerar APK final, se o ambiente permitir.
+
+Contexto técnico disponível no repositório:
+- `manifest.webmanifest`
+- `service-worker.js`
+- `APP_BUILD_INSTRUCTIONS.md`
+- `APP_ASSETS_CHECKLIST.md`
+
+Saída esperada:
+- Código do projeto Android
+- Instruções de build
+- APK gerado (quando possível)
