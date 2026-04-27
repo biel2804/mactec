@@ -141,6 +141,70 @@
     return mode === 'manual' ? 'Manual' : 'Automático';
   }
 
+  function normalizeOperationalStatus(value) {
+    const normalized = safeText(value).trim().toLowerCase();
+    if (!normalized) return '';
+    if (['auto', 'automatico', 'automático'].includes(normalized)) return 'automatico';
+    if (['manual'].includes(normalized)) return 'manual';
+    if (['aguardando_cliente', 'aguardando cliente', 'cliente'].includes(normalized)) return 'aguardando_cliente';
+    if (['aguardando_equipe', 'aguardando equipe', 'equipe'].includes(normalized)) return 'aguardando_equipe';
+    return '';
+  }
+
+  function getConversationOperationalState(conversation) {
+    const explicitStatus = normalizeOperationalStatus(
+      conversation?.status_conversa
+      || conversation?.status_atendimento
+      || conversation?.atendimento_status
+      || conversation?.operational_status
+    );
+
+    let statusKey = explicitStatus;
+    if (!statusKey) {
+      statusKey = conversation?.modo_atendimento === 'manual' ? 'aguardando_equipe' : 'aguardando_cliente';
+    }
+
+    const map = {
+      automatico: { label: 'Automático', tone: 'auto' },
+      manual: { label: 'Manual', tone: 'manual' },
+      aguardando_cliente: { label: 'Aguardando cliente', tone: 'waiting-customer' },
+      aguardando_equipe: { label: 'Aguardando equipe', tone: 'waiting-team' }
+    };
+
+    return { key: statusKey, ...(map[statusKey] || map.aguardando_cliente) };
+  }
+
+  function getPriorityBadge(conversation) {
+    const priority = safeText(conversation?.prioridade, 'normal').trim().toLowerCase();
+    if (!priority || ['normal', 'baixa', 'low'].includes(priority)) return '';
+    if (['alta', 'high', 'urgente', 'critical'].includes(priority)) {
+      return { label: priority === 'critical' ? 'Prioridade crítica' : 'Prioridade alta', tone: 'priority-high' };
+    }
+    return { label: `Prioridade ${priority}`, tone: 'priority-medium' };
+  }
+
+  function getCustomerContextSummary(conversation) {
+    const tags = state.context.tags || [];
+    const notes = state.context.notes || [];
+    const firstTag = tags[0]?.nome || safeText(conversation?.etiqueta_principal).trim() || 'Sem etiqueta';
+    const firstNote = safeText(notes[0]?.conteudo || conversation?.observacao_curta || conversation?.observacao || '').trim();
+    const orderRef = safeText(
+      conversation?.pedido_referencia
+      || conversation?.pedido_id
+      || conversation?.ordem_servico
+      || conversation?.ordem_servico_id
+      || conversation?.os_referencia
+      || conversation?.os_id
+      || ''
+    ).trim();
+
+    return {
+      firstTag,
+      shortNote: firstNote ? (firstNote.length > 110 ? `${firstNote.slice(0, 107)}...` : firstNote) : 'Sem observações rápidas.',
+      orderRef: orderRef || 'Não vinculada'
+    };
+  }
+
   function getConversationStageLabel(conversation) {
     if (!conversation?.kanban_column_id) return 'Sem etapa definida';
     const column = state.kanban.columns.find((item) => item.id === conversation.kanban_column_id);
@@ -613,9 +677,11 @@
     listEl.innerHTML = conversations.map((conversation) => {
       const name = getConversationName(conversation);
       const activeClass = conversation.id === state.activeConversationId ? ' active' : '';
-      const waitingBadge = conversation.modo_atendimento === 'manual'
-        ? '<span class="wa-item-badge waiting">Aguardando</span>'
-        : '';
+      const status = getConversationOperationalState(conversation);
+      const modeBadge = `<span class="wa-item-badge ${conversation.modo_atendimento === 'manual' ? 'manual' : 'auto'}">${getModeLabel(conversation.modo_atendimento)}</span>`;
+      const statusBadge = `<span class="wa-item-badge ${status.tone}">${status.label}</span>`;
+      const priority = getPriorityBadge(conversation);
+      const priorityBadge = priority ? `<span class="wa-item-badge ${priority.tone}">${priority.label}</span>` : '';
       return `
         <button class="wa-conversation-item${activeClass}" data-id="${conversation.id}">
           ${renderAvatarHtml(conversation, name)}
@@ -627,7 +693,11 @@
             <div class="wa-item-phone">${formatPhone(conversation.telefone)}</div>
             <div class="wa-item-bottom">
               <span class="wa-item-preview">${safeText(conversation.ultima_mensagem, 'Sem mensagens')}</span>
-              ${waitingBadge}
+            </div>
+            <div class="wa-item-status-row">
+              ${modeBadge}
+              ${statusBadge}
+              ${priorityBadge}
             </div>
           </div>
         </button>
@@ -721,6 +791,8 @@
     const name = getConversationName(conversation);
     const mode = conversation.modo_atendimento || 'auto';
     const isManual = mode === 'manual';
+    const status = getConversationOperationalState(conversation);
+    const priority = getPriorityBadge(conversation);
 
     container.innerHTML = `
       <div class="wa-chat-contact">
@@ -731,13 +803,16 @@
           <div class="wa-chat-contact-details">
             <p>${formatPhone(conversation.telefone)}</p>
             <span class="wa-status-badge ${isManual ? 'manual' : 'auto'}">${getModeLabel(mode)}</span>
+            <span class="wa-status-badge ${status.tone}">${status.label}</span>
+            ${priority ? `<span class="wa-status-badge ${priority.tone}">${priority.label}</span>` : ''}
           </div>
         </div>
       </div>
-      <div class="wa-chat-actions">
-        <button class="wa-btn wa-btn-secondary" id="waToggleConversationContextBtn" type="button">Detalhes</button>
-        <button class="wa-btn wa-btn-secondary" id="waToggleModeBtn">Modo automático: ${isManual ? 'OFF' : 'ON'}</button>
-        <button class="wa-btn wa-btn-primary" id="waQuickModeBtn">${isManual ? 'Reativar automático' : 'Assumir manualmente'}</button>
+      <div class="wa-chat-actions" data-mode="${isManual ? 'manual' : 'auto'}">
+        <span class="wa-mode-indicator ${isManual ? 'manual' : 'auto'}">${isManual ? 'Atendimento manual ativo' : 'Atendimento automático ativo'}</span>
+        <button class="wa-btn wa-btn-secondary" id="waToggleConversationContextBtn" type="button">Contexto</button>
+        <button class="wa-btn wa-btn-secondary" id="waToggleModeBtn" type="button">Modo automático: ${isManual ? 'OFF' : 'ON'}</button>
+        <button class="wa-btn wa-btn-primary" id="waQuickModeBtn" type="button">${isManual ? 'Reativar automático' : 'Assumir manualmente'}</button>
       </div>
     `;
 
@@ -766,10 +841,35 @@
       return;
     }
 
+    const summary = getCustomerContextSummary(conversation);
+
     panel.innerHTML = `
       <div class="wa-context-header">
         <strong>Contexto da conversa</strong>
         <span class="wa-context-stage">Etapa: ${getConversationStageLabel(conversation)}</span>
+      </div>
+
+      <div class="wa-context-block wa-context-customer-summary">
+        <label>Cliente</label>
+        <div class="wa-customer-summary-grid">
+          <article class="wa-customer-summary-item"><strong>Nome</strong><span>${escapeHtml(getConversationName(conversation))}</span></article>
+          <article class="wa-customer-summary-item"><strong>Telefone</strong><span>${escapeHtml(formatPhone(conversation.telefone))}</span></article>
+          <article class="wa-customer-summary-item"><strong>Etiqueta principal</strong><span>${escapeHtml(summary.firstTag)}</span></article>
+          <article class="wa-customer-summary-item"><strong>Pedido / O.S.</strong><span>${escapeHtml(summary.orderRef)}</span></article>
+          <article class="wa-customer-summary-item wa-customer-summary-item-wide"><strong>Observação</strong><span>${escapeHtml(summary.shortNote)}</span></article>
+        </div>
+      </div>
+
+      <div class="wa-context-block wa-context-quick-actions">
+        <label>Ações rápidas</label>
+        <div class="wa-quick-actions-grid">
+          <button class="wa-btn wa-btn-secondary" type="button" data-quick-action="ver-cliente">Ver cliente</button>
+          <button class="wa-btn wa-btn-secondary" type="button" data-quick-action="abrir-pedido">Abrir pedido</button>
+          <button class="wa-btn wa-btn-secondary" type="button" data-quick-action="abrir-os">Abrir O.S.</button>
+          <button class="wa-btn wa-btn-secondary" type="button" data-quick-action="criar-tarefa">Criar tarefa</button>
+          <button class="wa-btn wa-btn-secondary" type="button" data-quick-action="adicionar-observacao">Adicionar observação</button>
+          <button class="wa-btn wa-btn-secondary" type="button" data-quick-action="ver-garantia">Ver garantia</button>
+        </div>
       </div>
 
       <div class="wa-context-grid">
@@ -838,6 +938,40 @@
     document.getElementById('waSaveDealValueBtn')?.addEventListener('click', handleUpdateDealValue);
     document.getElementById('waSaveTaskBtn')?.addEventListener('click', handleSaveConversationTask);
     document.getElementById('waSaveReminderBtn')?.addEventListener('click', handleSaveConversationReminder);
+
+    panel.querySelectorAll('[data-quick-action]').forEach((button) => {
+      button.addEventListener('click', () => handleQuickAction(button.dataset.quickAction));
+    });
+  }
+
+  function handleQuickAction(action) {
+    const selected = getSelectedConversation();
+    if (!selected || !action) return;
+
+    const labels = {
+      'ver-cliente': 'ver cliente',
+      'abrir-pedido': 'abrir pedido',
+      'abrir-os': 'abrir O.S.',
+      'criar-tarefa': 'criar tarefa',
+      'adicionar-observacao': 'adicionar observação',
+      'ver-garantia': 'ver garantia'
+    };
+
+    if (action === 'criar-tarefa') {
+      const input = document.getElementById('waTaskTitleInput');
+      if (input) {
+        input.focus();
+      }
+    }
+
+    if (action === 'adicionar-observacao') {
+      const input = document.getElementById('waInternalNoteInput');
+      if (input) {
+        input.focus();
+      }
+    }
+
+    showStatus(`Ação rápida "${labels[action] || action}" preparada para integração real.`, 'success');
   }
 
   function openConversationContextDrawer() {
