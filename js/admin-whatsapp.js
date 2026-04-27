@@ -30,7 +30,9 @@
       conversationId: null
     },
     theme: 'dark',
-    isAttachmentMenuOpen: false
+    isAttachmentMenuOpen: false,
+    isMobileViewport: false,
+    mobileConversationView: 'list'
   };
 
   function safeText(value, fallback = '') {
@@ -187,6 +189,41 @@
     }
   }
 
+  function shouldUseMobileLayout() {
+    return window.matchMedia('(max-width: 980px)').matches;
+  }
+
+  function applyMobileConversationView() {
+    const shell = document.querySelector('.wa-shell');
+    if (!shell) return;
+
+    shell.classList.toggle('is-mobile-layout', state.isMobileViewport);
+    shell.classList.toggle(
+      'is-mobile-list-view',
+      state.isMobileViewport && state.currentWorkspaceView === 'conversas' && state.mobileConversationView === 'list'
+    );
+    shell.classList.toggle(
+      'is-mobile-chat-view',
+      state.isMobileViewport && state.currentWorkspaceView === 'conversas' && state.mobileConversationView === 'chat'
+    );
+  }
+
+  function setMobileConversationView(view) {
+    state.mobileConversationView = view === 'chat' ? 'chat' : 'list';
+    applyMobileConversationView();
+  }
+
+  function handleMobileViewportChange() {
+    state.isMobileViewport = shouldUseMobileLayout();
+    if (state.isMobileViewport && state.currentWorkspaceView === 'conversas' && !state.activeConversationId) {
+      state.mobileConversationView = 'list';
+    }
+    applyMobileConversationView();
+    if (!state.isMobileViewport) {
+      closeConversationContextDrawer();
+    }
+  }
+
   function setWorkspaceView(viewName) {
     const nextView = VIEW_IDS[viewName] ? viewName : 'conversas';
     state.currentWorkspaceView = nextView;
@@ -196,6 +233,11 @@
     });
 
     renderWorkspaceView();
+    if (state.isMobileViewport) {
+      setMobileConversationView(nextView === 'conversas' ? 'list' : 'chat');
+    } else {
+      applyMobileConversationView();
+    }
     renderAuxiliaryViews();
 
     if (nextView === 'kanban') {
@@ -516,7 +558,7 @@
       const hasActive = list.some((item) => item.id === state.activeConversationId);
       if (!state.activeConversationId || !hasActive) {
         if (list.length > 0) {
-          await selectConversation(list[0].id);
+          await selectConversation(list[0].id, { openMobileChat: false });
         } else {
           state.activeConversationId = null;
           state.activeConversation = null;
@@ -597,10 +639,11 @@
     });
   }
 
-  async function selectConversation(conversationId) {
+  async function selectConversation(conversationId, options = {}) {
     if (!conversationId) return;
     state.activeConversationId = conversationId;
     state.activeConversation = state.filteredConversations.find((item) => item.id === conversationId) || null;
+    const openMobileChat = options.openMobileChat !== false;
 
     renderConversationList(state.filteredConversations);
     if (state.activeConversation) {
@@ -610,6 +653,9 @@
         loadMessages(conversationId),
         loadConversationContext(conversationId)
       ]);
+      if (state.isMobileViewport && state.currentWorkspaceView === 'conversas' && openMobileChat) {
+        setMobileConversationView('chat');
+      }
     }
   }
 
@@ -678,6 +724,7 @@
 
     container.innerHTML = `
       <div class="wa-chat-contact">
+        ${state.isMobileViewport ? '<button class="wa-mobile-back-btn" id="waMobileBackBtn" type="button" aria-label="Voltar para lista de conversas">←</button>' : ''}
         ${renderAvatarHtml(conversation, name)}
         <div class="wa-chat-contact-meta">
           <strong>${name}</strong>
@@ -695,6 +742,10 @@
     `;
 
     document.getElementById('waToggleConversationContextBtn')?.addEventListener('click', toggleConversationContextDrawer);
+    document.getElementById('waMobileBackBtn')?.addEventListener('click', () => {
+      setMobileConversationView('list');
+      closeConversationContextDrawer();
+    });
     document.getElementById('waToggleModeBtn')?.addEventListener('click', () => {
       const nextMode = isManual ? 'auto' : 'manual';
       toggleConversationMode(nextMode);
@@ -1504,18 +1555,23 @@
     bindSidebarWorkspaceNavigation();
     document.getElementById('waTasksModuleSaveBtn')?.addEventListener('click', handleSaveTaskFromModuleView);
     document.getElementById('waRemindersModuleSaveBtn')?.addEventListener('click', handleSaveReminderFromModuleView);
+    window.addEventListener('resize', handleMobileViewportChange);
   }
 
   async function initAdminWhatsAppPage() {
     const savedTheme = localStorage.getItem('theme');
     applyTheme(savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'dark');
     bindEvents();
+    handleMobileViewportChange();
     setWorkspaceView('conversas');
     closeConversationContextDrawer();
     closeAttachmentMenu();
     setMainSidebarCollapsed(false);
     renderConversationContextPanel(null);
     await loadConversations();
+    if (state.isMobileViewport) {
+      setMobileConversationView('list');
+    }
     startWhatsAppPolling();
     showStatus('Central pronta para uso.', 'success');
   }
