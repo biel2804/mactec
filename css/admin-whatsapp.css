@@ -355,6 +355,20 @@ html, body {
 }
 
 .wa-chat-contact { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.wa-mobile-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--wa-border);
+  background: #0f171b;
+  color: var(--wa-text);
+  font-size: 1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
 .wa-chat-contact .wa-avatar { width: 40px; height: 40px; }
 .wa-chat-contact-meta { min-width: 0; display: grid; gap: 3px; }
 .wa-chat-contact strong { font-size: 0.86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -692,8 +706,162 @@ html, body {
   .wa-conversations-layout.is-context-open { grid-template-columns: 1fr; }
   .wa-conversation-context-drawer,
   .wa-conversations-layout.is-context-open .wa-conversation-context-drawer {
-    width: 100%;
+    width: 0;
+    opacity: 0;
+    border-top: 0;
+  }
+
+  .wa-page {
+    height: 100dvh;
+  }
+
+  .wa-header {
+    min-height: 44px;
+    padding: 6px 10px;
+  }
+
+  .wa-header-title span {
+    font-size: 0.82rem;
+  }
+
+  .wa-header-actions {
+    gap: 4px;
+  }
+
+  .wa-header-actions .wa-btn {
+    min-height: 30px;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-product-nav {
+    display: none;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-sidebar,
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-workspace {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .wa-shell.is-mobile-layout.is-mobile-list-view[data-current-view="conversas"] .wa-sidebar {
+    display: flex;
+    border-bottom: 0;
+  }
+
+  .wa-shell.is-mobile-layout.is-mobile-list-view[data-current-view="conversas"] .wa-workspace {
+    display: none;
+  }
+
+  .wa-shell.is-mobile-layout.is-mobile-chat-view[data-current-view="conversas"] .wa-sidebar {
+    display: none;
+  }
+
+  .wa-shell.is-mobile-layout.is-mobile-chat-view[data-current-view="conversas"] .wa-workspace {
+    display: block;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-sidebar-top {
+    padding: 10px;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-filter-tab {
+    min-height: 34px;
+    font-size: 0.75rem;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-conversation-list {
+    padding: 8px 10px 12px;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-conversation-item {
+    padding: 11px 10px;
+    min-height: 76px;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-item-top strong {
+    font-size: 0.86rem;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-chat-header {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-chat-contact .wa-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-chat-contact-details {
+    gap: 4px;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-chat-actions {
+    gap: 4px;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-chat-actions .wa-btn {
+    min-height: 30px;
+    font-size: 0.68rem;
+    padding: 4px 8px;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-message-history {
+    padding: 10px;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-message-bubble {
+    max-width: 86%;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-reply-box {
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-reply-row {
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-reply-textarea {
+    min-height: 44px;
+    max-height: 150px;
+    padding: 10px 11px;
+    font-size: 16px;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-reply-row #waSendReplyBtn {
+    min-width: 78px;
+    min-height: 44px;
+    font-size: 0.78rem;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-attach-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-conversation-context-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(92vw, 340px);
+    transform: translateX(100%);
+    opacity: 0;
+    z-index: 40;
+    background: #0e161a;
+    border-left: 1px solid var(--wa-border);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-conversations-layout.is-context-open .wa-conversation-context-drawer {
+    transform: translateX(0);
     opacity: 1;
-    border-top: 1px solid var(--wa-border);
+  }
+
+  .wa-shell.is-mobile-layout[data-current-view="conversas"] .wa-conversation-context-panel {
+    border-left: 0;
   }
 }
