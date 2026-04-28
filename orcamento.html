@@ -7561,12 +7561,33 @@ function resetShippingSelection(message = 'Digite o CEP para ver as opções de 
     updatePriceDisplay();
 }
 
+function hasValidSelectedShippingForQuote(quote) {
+    if (!quote) return false;
+    if (!quote.shippingType || !quote.shippingServiceType) return false;
+
+    const shippingBaseCost = Number(quote.shippingBaseCost);
+    const freightCost = Number(quote.freightCost);
+    if (!Number.isFinite(shippingBaseCost) || !Number.isFinite(freightCost)) return false;
+
+    return true;
+}
+
 function prepareShippingForCustomerCep(cep) {
     const cepDigits = sanitizeCepInputValue(cep);
     const freightCepInput = document.getElementById('cepInput');
     if (freightCepInput) {
         freightCepInput.value = cepDigits;
     }
+
+    const currentFreightCep = sanitizeCepInputValue(currentQuote.cep || '');
+    const shouldPreserveSelection = cepDigits.length === 8
+        && currentFreightCep === cepDigits
+        && hasValidSelectedShippingForQuote(currentQuote);
+
+    if (shouldPreserveSelection) {
+        return;
+    }
+
     resetShippingSelection('CEP do cliente carregado. Clique fora do campo CEP para calcular o frete.', { preserveCep: true });
 }
 
