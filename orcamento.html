@@ -5718,9 +5718,14 @@
             const percentualJuros = Number(savedOrder?.percentual_juros ?? checkoutData?.percentualJuros ?? 0);
             const valorTotalComJuros = Number(savedOrder?.valor_total_com_juros ?? checkoutData?.valorTotalComJuros ?? valorFinal);
             const valorParcela = Number(savedOrder?.valor_parcela ?? checkoutData?.valorParcela ?? (parcelas > 0 ? valorTotalComJuros / parcelas : valorTotalComJuros));
+            const numeroPedido = savedOrder?.numero_pedido;
+
+            if (numeroPedido == null) {
+                throw new Error('Número operacional do pedido (numero_pedido) não retornado após salvar o pedido.');
+            }
 
             const mensagemPedido = gerarMensagemPedido({
-                orderId: savedOrder?.id || null,
+                numeroPedido,
                 createdAt: savedOrder?.created_at || new Date(),
                 customerName,
                 customerPhone,
@@ -5944,8 +5949,7 @@
                 '',
                 separator,
                 '',
-                '🧾 *ID do Pedido:*',
-                `#${order.orderId || 'não informado'}`,
+                `🧾 *Pedido:* #${order.numeroPedido || 'não informado'}`,
                 '',
                 separator,
                 '',
@@ -5956,7 +5960,7 @@
         }
 
         function gerarMensagemPedido(pedido = {}) {
-            if (pedido && typeof pedido === 'object' && (pedido.orderId || pedido.items || pedido.customerName)) {
+            if (pedido && typeof pedido === 'object' && (pedido.numeroPedido || pedido.items || pedido.customerName)) {
                 return buildWhatsAppOrderMessage(pedido);
             }
 
@@ -6411,6 +6415,7 @@
             cep: '',
             distance: 0,
             savedOrderId: null,
+            savedOrderNumber: null,
             shippingType: '',
             shippingLabel: '',
             shippingServiceType: '',
@@ -7926,10 +7931,10 @@ async function calcularFrete(cep) {
         }
 
         // Complete Payment
-        function completePayment(orderId) {
+        function completePayment(numeroPedido) {
             // Compatibilidade legado: direciona para o checkout oficial no carrinho.
-            if (orderId && !currentQuote.savedOrderId) {
-                currentQuote.savedOrderId = orderId;
+            if (numeroPedido && !currentQuote.savedOrderNumber) {
+                currentQuote.savedOrderNumber = numeroPedido;
             }
             showAlert('Finalize o pedido pelo carrinho para concluir o envio.', 'warning');
             openCartModal();
@@ -8028,8 +8033,8 @@ async function calcularFrete(cep) {
         }
 
         // Share on WhatsApp
-        function shareOnWhatsApp(orderId) {
-            if (!currentQuote.savedOrderId && !orderId) {
+        function shareOnWhatsApp(numeroPedido) {
+            if (!currentQuote.savedOrderNumber && !numeroPedido) {
                 showAlert('Envio direto desativado. Finalize pelo carrinho.', 'warning');
                 openCartModal();
                 return;
@@ -8040,7 +8045,7 @@ async function calcularFrete(cep) {
             const valorParcela = Number(financial.valor_parcela || (parcelas > 0 ? valorTotalComJuros / parcelas : valorTotalComJuros));
             const paymentLabel = normalizePaymentMethod(currentQuote.paymentMethod).label || currentQuote.paymentLabel || 'Não informado';
             const message = buildWhatsAppOrderMessage({
-                orderId: currentQuote.savedOrderId || orderId || null,
+                numeroPedido: currentQuote.savedOrderNumber || numeroPedido || null,
                 createdAt: new Date(),
                 customerName: currentQuote.customerName || 'Não informado',
                 customerPhone: currentQuote.customerWhatsApp || 'Não informado',
@@ -9834,6 +9839,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 cep: '',
                 distance: 0,
                 savedOrderId: null,
+                savedOrderNumber: null,
                 shippingType: '',
                 shippingLabel: '',
                 shippingServiceType: '',
