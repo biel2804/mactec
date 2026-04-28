@@ -3599,9 +3599,9 @@
                 </div>
                 <section class="order-tracking" id="ordersTrackingSection">
                     <div class="order-tracking-card">
-                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">Consulte o andamento do seu pedido pelo número do pedido ou WhatsApp.</p>
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">Você encontra esse número na mensagem enviada pelo WhatsApp após finalizar o pedido.</p>
                         <div class="order-tracking-form">
-                            <input type="text" id="orderTrackingInput" placeholder="Ex: 12345 ou (11) 99999-9999" inputmode="text">
+                            <input type="text" id="orderTrackingInput" placeholder="Digite o número do pedido" inputmode="text">
                             <button type="button" class="btn btn-primary" onclick="trackOrderFromHome()">Consultar pedido</button>
                         </div>
                         <p class="order-tracking-feedback" id="orderTrackingFeedback"></p>
@@ -6115,18 +6115,10 @@
             result.innerHTML = '';
         }
 
-        function isOrderNumberInput(value) {
-            return /^\d+$/.test(String(value || '').trim());
-        }
-
-        function buildOrderTrackingPhoneCandidates(rawValue) {
-            const digits = normalizePhone(rawValue);
-            const candidates = new Set();
-            if (!digits) return [];
-            candidates.add(digits);
-            if (digits.length === 11) candidates.add(`55${digits}`);
-            if (digits.length === 13 && digits.startsWith('55')) candidates.add(digits.slice(2));
-            return Array.from(candidates).filter(Boolean);
+        function extractOrderNumberFromTrackingInput(value) {
+            const digits = String(value || '').replace(/\D+/g, '');
+            if (!digits) return null;
+            return digits.replace(/^0+/, '') || '0';
         }
 
         function buildOrderTrackingTimeline(status) {
@@ -6151,58 +6143,30 @@
             const client = ensureSupabaseClient(true);
             if (!client) throw new Error('Supabase não configurado.');
 
-            const trimmed = String(searchTerm || '').trim();
+            const numeroPedido = extractOrderNumberFromTrackingInput(searchTerm);
+            if (!numeroPedido) {
+                throw new Error('Pedido não encontrado. Confira o número informado e tente novamente.');
+            }
+
             const columns = 'id, numero_pedido, cliente_nome, whatsapp, modelo_dispositivo, status, created_at, updated_at';
 
             try {
-                if (isOrderNumberInput(trimmed)) {
-                    const numeroPedido = Number(trimmed.replace(/^0+/, '') || '0');
-                    const { data, error } = await client.rpc('track_pedido', {
-                        search_numero: numeroPedido,
-                        search_whatsapp: null
-                    });
-                    if (!error && Array.isArray(data) && data.length) return data[0];
-                } else {
-                    const phoneCandidates = buildOrderTrackingPhoneCandidates(trimmed);
-                    const primaryPhone = phoneCandidates[0] || null;
-                    if (primaryPhone) {
-                        const { data, error } = await client.rpc('track_pedido', {
-                            search_numero: null,
-                            search_whatsapp: primaryPhone
-                        });
-                        if (!error && Array.isArray(data) && data.length) return data[0];
-                    }
-                }
+                const { data, error } = await client.rpc('track_pedido', {
+                    search_numero: Number(numeroPedido),
+                    search_whatsapp: null
+                });
+                if (!error && Array.isArray(data) && data.length) return data[0];
             } catch (rpcError) {
                 console.warn('RPC track_pedido indisponível, usando fallback por tabela:', rpcError?.message || rpcError);
             }
 
-            if (isOrderNumberInput(trimmed)) {
-                const numeroPedido = trimmed.replace(/^0+/, '') || '0';
-                const { data, error } = await client
-                    .from('pedidos')
-                    .select(columns)
-                    .eq('numero_pedido', numeroPedido)
-                    .maybeSingle();
-                if (error) throw error;
-                return data || null;
-            }
-
-            const phoneCandidates = buildOrderTrackingPhoneCandidates(trimmed);
-            if (!phoneCandidates.length) {
-                throw new Error('Informe um número de pedido ou WhatsApp válido.');
-            }
-
-            const orClause = phoneCandidates.map((candidate) => `whatsapp.eq.${candidate}`).join(',');
             const { data, error } = await client
                 .from('pedidos')
                 .select(columns)
-                .or(orClause)
-                .order('created_at', { ascending: false })
-                .limit(1);
-
+                .eq('numero_pedido', numeroPedido)
+                .maybeSingle();
             if (error) throw error;
-            return Array.isArray(data) && data.length ? data[0] : null;
+            return data || null;
         }
 
         function renderOrderTrackingResult(order) {
@@ -6267,7 +6231,7 @@
             clearOrderTrackingResult();
 
             if (!rawValue) {
-                setOrderTrackingFeedback('Informe um número de pedido ou WhatsApp para consultar.', 'warning');
+                setOrderTrackingFeedback('Pedido não encontrado. Confira o número informado e tente novamente.', 'warning');
                 return;
             }
 
@@ -6275,7 +6239,7 @@
                 setOrderTrackingFeedback('Consultando pedido...', 'muted');
                 const order = await findTrackableOrder(rawValue);
                 if (!order) {
-                    setOrderTrackingFeedback('Pedido não encontrado com os dados informados.', 'warning');
+                    setOrderTrackingFeedback('Pedido não encontrado. Confira o número informado e tente novamente.', 'warning');
                     return;
                 }
 
