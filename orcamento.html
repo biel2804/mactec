@@ -10301,6 +10301,16 @@ async function getMelhorEnvioShipping(cep, type) {
             refreshServiceOrderPhotosSection();
         }
 
+        function applyServiceOrderEditingContext(serviceOrderId) {
+            const persistedServiceOrderId = parsePersistedServiceOrderId(serviceOrderId);
+            if (!persistedServiceOrderId) return null;
+            currentServiceOrderId = persistedServiceOrderId;
+            document.getElementById('editingServiceOrderId').value = persistedServiceOrderId;
+            document.getElementById('saveServiceOrderBtn').textContent = 'Atualizar O.S.';
+            document.getElementById('cancelServiceOrderEditBtn').style.display = 'inline-flex';
+            return persistedServiceOrderId;
+        }
+
         function setServiceOrderView(viewName = SERVICE_ORDER_VIEW.KANBAN) {
             const normalizedView = viewName === SERVICE_ORDER_VIEW.FORM ? SERVICE_ORDER_VIEW.FORM : SERVICE_ORDER_VIEW.KANBAN;
             currentServiceOrderView = normalizedView;
@@ -10696,12 +10706,13 @@ async function getMelhorEnvioShipping(cep, type) {
                 const savedRecord = await saveServiceOrderRecord(payload, editingId || null);
                 showAlert(editingId ? 'O.S. atualizada com sucesso!' : 'O.S. criada com sucesso!', 'success');
                 renderServiceOrderPreview(savedRecord || payload);
-                if (savedRecord?.id) {
-                    currentServiceOrderId = String(savedRecord.id);
+                const persistedServiceOrderId = applyServiceOrderEditingContext(savedRecord?.id || editingId);
+                if (!persistedServiceOrderId) {
+                    throw new Error('O.S. salva sem ID interno persistido válido.');
                 }
-                resetServiceOrderForm();
+                await refreshServiceOrderPhotosSection();
                 await loadServiceOrdersTable();
-                setServiceOrderView(SERVICE_ORDER_VIEW.KANBAN);
+                setServiceOrderView(SERVICE_ORDER_VIEW.FORM);
             } catch (error) {
                 showAlert('Erro ao salvar O.S.: ' + error.message, 'error');
                 logClientError({
@@ -10832,8 +10843,7 @@ async function getMelhorEnvioShipping(cep, type) {
             try {
                 const data = await fetchServiceOrderById(osId);
 
-                currentServiceOrderId = osId;
-                document.getElementById('editingServiceOrderId').value = String(data.id);
+                applyServiceOrderEditingContext(data.id || osId);
                 document.getElementById('osInternalOrderId').value = data.pedido_id || '';
                 document.getElementById('osOrderId').value = '';
                 if (data.pedido_id) {
@@ -10852,8 +10862,6 @@ async function getMelhorEnvioShipping(cep, type) {
                 document.getElementById('osDefect').value = data.servico || '';
                 document.getElementById('osStatusInline').value = data.status || ORDER_STATUS.PENDENTE;
                 document.getElementById('osNotes').value = data.observacoes || '';
-                document.getElementById('saveServiceOrderBtn').textContent = 'Atualizar O.S.';
-                document.getElementById('cancelServiceOrderEditBtn').style.display = 'inline-flex';
                 renderServiceOrderPreview(data);
                 await refreshServiceOrderPhotosSection();
                 setServiceOrderView(SERVICE_ORDER_VIEW.FORM);
