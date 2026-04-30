@@ -10603,13 +10603,16 @@ async function getMelhorEnvioShipping(cep, type) {
             if (!client) throw new Error('Supabase não configurado.');
 
             if (serviceOrderId) {
+                const persistedServiceOrderId = parsePersistedServiceOrderId(serviceOrderId);
+                if (!persistedServiceOrderId) throw new Error('O.S. sem ID interno válido para atualização.');
                 const { data, error } = await client
                     .from('ordens_servico')
                     .update(payload)
-                    .eq('id', serviceOrderId)
+                    .eq('id', persistedServiceOrderId)
                     .select('*')
-                    .single();
+                    .maybeSingle();
                 if (error) throw error;
+                if (!data?.id) throw new Error('O.S. sem ID interno válido para atualização.');
                 return data || null;
             }
 
@@ -10632,7 +10635,7 @@ async function getMelhorEnvioShipping(cep, type) {
             const saveBtn = document.getElementById('saveServiceOrderBtn');
             setButtonLoading(saveBtn, true, 'Salvando...');
             try {
-                const editingId = document.getElementById('editingServiceOrderId').value;
+                const editingId = parsePersistedServiceOrderId(document.getElementById('editingServiceOrderId').value);
                 const { orderNumber, internalOrderId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes } = getServiceOrderFormData();
                 let resolvedOrderId = internalOrderId || null;
                 if (!resolvedOrderId && orderNumber) {
