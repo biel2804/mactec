@@ -10647,18 +10647,31 @@ async function getMelhorEnvioShipping(cep, type) {
                     .eq('id', persistedServiceOrderId)
                     .select('*')
                     .maybeSingle();
+
                 if (error) throw error;
-                if (!data?.id) throw new Error('O.S. sem ID interno válido para atualização.');
-                return data || null;
+
+                if (!data || !data.id) {
+                    console.error('Erro: Supabase não retornou ID da O.S.', { data, payload });
+                    throw new Error('Falha ao obter ID interno da O.S. após salvar.');
+                }
+
+                return data;
             }
 
             const { data, error } = await client
                 .from('ordens_servico')
-                .insert([payload])
+                .insert(payload)
                 .select('*')
-                .single();
+                .maybeSingle();
+
             if (error) throw error;
-            return data || null;
+
+            if (!data || !data.id) {
+                console.error('Erro: Supabase não retornou ID da O.S.', { data, payload });
+                throw new Error('Falha ao obter ID interno da O.S. após salvar.');
+            }
+
+            return data;
         }
 
         async function handleServiceOrderFormSubmit(event) {
