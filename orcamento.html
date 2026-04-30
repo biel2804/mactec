@@ -2228,17 +2228,6 @@
             gap: 0.5rem;
             min-width: 0;
         }
-        #adminPanel #service-orders .os-card-photo {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.28rem;
-            font-size: 0.72rem;
-            color: #95accd;
-            opacity: 0.92;
-        }
-        #adminPanel #service-orders .os-card-photo.is-hidden {
-            visibility: hidden;
-        }
         #adminPanel #service-orders .os-card-badge {
             border-radius: 999px;
             padding: 0.18rem 0.48rem;
@@ -2429,52 +2418,6 @@
             color: #809bc0;
             padding: 0.1rem 0.1rem 0.05rem;
         }
-        #adminPanel #service-orders .os-photos-section {
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.75rem;
-            margin-bottom: 0.9rem;
-            background: var(--primary-dark);
-        }
-        #adminPanel #service-orders .os-photos-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
-            margin-bottom: 0.6rem;
-        }
-        #adminPanel #service-orders .os-photos-help {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-            margin: 0 0 0.6rem 0;
-        }
-        #adminPanel #service-orders .os-photos-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 0.6rem;
-            margin-top: 0.7rem;
-        }
-        #adminPanel #service-orders .os-photo-card {
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--secondary-dark);
-            overflow: hidden;
-        }
-        #adminPanel #service-orders .os-photo-card img {
-            width: 100%;
-            height: 95px;
-            object-fit: cover;
-            display: block;
-            background: #111827;
-        }
-        #adminPanel #service-orders .os-photo-meta {
-            font-size: 0.75rem;
-            padding: 0.45rem;
-            color: var(--text-secondary);
-        }
-        #adminPanel #service-orders .os-photo-actions {
-            padding: 0 0.45rem 0.45rem;
-        }
         :root[data-theme="light"] #adminPanel #service-orders .os-title-wrap h2 {
             color: #0f172a;
         }
@@ -2534,8 +2477,7 @@
         :root[data-theme="light"] #adminPanel #service-orders .os-card-device {
             color: #1e293b;
         }
-        :root[data-theme="light"] #adminPanel #service-orders .os-card-defect,
-        :root[data-theme="light"] #adminPanel #service-orders .os-card-photo {
+        :root[data-theme="light"] #adminPanel #service-orders .os-card-defect {
             color: #334155;
         }
         :root[data-theme="light"] #adminPanel #service-orders .os-card-footer {
@@ -4468,15 +4410,7 @@
                                     <label for="osNotes">Observações (opcional):</label>
                                     <textarea id="osNotes" placeholder="Observações adicionais"></textarea>
                                 </div>
-                                <section class="os-photos-section">
-                                    <div class="os-photos-header">
-                                        <label for="osPhotosInput" style="margin:0; font-weight:600;">Fotos <span id="osPhotosCounter">(0)</span></label>
-                                        <button type="button" class="btn btn-secondary" id="osPhotosReloadBtn">Recarregar</button>
-                                    </div>
-                                    <p class="os-photos-help" id="osPhotosHint">Salve a O.S. primeiro para habilitar upload de fotos.</p>
-                                    <input type="file" id="osPhotosInput" accept="image/*" multiple disabled>
-                                    <div id="osPhotosGrid" class="os-photos-grid"></div>
-                                </section>
+                                
                                 <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
                                     <button type="submit" class="btn btn-primary" id="saveServiceOrderBtn">Salvar O.S.</button>
                                     <button type="button" class="btn btn-secondary" id="cancelServiceOrderEditBtn" onclick="cancelServiceOrderEdit()" style="display:none;">Cancelar edição</button>
@@ -6639,29 +6573,6 @@
             });
             safeRun('bind walkInServiceOrderForm', () => {
                 document.getElementById('walkInServiceOrderForm')?.addEventListener('submit', handleWalkInServiceOrderSubmit);
-            });
-            safeRun('bind serviceOrder photos input', () => {
-                document.getElementById('osPhotosInput')?.addEventListener('change', handleServiceOrderPhotoInputChange);
-            });
-            safeRun('bind serviceOrder photos reload', () => {
-                document.getElementById('osPhotosReloadBtn')?.addEventListener('click', () => {
-                    refreshServiceOrderPhotosSection();
-                });
-            });
-            safeRun('bind serviceOrder photos remove', () => {
-                document.getElementById('osPhotosGrid')?.addEventListener('click', async (event) => {
-                    const button = event.target.closest('.js-os-photo-remove');
-                    if (!button) return;
-                    const photoId = String(button.dataset.photoId || '');
-                    const storagePath = String(button.dataset.storagePath || '');
-                    if (!photoId) return;
-                    try {
-                        await removeServiceOrderPhoto(photoId, storagePath);
-                        await refreshServiceOrderPhotosSection();
-                    } catch (error) {
-                        showAlert(`Erro ao remover foto: ${error.message}`, 'error');
-                    }
-                });
             });
             safeRun('bind serviceOrdersTable click', () => {
                 document.getElementById('serviceOrdersTable')?.addEventListener('click', (event) => {
@@ -9987,19 +9898,6 @@ async function getMelhorEnvioShipping(cep, type) {
         let currentServiceOrderPreviewData = null;
         let currentServiceOrderView = SERVICE_ORDER_VIEW.KANBAN;
         const MOBILE_PREVIEW_MAX_WIDTH = 768;
-        const SERVICE_ORDER_PHOTOS_BUCKET = 'os-photos';
-        const SERVICE_ORDER_PRINT_MAX_PHOTOS = 4;
-        const SERVICE_ORDER_PRINT_MIN_PHOTOS = 1;
-        const SERVICE_ORDER_A4_HEIGHT_PX = 1122;
-        const SERVICE_ORDER_PRINT_BODY_MARGIN_PX = 40;
-        const SERVICE_ORDER_PRINT_RESERVED_FIXED_HEIGHT_PX = 730;
-        const SERVICE_ORDER_PRINT_PHOTO_SECTION_FIXED_HEIGHT_PX = 58;
-        const SERVICE_ORDER_PRINT_PHOTO_TILE_HEIGHT_PX = 125;
-        const SERVICE_ORDER_PRINT_PHOTO_GAP_PX = 8;
-        const SERVICE_ORDER_PRINT_OBSERVATION_CHARS_PER_LINE = 92;
-        const SERVICE_ORDER_PRINT_LINE_HEIGHT_PX = 18;
-        let currentServiceOrderPhotos = [];
-        let isServiceOrderPhotoUploadRunning = false;
 
         function isMobileServiceOrderViewport() {
             return window.innerWidth <= MOBILE_PREVIEW_MAX_WIDTH;
@@ -10014,193 +9912,7 @@ async function getMelhorEnvioShipping(cep, type) {
             return String(numericValue);
         }
 
-        function getCurrentServiceOrderIdForPhotos() {
-            const editingId = parsePersistedServiceOrderId(document.getElementById('editingServiceOrderId')?.value);
-            if (editingId) return editingId;
-            return parsePersistedServiceOrderId(currentServiceOrderId);
-        }
-
-        async function assertServiceOrderExists(serviceOrderId) {
-            const client = ensureSupabaseClient(true);
-            if (!client) throw new Error('Supabase não configurado.');
-            const parsedId = parsePersistedServiceOrderId(serviceOrderId);
-            if (!parsedId) throw new Error('Salve a O.S. antes do upload de fotos.');
-            const { data, error } = await client
-                .from('ordens_servico')
-                .select('id')
-                .eq('id', parsedId)
-                .limit(1)
-                .maybeSingle();
-            if (error) throw error;
-            if (!data?.id) throw new Error('A O.S. precisa estar salva no banco antes do upload de fotos.');
-            return parsedId;
-        }
-
-        function sanitizePhotoFileName(fileName = 'arquivo.jpg') {
-            return String(fileName)
-                .normalize('NFD')
-                .replace(/[^\w.\-]+/g, '_')
-                .replace(/_+/g, '_')
-                .toLowerCase();
-        }
-
-        async function listServiceOrderPhotos(osId) {
-            const client = ensureSupabaseClient(true);
-            if (!client) throw new Error('Supabase não configurado.');
-            const { data, error } = await client
-                .from('ordens_servico_fotos')
-                .select('*')
-                .eq('os_id', osId)
-                .order('ordem', { ascending: true })
-                .order('created_at', { ascending: true });
-            if (error) throw error;
-            return data || [];
-        }
-
-        function resolveServiceOrderPhotoUrl(storagePath) {
-            const client = ensureSupabaseClient(false);
-            if (!client || !storagePath) return '';
-            const { data } = client.storage.from(SERVICE_ORDER_PHOTOS_BUCKET).getPublicUrl(storagePath);
-            return data?.publicUrl || '';
-        }
-
-        function renderServiceOrderPhotos(photos = []) {
-            const grid = document.getElementById('osPhotosGrid');
-            const counter = document.getElementById('osPhotosCounter');
-            if (!grid || !counter) return;
-            currentServiceOrderPhotos = photos;
-            counter.textContent = `(${photos.length})`;
-            if (!photos.length) {
-                grid.innerHTML = '<p style="margin:0; color:var(--text-secondary); font-size:0.85rem;">Nenhuma foto vinculada a esta O.S.</p>';
-                return;
-            }
-            grid.innerHTML = photos.map((photo) => {
-                const url = resolveServiceOrderPhotoUrl(photo.storage_path);
-                const legenda = escapeHtml(photo.legenda || '');
-                return `
-                    <article class="os-photo-card">
-                        <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
-                            <img src="${escapeHtml(url)}" alt="${legenda || 'Foto da O.S.'}">
-                        </a>
-                        <div class="os-photo-meta">${legenda || escapeHtml(photo.storage_path.split('/').pop() || 'Imagem')}</div>
-                        <div class="os-photo-actions">
-                            <button type="button" class="btn btn-secondary js-os-photo-remove" data-photo-id="${photo.id}" data-storage-path="${escapeHtml(photo.storage_path)}" style="width:100%; font-size:0.8rem;">Remover</button>
-                        </div>
-                    </article>
-                `;
-            }).join('');
-        }
-
-        async function refreshServiceOrderPhotosSection() {
-            const photosInput = document.getElementById('osPhotosInput');
-            const hint = document.getElementById('osPhotosHint');
-            const serviceOrderId = getCurrentServiceOrderIdForPhotos();
-            if (!photosInput || !hint) return;
-            if (!serviceOrderId) {
-                photosInput.value = '';
-                photosInput.disabled = true;
-                hint.textContent = 'Salve a O.S. primeiro para habilitar upload de fotos.';
-                renderServiceOrderPhotos([]);
-                return;
-            }
-            try {
-                await assertServiceOrderExists(serviceOrderId);
-                photosInput.disabled = isServiceOrderPhotoUploadRunning;
-                hint.textContent = `Envie fotos do aparelho para a O.S. #${serviceOrderId}.`;
-                const photos = await listServiceOrderPhotos(serviceOrderId);
-                renderServiceOrderPhotos(photos);
-            } catch (error) {
-                photosInput.disabled = true;
-                hint.textContent = 'Salve a O.S. primeiro para habilitar upload de fotos.';
-                renderServiceOrderPhotos([]);
-                showAlert('Não foi possível carregar as fotos da O.S.', 'warning');
-            }
-        }
-
-        async function uploadPhotoToServiceOrder(serviceOrderId, file) {
-            const client = ensureSupabaseClient(true);
-            if (!client) throw new Error('Supabase não configurado.');
-            const persistedServiceOrderId = await assertServiceOrderExists(serviceOrderId);
-            if (!file || !String(file.type || '').startsWith('image/')) {
-                throw new Error('Selecione apenas arquivos de imagem.');
-            }
-            const maxOrder = currentServiceOrderPhotos.reduce((max, item) => Math.max(max, Number(item.ordem || 0)), 0);
-            const fileName = sanitizePhotoFileName(file?.name || 'imagem.jpg');
-            const storagePath = `os-${persistedServiceOrderId}/${Date.now()}-${fileName}`;
-            const { error: uploadError } = await client.storage
-                .from(SERVICE_ORDER_PHOTOS_BUCKET)
-                .upload(storagePath, file, { upsert: false, contentType: file?.type || 'image/jpeg' });
-            if (uploadError) throw uploadError;
-
-            const { error: insertError } = await client
-                .from('ordens_servico_fotos')
-                .insert([{
-                    os_id: persistedServiceOrderId,
-                    storage_path: storagePath,
-                    ordem: maxOrder + 1,
-                    legenda: null
-                }]);
-            if (insertError) {
-                await client.storage.from(SERVICE_ORDER_PHOTOS_BUCKET).remove([storagePath]);
-                throw insertError;
-            }
-        }
-
-        async function handleServiceOrderPhotoInputChange(event) {
-            const files = Array.from(event?.target?.files || []);
-            if (!files.length) return;
-            const serviceOrderId = getCurrentServiceOrderIdForPhotos();
-            if (!serviceOrderId) {
-                showAlert('Salve a O.S. antes de enviar fotos.', 'warning');
-                event.target.value = '';
-                return;
-            }
-            const hint = document.getElementById('osPhotosHint');
-            const photosInput = document.getElementById('osPhotosInput');
-            try {
-                isServiceOrderPhotoUploadRunning = true;
-                if (photosInput) photosInput.disabled = true;
-                if (hint) hint.textContent = 'Enviando fotos... aguarde.';
-                for (const file of files) {
-                    await uploadPhotoToServiceOrder(serviceOrderId, file);
-                }
-                showAlert('Foto(s) adicionada(s) com sucesso.', 'success');
-                event.target.value = '';
-                await refreshServiceOrderPhotosSection();
-            } catch (error) {
-                showAlert(`Erro ao enviar foto: ${error.message}`, 'error');
-            } finally {
-                isServiceOrderPhotoUploadRunning = false;
-                await refreshServiceOrderPhotosSection();
-            }
-        }
-
-        async function removeServiceOrderPhoto(photoId, storagePath) {
-            const client = ensureSupabaseClient(true);
-            if (!client) throw new Error('Supabase não configurado.');
-            let storageDeleteFailed = false;
-            if (storagePath) {
-                const { error: storageError } = await client.storage
-                    .from(SERVICE_ORDER_PHOTOS_BUCKET)
-                    .remove([storagePath]);
-                if (storageError) {
-                    storageDeleteFailed = true;
-                    console.warn('Falha ao remover arquivo da foto no storage:', storageError.message);
-                }
-            }
-            const { error: deleteError } = await client
-                .from('ordens_servico_fotos')
-                .delete()
-                .eq('id', photoId);
-            if (deleteError) throw deleteError;
-            if (storageDeleteFailed) {
-                showAlert('Foto removida da O.S., mas o arquivo no Storage não pôde ser removido.', 'warning');
-            } else {
-                showAlert('Foto removida com sucesso.', 'success');
-            }
-        }
-
-        function getServiceOrderPreviewHtml(data) {
+                async                 async                         async         async         async         async         function getServiceOrderPreviewHtml(data) {
             if (!data) {
                 return '<p style="margin:0; color:#333;">Salve ou edite uma O.S. para carregar a pré-visualização.</p>';
             }
@@ -10297,8 +10009,6 @@ async function getMelhorEnvioShipping(cep, type) {
             document.getElementById('saveServiceOrderBtn').textContent = 'Salvar O.S.';
             document.getElementById('cancelServiceOrderEditBtn').style.display = 'none';
             currentServiceOrderId = null;
-            renderServiceOrderPhotos([]);
-            refreshServiceOrderPhotosSection();
         }
 
         function applyServiceOrderEditingContext(serviceOrderId) {
@@ -10325,7 +10035,6 @@ async function getMelhorEnvioShipping(cep, type) {
 
         function initializeServiceOrdersView() {
             setServiceOrderView(SERVICE_ORDER_VIEW.KANBAN);
-            refreshServiceOrderPhotosSection();
         }
 
         function openNewServiceOrderForm() {
@@ -10475,7 +10184,6 @@ async function getMelhorEnvioShipping(cep, type) {
                         const deviceLabel = [brand, model].filter(Boolean).join(' ') || 'Dispositivo não informado';
                         const createdAt = os.data_criacao ? new Date(os.data_criacao).toLocaleDateString('pt-BR') : '-';
                         const defectLabel = (os.servico || 'Defeito não informado').trim();
-                        const hasPhotos = Boolean(os.foto) || Number(os.total_fotos || 0) > 0 || Number(os.photos_count || 0) > 0;
                         return `
                             <button type="button" class="os-kanban-card js-service-order-kanban-card" data-id="${os.id}" style="--os-card-accent:${escapeHtml(cardAccent)};">
                                 <div class="os-card-top">
@@ -10486,7 +10194,6 @@ async function getMelhorEnvioShipping(cep, type) {
                                 <div class="os-card-device">${escapeHtml(deviceLabel)}</div>
                                 <div class="os-card-defect">${escapeHtml(defectLabel)}</div>
                                 <div class="os-card-footer">
-                                    <span class="os-card-photo ${hasPhotos ? '' : 'is-hidden'}">📷 <span>Foto</span></span>
                                     <span class="os-card-badge" style="--os-card-accent:${escapeHtml(statusAccent)};">${escapeHtml(formatStatus(os.status || status))}</span>
                                 </div>
                             </button>
@@ -10723,7 +10430,6 @@ async function getMelhorEnvioShipping(cep, type) {
                 if (!persistedServiceOrderId) {
                     throw new Error('O.S. salva sem ID interno persistido válido.');
                 }
-                await refreshServiceOrderPhotosSection();
                 await loadServiceOrdersTable();
                 setServiceOrderView(SERVICE_ORDER_VIEW.FORM);
             } catch (error) {
@@ -10876,7 +10582,6 @@ async function getMelhorEnvioShipping(cep, type) {
                 document.getElementById('osStatusInline').value = data.status || ORDER_STATUS.PENDENTE;
                 document.getElementById('osNotes').value = data.observacoes || '';
                 renderServiceOrderPreview(data);
-                await refreshServiceOrderPhotosSection();
                 setServiceOrderView(SERVICE_ORDER_VIEW.FORM);
                 showAlert('O.S. carregada para edição.', 'info');
             } catch (error) {
@@ -10893,28 +10598,6 @@ async function getMelhorEnvioShipping(cep, type) {
         }
 
         function buildServiceOrderPrintableHtml(data) {
-            const printablePhotos = Array.isArray(data?.printable_photos) ? data.printable_photos : [];
-            const photoLimit = calculateServiceOrderPrintablePhotoLimit(data, printablePhotos.length);
-            const photosForPrint = printablePhotos.slice(0, photoLimit);
-            const photoGridSizeClass = photosForPrint.length <= 2 ? 2 : 4;
-            const photoSectionHtml = printablePhotos.length
-                ? `
-                        <div class="section photo-section">
-                            <h3>Registro Fotográfico do Aparelho</h3>
-                            <div class="photo-grid photo-grid-${photoGridSizeClass}">
-                                ${photosForPrint.map((photo) => `
-                                    <figure class="photo-item">
-                                        <img src="${escapeHtml(photo.url || '')}" alt="Foto da O.S." onerror="this.closest('figure')?.classList.add('photo-item-error'); this.style.display='none';">
-                                    </figure>
-                                `).join('')}
-                            </div>
-                            ${printablePhotos.length > photosForPrint.length
-                                ? `<p class="photo-limit-note">Exibindo ${photosForPrint.length} de ${printablePhotos.length} fotos para preservar o layout em uma página A4.</p>`
-                                : ''
-                            }
-                        </div>
-                    `
-                : '';
             return `
                     <!DOCTYPE html>
                     <html>
@@ -10929,17 +10612,6 @@ async function getMelhorEnvioShipping(cep, type) {
                             .row { display: flex; justify-content: space-between; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
                             .label { font-weight: bold; }
                             .status { padding: 5px 10px; border-radius: 4px; display: inline-block; color: white; }
-                            .photo-section { margin-top: 12px; margin-bottom: 16px; }
-                            .photo-grid { display: grid; gap: 8px; }
-                            .photo-grid-1,
-                            .photo-grid-2,
-                            .photo-grid-3,
-                            .photo-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-                            .photo-item { margin: 0; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; background: #fff; }
-                            .photo-item-error { min-height: 80px; background: #f8fafc; position: relative; }
-                            .photo-item-error::after { content: 'Imagem indisponível'; display: block; color: #64748b; font-size: 11px; text-align: center; padding-top: 32px; }
-                            .photo-item img { width: 100%; height: 125px; object-fit: cover; display: block; }
-                            .photo-limit-note { margin: 8px 0 0; font-size: 11px; color: #64748b; }
                             .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
                         </style>
                     </head>
@@ -10985,7 +10657,6 @@ async function getMelhorEnvioShipping(cep, type) {
                             ${data.observacoes ? `<div class="row"><div><span class="label">Observações:</span> ${data.observacoes}</div></div>` : ''}
                         </div>
 
-                        ${photoSectionHtml}
 
                         <div class="footer">
                             <p>Documento gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
@@ -10996,52 +10667,8 @@ async function getMelhorEnvioShipping(cep, type) {
                 `;
         }
 
-        function calculateServiceOrderPrintablePhotoLimit(data, totalPhotos) {
-            const safeTotalPhotos = Math.max(0, Math.min(Number(totalPhotos) || 0, SERVICE_ORDER_PRINT_MAX_PHOTOS));
-            if (!safeTotalPhotos) return 0;
-
-            const observationText = String(data?.observacoes || '').trim();
-            const estimatedObservationLines = observationText
-                ? Math.max(1, Math.ceil(observationText.length / SERVICE_ORDER_PRINT_OBSERVATION_CHARS_PER_LINE))
-                : 0;
-            const estimatedObservationHeight = estimatedObservationLines * SERVICE_ORDER_PRINT_LINE_HEIGHT_PX;
-
-            const printableHeight = SERVICE_ORDER_A4_HEIGHT_PX - SERVICE_ORDER_PRINT_BODY_MARGIN_PX;
-            const freeSpacePx = Math.max(
-                0,
-                printableHeight - (SERVICE_ORDER_PRINT_RESERVED_FIXED_HEIGHT_PX + estimatedObservationHeight)
-            );
-
-            const photoRowsCapacity = Math.floor(
-                Math.max(0, freeSpacePx - SERVICE_ORDER_PRINT_PHOTO_SECTION_FIXED_HEIGHT_PX + SERVICE_ORDER_PRINT_PHOTO_GAP_PX) /
-                (SERVICE_ORDER_PRINT_PHOTO_TILE_HEIGHT_PX + SERVICE_ORDER_PRINT_PHOTO_GAP_PX)
-            );
-            const maxPhotosBySpace = photoRowsCapacity >= 2 ? 4 : (photoRowsCapacity >= 1 ? 2 : 0);
-            return Math.max(
-                Math.min(safeTotalPhotos, maxPhotosBySpace),
-                safeTotalPhotos > 0 ? SERVICE_ORDER_PRINT_MIN_PHOTOS : 0
-            );
-        }
-
         function buildServiceOrderPdfBlob(data) {
             return new Blob([buildServiceOrderPrintableHtml(data)], { type: 'text/html;charset=utf-8' });
-        }
-
-        async function getPrintableServiceOrderPhotos(serviceOrderId) {
-            if (!serviceOrderId) return [];
-            try {
-                const photos = await listServiceOrderPhotos(serviceOrderId);
-                return photos
-                    .map((photo) => ({
-                        ...photo,
-                        url: resolveServiceOrderPhotoUrl(photo.storage_path)
-                    }))
-                    .filter((photo) => photo.url)
-                    .slice(0, SERVICE_ORDER_PRINT_MAX_PHOTOS);
-            } catch (error) {
-                console.warn('Falha ao carregar fotos para impressão da O.S.:', error?.message || error);
-                return [];
-            }
         }
 
         async function resolveServiceOrderForActions(serviceOrderId = null) {
@@ -11053,10 +10680,7 @@ async function getMelhorEnvioShipping(cep, type) {
             } else if (currentServiceOrderPreviewData) {
                 data = currentServiceOrderPreviewData;
             }
-            if (data) {
-                const printablePhotos = await getPrintableServiceOrderPhotos(data.id);
-                return { ...data, printable_photos: printablePhotos };
-            }
+            if (data) return data;
             throw new Error('Nenhuma O.S. em pré-visualização.');
         }
 
