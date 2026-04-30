@@ -4273,8 +4273,50 @@
                     <div class="os-view-toggle">
                         <button type="button" class="btn btn-secondary active" id="serviceOrdersKanbanBtn" onclick="setServiceOrderView('kanban')">Kanban</button>
                         <button type="button" class="btn btn-primary" id="serviceOrdersNewBtn" onclick="openNewServiceOrderForm()">+ Nova O.S.</button>
+                        <button type="button" class="btn btn-secondary" id="serviceOrdersWalkInBtn" onclick="openWalkInServiceOrderModal()">Atendimento balcão</button>
                         <button type="button" class="btn btn-secondary" disabled>Filtros</button>
                         <input type="search" class="os-search-input" placeholder="Buscar O.S., cliente ou dispositivo..." disabled>
+                    </div>
+                </div>
+
+                <div id="walkInServiceOrderModal" class="modal">
+                    <div class="modal-content" style="max-width:640px;">
+                        <span class="close" onclick="closeWalkInServiceOrderModal()">&times;</span>
+                        <h3 style="color:var(--accent-green); margin-bottom:0.75rem;">Atendimento balcão / O.S. avulsa</h3>
+                        <form id="walkInServiceOrderForm">
+                            <div class="os-grid-2">
+                                <div class="form-group">
+                                    <label for="walkInClientName">Nome do cliente</label>
+                                    <input type="text" id="walkInClientName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="walkInWhatsApp">WhatsApp</label>
+                                    <input type="tel" id="walkInWhatsApp" required>
+                                </div>
+                            </div>
+                            <div class="os-grid-2">
+                                <div class="form-group">
+                                    <label for="walkInDeviceBrand">Marca</label>
+                                    <input type="text" id="walkInDeviceBrand" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="walkInDeviceModel">Aparelho/modelo</label>
+                                    <input type="text" id="walkInDeviceModel" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="walkInDefect">Defeito/serviço solicitado</label>
+                                <textarea id="walkInDefect" rows="3" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="walkInNotes">Observações iniciais (opcional)</label>
+                                <textarea id="walkInNotes" rows="3"></textarea>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; justify-content:flex-end; flex-wrap:wrap;">
+                                <button type="button" class="btn btn-secondary" onclick="closeWalkInServiceOrderModal()">Cancelar</button>
+                                <button type="submit" class="btn btn-primary" id="walkInCreateBtn">Criar pedido e abrir O.S.</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
@@ -6556,6 +6598,9 @@
             });
             safeRun('bind serviceOrderForm', () => {
                 document.getElementById('serviceOrderForm')?.addEventListener('submit', handleServiceOrderFormSubmit);
+            });
+            safeRun('bind walkInServiceOrderForm', () => {
+                document.getElementById('walkInServiceOrderForm')?.addEventListener('submit', handleWalkInServiceOrderSubmit);
             });
             safeRun('bind serviceOrder photos input', () => {
                 document.getElementById('osPhotosInput')?.addEventListener('change', handleServiceOrderPhotoInputChange);
@@ -10238,6 +10283,100 @@ async function getMelhorEnvioShipping(cep, type) {
         function openNewServiceOrderForm() {
             resetServiceOrderForm();
             setServiceOrderView(SERVICE_ORDER_VIEW.FORM);
+        }
+
+        function openWalkInServiceOrderModal() {
+            const modal = document.getElementById('walkInServiceOrderModal');
+            if (!modal) return;
+            const form = document.getElementById('walkInServiceOrderForm');
+            form?.reset();
+            modal.style.display = 'block';
+        }
+
+        function closeWalkInServiceOrderModal() {
+            const modal = document.getElementById('walkInServiceOrderModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function createMinimalAdministrativeOrder(walkInData) {
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+
+            const payload = validatePedidosPayload({
+                cliente_nome: walkInData.clientName,
+                whatsapp: walkInData.whatsapp,
+                endereco: 'Atendimento balcão',
+                modelo_dispositivo: `${walkInData.brand} ${walkInData.model}`.trim(),
+                servico: walkInData.defect,
+                valor_total: 0,
+                valor_servico: 0,
+                custo_peca: 0,
+                custo_mao_obra: 0,
+                valor_frete: 0,
+                lucro_bruto: 0,
+                margem: 0,
+                desconto: 0,
+                valor_total_final: 0,
+                percentual_juros: 0,
+                valor_total_com_juros: 0,
+                valor_parcela: 0,
+                forma_pagamento: null,
+                parcelas: 1,
+                status_pagamento: 'pendente',
+                status: 'PEDIDO_EM_ANALISE',
+                observacoes: walkInData.notes ? `Atendimento balcão | ${walkInData.notes}` : 'Atendimento balcão',
+                tipo_envio: null,
+                itens_json: JSON.stringify([{ tipo: 'atendimento_balcao', descricao: walkInData.defect, valor: 0 }]),
+                cliente_id: null
+            }, 'insert_walk_in');
+
+            const { data, error } = await client.from('pedidos').insert([payload]).select('*').single();
+            if (error) {
+                throwPedidosColumnMismatch(error, payload, 'insert_walk_in');
+                throw error;
+            }
+            return data;
+        }
+
+        async function handleWalkInServiceOrderSubmit(event) {
+            event.preventDefault();
+            const button = document.getElementById('walkInCreateBtn');
+            setButtonLoading(button, true, 'Criando...');
+            try {
+                const clientName = document.getElementById('walkInClientName').value.trim();
+                const whatsapp = document.getElementById('walkInWhatsApp').value.trim();
+                const brand = document.getElementById('walkInDeviceBrand').value.trim();
+                const model = document.getElementById('walkInDeviceModel').value.trim();
+                const defect = document.getElementById('walkInDefect').value.trim();
+                const notes = document.getElementById('walkInNotes').value.trim();
+
+                if (!clientName || !whatsapp || !brand || !model || !defect) {
+                    throw new Error('Preencha os dados mínimos para abrir O.S. avulsa.');
+                }
+
+                const order = await createMinimalAdministrativeOrder({ clientName, whatsapp, brand, model, defect, notes });
+                if (!order?.id || order?.numero_pedido == null) {
+                    throw new Error('Pedido administrativo criado sem identificadores obrigatórios.');
+                }
+
+                closeWalkInServiceOrderModal();
+                openNewServiceOrderForm();
+                document.getElementById('osOrderId').value = String(order.numero_pedido);
+                document.getElementById('osInternalOrderId').value = String(order.id);
+                document.getElementById('osClientName').value = clientName;
+                document.getElementById('osPhone').value = whatsapp;
+                document.getElementById('osBrand').value = brand;
+                document.getElementById('osModel').value = model;
+                document.getElementById('osDefect').value = defect;
+                document.getElementById('osNotes').value = notes;
+                document.getElementById('osStatusInline').value = 'PEDIDO_EM_ANALISE';
+                document.getElementById('osTotalValue').value = '0';
+                showAlert(`Pedido #${order.numero_pedido} criado. Preencha e salve a O.S.`, 'success');
+            } catch (error) {
+                showAlert(`Erro ao criar atendimento balcão: ${error.message}`, 'error');
+            } finally {
+                setButtonLoading(button, false);
+            }
         }
 
         function cancelServiceOrderEdit() {
