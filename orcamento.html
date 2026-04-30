@@ -10451,7 +10451,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 grouped[status] = [];
             });
             serviceOrders.forEach((os) => {
-                const normalizedStatus = SERVICE_ORDER_KANBAN_COLUMNS.includes(os.status) ? os.status : ORDER_STATUS.PENDENTE;
+                const normalizedStatus = resolveServiceOrderKanbanColumnStatus(os?.status);
                 grouped[normalizedStatus].push(os);
             });
             board.innerHTML = SERVICE_ORDER_KANBAN_COLUMNS.map((status) => {
@@ -10493,6 +10493,32 @@ async function getMelhorEnvioShipping(cep, type) {
                     </section>
                 `;
             }).join('');
+        }
+
+        function resolveServiceOrderKanbanColumnStatus(status) {
+            const rawStatus = String(status || '').trim();
+            if (!rawStatus) return ORDER_STATUS.PENDENTE;
+            if (SERVICE_ORDER_KANBAN_COLUMNS.includes(rawStatus)) return rawStatus;
+            const normalizedStatus = normalizeOperationalStatus(rawStatus);
+            const statusMap = {
+                PEDIDO_EM_ANALISE: ORDER_STATUS.PENDENTE,
+                AGENDAR_COLETA: ORDER_STATUS.PENDENTE,
+                COLETA_OK_ANALISE_OS: ORDER_STATUS.PENDENTE,
+                [ORDER_STATUS.ORCAMENTO]: ORDER_STATUS.PENDENTE,
+                OS_ENVIADA_AGUARDANDO_APROVACAO: ORDER_STATUS.PENDENTE,
+                [ORDER_STATUS.APROVADO]: ORDER_STATUS.EM_ANDAMENTO,
+                OS_APROVADA_MANUTENCAO: ORDER_STATUS.EM_ANDAMENTO,
+                [ORDER_STATUS.EM_ANDAMENTO]: ORDER_STATUS.EM_ANDAMENTO,
+                [ORDER_STATUS.ANDAMENTO]: ORDER_STATUS.EM_ANDAMENTO,
+                MANUTENCAO_CONCLUIDA: ORDER_STATUS.CONCLUIDO,
+                [ORDER_STATUS.CONCLUIDO]: ORDER_STATUS.CONCLUIDO,
+                AGENDAR_DEVOLUCAO: ORDER_STATUS.FINALIZADO,
+                FINALIZADO: ORDER_STATUS.FINALIZADO,
+                [ORDER_STATUS.FINALIZADO]: ORDER_STATUS.FINALIZADO,
+                [ORDER_STATUS.ENTREGUE]: ORDER_STATUS.FINALIZADO
+            };
+            const mappedStatus = statusMap[normalizedStatus] || statusMap[rawStatus] || ORDER_STATUS.PENDENTE;
+            return SERVICE_ORDER_KANBAN_COLUMNS.includes(mappedStatus) ? mappedStatus : ORDER_STATUS.PENDENTE;
         }
 
         function getKanbanCardAccentColor(status) {
