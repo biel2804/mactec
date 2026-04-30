@@ -4254,8 +4254,13 @@
                         <button type="button" class="btn btn-secondary active" id="serviceOrdersKanbanBtn" onclick="setServiceOrderView('kanban')">Kanban</button>
                         <button type="button" class="btn btn-primary" id="serviceOrdersNewBtn" onclick="openNewServiceOrderForm()">+ Nova O.S.</button>
                         <button type="button" class="btn btn-secondary" id="serviceOrdersWalkInBtn" onclick="openWalkInServiceOrderModal()">Atendimento balcão</button>
-                        <button type="button" class="btn btn-secondary" disabled>Filtros</button>
-                        <input type="search" class="os-search-input" placeholder="Buscar O.S., cliente ou dispositivo..." disabled>
+                        <label for="serviceOrdersVisibilityFilter" style="font-size:0.85rem;">Visualização</label>
+                        <select id="serviceOrdersVisibilityFilter" class="os-search-input" style="max-width:220px;" onchange="applyServiceOrderVisibilityFilter(this.value)">
+                            <option value="ativas" selected>Ativas</option>
+                            <option value="canceladas">Canceladas</option>
+                            <option value="arquivadas">Arquivadas</option>
+                            <option value="todas">Todas</option>
+                        </select>
                     </div>
                 </div>
 
@@ -4396,6 +4401,8 @@
                                             <option value="MANUTENCAO_CONCLUIDA">Manutenção concluída</option>
                                             <option value="AGENDAR_DEVOLUCAO">Agendar devolução</option>
                                             <option value="FINALIZADO">Finalizado</option>
+                                            <option value="CANCELADO">Cancelado</option>
+                                            <option value="ARQUIVADO">Arquivado</option>
                                             <option value="pendente">Pendente (legado)</option>
                                             <option value="em_andamento">Em andamento (legado)</option>
                                             <option value="concluido">Concluído (legado)</option>
@@ -6006,7 +6013,8 @@
             CONCLUIDO: 'concluido',
             FINALIZADO: 'finalizado',
             ENTREGUE: 'entregue',
-            CANCELADO: 'cancelado'
+            CANCELADO: 'cancelado',
+            ARQUIVADO: 'arquivado'
         });
 
         const ORDER_TRACKING_STATUSES = Object.freeze({
@@ -6029,7 +6037,9 @@
             andamento: 'OS_APROVADA_MANUTENCAO',
             concluido: 'MANUTENCAO_CONCLUIDA',
             finalizado: 'FINALIZADO',
-            entregue: 'FINALIZADO'
+            entregue: 'FINALIZADO',
+            cancelado: 'CANCELADO',
+            arquivado: 'ARQUIVADO'
         });
 
         const STATUS_LABELS = Object.freeze({
@@ -6042,8 +6052,18 @@
             [ORDER_STATUS.FINALIZADO]: 'Finalizado',
             [ORDER_STATUS.ENTREGUE]: 'Entregue',
             [ORDER_STATUS.CANCELADO]: 'Cancelado',
+            [ORDER_STATUS.ARQUIVADO]: 'Arquivado',
+            CANCELADO: 'Cancelado',
+            ARQUIVADO: 'Arquivado',
             ...ORDER_TRACKING_STATUSES
         });
+        const SERVICE_ORDER_VISIBILITY_FILTER = Object.freeze({
+            ACTIVE: 'ativas',
+            CANCELED: 'canceladas',
+            ARCHIVED: 'arquivadas',
+            ALL: 'todas'
+        });
+        let serviceOrderVisibilityFilter = SERVICE_ORDER_VISIBILITY_FILTER.ACTIVE;
 
         const SERVICE_LABELS = Object.freeze({
             troca_tela: 'Troca de Tela',
@@ -6580,16 +6600,26 @@
                     if (!button) return;
                     const id = String(button.dataset.id || '');
                     if (!id) return;
-                    if (button.dataset.action === 'edit') {
-                        editServiceOrder(id);
-                    }
-                    if (button.dataset.action === 'print') {
-                        printServiceOrder(id);
-                    }
+                    const action = button.dataset.action;
+                    if (action === 'edit') editServiceOrder(id);
+                    if (action === 'print') printServiceOrder(id);
+                    if (action === 'finalize') finalizeServiceOrder(id);
+                    if (action === 'archive') archiveServiceOrder(id);
+                    if (action === 'cancel') cancelServiceOrder(id);
                 });
             });
             safeRun('bind serviceOrdersKanban click', () => {
                 document.getElementById('serviceOrdersKanbanBoard')?.addEventListener('click', (event) => {
+                    const actionButton = event.target.closest('.js-service-order-action');
+                    if (actionButton) {
+                        const id = String(actionButton.dataset.id || '');
+                        if (!id) return;
+                        const action = actionButton.dataset.action;
+                        if (action === 'finalize') finalizeServiceOrder(id);
+                        if (action === 'archive') archiveServiceOrder(id);
+                        if (action === 'cancel') cancelServiceOrder(id);
+                        return;
+                    }
                     const card = event.target.closest('.js-service-order-kanban-card');
                     if (!card) return;
                     const id = String(card.dataset.id || '');
@@ -10162,6 +10192,34 @@ async function getMelhorEnvioShipping(cep, type) {
             setText('serviceOrdersSummaryDone', doneCount);
         }
 
+        function isServiceOrderArchivedStatus(status) {
+            const normalized = normalizeOperationalStatus(status);
+            return normalized === 'ARQUIVADO' || normalized === ORDER_STATUS.ARQUIVADO;
+        }
+
+        function isServiceOrderCanceledStatus(status) {
+            const normalized = normalizeOperationalStatus(status);
+            return normalized === 'CANCELADO' || normalized === ORDER_STATUS.CANCELADO;
+        }
+
+        function isServiceOrderActiveForMainView(order) {
+            return !isServiceOrderArchivedStatus(order?.status) && !isServiceOrderCanceledStatus(order?.status);
+        }
+
+        function filterServiceOrdersByVisibility(serviceOrders = [], visibility = serviceOrderVisibilityFilter) {
+            if (visibility === SERVICE_ORDER_VISIBILITY_FILTER.ALL) return serviceOrders;
+            if (visibility === SERVICE_ORDER_VISIBILITY_FILTER.CANCELED) return serviceOrders.filter((os) => isServiceOrderCanceledStatus(os?.status));
+            if (visibility === SERVICE_ORDER_VISIBILITY_FILTER.ARCHIVED) return serviceOrders.filter((os) => isServiceOrderArchivedStatus(os?.status));
+            return serviceOrders.filter((os) => isServiceOrderActiveForMainView(os));
+        }
+
+        function applyServiceOrderVisibilityFilter(nextFilter = SERVICE_ORDER_VISIBILITY_FILTER.ACTIVE) {
+            serviceOrderVisibilityFilter = Object.values(SERVICE_ORDER_VISIBILITY_FILTER).includes(nextFilter)
+                ? nextFilter
+                : SERVICE_ORDER_VISIBILITY_FILTER.ACTIVE;
+            loadServiceOrdersTable();
+        }
+
         function renderServiceOrdersKanban(serviceOrders = []) {
             const board = document.getElementById('serviceOrdersKanbanBoard');
             if (!board) return;
@@ -10195,6 +10253,11 @@ async function getMelhorEnvioShipping(cep, type) {
                                 <div class="os-card-defect">${escapeHtml(defectLabel)}</div>
                                 <div class="os-card-footer">
                                     <span class="os-card-badge" style="--os-card-accent:${escapeHtml(statusAccent)};">${escapeHtml(formatStatus(os.status || status))}</span>
+                                    <div class="os-list-actions">
+                                        <button class="btn btn-secondary os-list-action-btn js-service-order-action" data-action="finalize" data-id="${os.id}" type="button">Finalizar</button>
+                                        <button class="btn btn-secondary os-list-action-btn js-service-order-action" data-action="archive" data-id="${os.id}" type="button">Arquivar</button>
+                                        <button class="btn btn-secondary os-list-action-btn js-service-order-action" data-action="cancel" data-id="${os.id}" type="button">Cancelar</button>
+                                    </div>
                                 </div>
                             </button>
                         `;
@@ -10231,6 +10294,8 @@ async function getMelhorEnvioShipping(cep, type) {
                 [ORDER_STATUS.CONCLUIDO]: ORDER_STATUS.CONCLUIDO,
                 AGENDAR_DEVOLUCAO: ORDER_STATUS.FINALIZADO,
                 FINALIZADO: ORDER_STATUS.FINALIZADO,
+                CANCELADO: ORDER_STATUS.FINALIZADO,
+                ARQUIVADO: ORDER_STATUS.FINALIZADO,
                 [ORDER_STATUS.FINALIZADO]: ORDER_STATUS.FINALIZADO,
                 [ORDER_STATUS.ENTREGUE]: ORDER_STATUS.FINALIZADO
             };
@@ -10253,6 +10318,8 @@ async function getMelhorEnvioShipping(cep, type) {
                 MANUTENCAO_CONCLUIDA: '#22c55e',
                 [ORDER_STATUS.CONCLUIDO]: '#22c55e',
                 FINALIZADO: '#6f8f86',
+                CANCELADO: '#dc2626',
+                ARQUIVADO: '#6b7280',
                 [ORDER_STATUS.FINALIZADO]: '#6f8f86',
                 [ORDER_STATUS.ENTREGUE]: '#6f8f86'
             };
@@ -10274,6 +10341,8 @@ async function getMelhorEnvioShipping(cep, type) {
                 MANUTENCAO_CONCLUIDA: '#16a34a',
                 [ORDER_STATUS.CONCLUIDO]: '#16a34a',
                 FINALIZADO: '#4b5563',
+                CANCELADO: '#b91c1c',
+                ARQUIVADO: '#374151',
                 [ORDER_STATUS.FINALIZADO]: '#4b5563',
                 [ORDER_STATUS.ENTREGUE]: '#4b5563'
             };
@@ -10502,13 +10571,21 @@ async function getMelhorEnvioShipping(cep, type) {
                     return;
                 }
 
+                const filteredOrders = filterServiceOrdersByVisibility(data, serviceOrderVisibilityFilter);
                 updateServiceOrderSummary(data);
-                renderServiceOrdersKanban(data);
+                renderServiceOrdersKanban(filteredOrders);
                 if (listMeta) {
-                    listMeta.textContent = `Mostrando 1 a ${data.length} de ${data.length} resultados`;
+                    if (!filteredOrders.length) {
+                        listMeta.textContent = `Mostrando 0 de ${data.length} resultados`;
+                    } else {
+                        listMeta.textContent = `Mostrando 1 a ${filteredOrders.length} de ${data.length} resultados`;
+                    }
                 }
-
-                data.forEach(os => {
+                if (!filteredOrders.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="os-list-empty">Nenhuma ordem de serviço para este filtro</td></tr>';
+                    return;
+                }
+                filteredOrders.forEach(os => {
                     const brand = (os.marca || '').trim();
                     const model = (os.modelo || '').trim();
                     const deviceLabel = [brand, model].filter(Boolean).join(' ') || 'Não informado';
@@ -10524,6 +10601,9 @@ async function getMelhorEnvioShipping(cep, type) {
                             <div class="os-list-actions">
                                 <button class="btn btn-primary os-list-action-btn js-service-order-action" data-action="edit" data-id="${os.id}">Editar</button>
                                 <button class="btn btn-secondary os-list-action-btn js-service-order-action" data-action="print" data-id="${os.id}">PDF</button>
+                                <button class="btn btn-secondary os-list-action-btn js-service-order-action" data-action="finalize" data-id="${os.id}">Finalizar</button>
+                                <button class="btn btn-secondary os-list-action-btn js-service-order-action" data-action="archive" data-id="${os.id}">Arquivar</button>
+                                <button class="btn btn-secondary os-list-action-btn js-service-order-action" data-action="cancel" data-id="${os.id}">Cancelar</button>
                             </div>
                         </td>
                     `;
@@ -10591,6 +10671,36 @@ async function getMelhorEnvioShipping(cep, type) {
 
         async function saveServiceOrder() {
             await salvarOS();
+        }
+
+        async function updateServiceOrderStatus(id, status) {
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+            const persistedServiceOrderId = parsePersistedServiceOrderId(id);
+            if (!persistedServiceOrderId) throw new Error('ID da O.S. inválido.');
+            const { error } = await client
+                .from('ordens_servico')
+                .update({ status })
+                .eq('id', persistedServiceOrderId);
+            if (error) throw error;
+            await loadServiceOrdersTable();
+        }
+
+        async function finalizeServiceOrder(id) {
+            await updateServiceOrderStatus(id, 'FINALIZADO');
+            showAlert('O.S. finalizada com sucesso.', 'success');
+        }
+
+        async function cancelServiceOrder(id) {
+            if (!confirm('Confirmar cancelamento desta O.S.?')) return;
+            await updateServiceOrderStatus(id, 'CANCELADO');
+            showAlert('O.S. cancelada com sucesso.', 'success');
+        }
+
+        async function archiveServiceOrder(id) {
+            if (!confirm('Confirmar arquivamento desta O.S.?')) return;
+            await updateServiceOrderStatus(id, 'ARQUIVADO');
+            showAlert('O.S. arquivada com sucesso.', 'success');
         }
 
         function closeEditServiceOrderModal() {
