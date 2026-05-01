@@ -4083,11 +4083,18 @@
                 <div style="background: var(--secondary-dark); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border-color);">
                     <form id="expenseForm" style="display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:0.75rem;">
                         <div class="form-group"><label for="expenseType">Tipo</label><select id="expenseType"><option value="estoque">Estoque</option><option value="marketing">Marketing</option><option value="ferramentas">Ferramentas</option><option value="fixo">Fixo</option></select></div>
+                        <div class="form-group"><label for="expenseCategory">Categoria</label><select id="expenseCategory"><option value="estoque">Estoque</option><option value="transporte">Transporte</option><option value="marketing">Marketing</option><option value="pessoal">Pessoal</option><option value="fornecedor">Fornecedor</option><option value="reembolso">Reembolso</option><option value="avaria_perda">Avaria/perda</option><option value="ferramentas">Ferramentas</option><option value="outros">Outros</option></select></div>
                         <div class="form-group"><label for="expenseValue">Valor</label><input id="expenseValue" type="number" min="0" step="0.01"></div>
+                        <div class="form-group"><label for="expensePaymentMethod">Forma de pagamento</label><select id="expensePaymentMethod"><option value="dinheiro">Dinheiro</option><option value="cartao_credito">Cartão de crédito</option><option value="cartao_debito">Cartão de débito</option><option value="pix">Pix</option><option value="transferencia">Transferência</option></select></div>
+                        <div class="form-group"><label for="expensePaymentStatus">Status do pagamento</label><select id="expensePaymentStatus"><option value="pago">Pago</option><option value="pendente">Pendente</option><option value="agendado">Agendado</option></select></div>
                         <div class="form-group"><label for="expenseDate">Data</label><input id="expenseDate" type="date"></div>
                         <div class="form-group"><label for="expenseOrderId">Pedido ID (opcional)</label><input id="expenseOrderId" type="text"></div>
+                        <div class="form-group"><label for="expenseSupplier">Fornecedor / recebedor</label><input id="expenseSupplier" type="text" placeholder="Quem recebeu o pagamento"></div>
                         <div class="form-group" style="grid-column: 1/-1;"><label for="expenseDescription">Descrição</label><input id="expenseDescription" type="text"></div>
-                        <div><button class="btn btn-primary" type="submit">Adicionar despesa</button></div>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <button id="expenseSubmitButton" class="btn btn-primary" type="submit">Adicionar despesa</button>
+                            <button id="expenseCancelEditButton" class="btn btn-secondary" type="button" style="display:none;">Cancelar edição</button>
+                        </div>
                     </form>
                 </div>
                 <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
@@ -4097,8 +4104,8 @@
                 </div>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Tipo</th><th>Valor</th><th>Descrição</th><th>Data</th><th>Pedido</th></tr></thead>
-                        <tbody id="expensesTable"><tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">Carregando despesas...</td></tr></tbody>
+                        <thead><tr><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Status pagamento</th><th>Descrição</th><th>Data</th><th>Pedido</th><th>Ações</th></tr></thead>
+                        <tbody id="expensesTable"><tr><td colspan="8" style="text-align:center;color:var(--text-secondary);">Carregando despesas...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -6645,6 +6652,39 @@
                 bindPhoneField('adminCustomerSearchPhone');
                 bindPhoneField('adminCustomerPhone');
             });
+            safeRun('bind expenseForm submit', () => {
+                document.getElementById('expenseForm')?.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const client = ensureSupabaseClient(true);
+                    if (!client) return;
+                    const payload = {
+                        tipo: document.getElementById('expenseType').value || null,
+                        categoria: document.getElementById('expenseCategory').value || null,
+                        valor: Number(document.getElementById('expenseValue').value || 0),
+                        forma_pagamento: document.getElementById('expensePaymentMethod').value || null,
+                        status_pagamento: document.getElementById('expensePaymentStatus').value || 'pago',
+                        data: document.getElementById('expenseDate').value || null,
+                        pedido_id: document.getElementById('expenseOrderId').value ? Number(document.getElementById('expenseOrderId').value) : null,
+                        fornecedor: document.getElementById('expenseSupplier').value.trim() || null,
+                        descricao: document.getElementById('expenseDescription').value.trim() || null
+                    };
+                    let resultError = null;
+                    if (editingExpenseId) {
+                        const { error } = await client.from('despesas').update(payload).eq('id', editingExpenseId);
+                        resultError = error;
+                    } else {
+                        const { error } = await client.from('despesas').insert(payload);
+                        resultError = error;
+                    }
+                    if (resultError) return alert('Erro ao salvar despesa.');
+                    alert(editingExpenseId ? 'Despesa atualizada com sucesso.' : 'Despesa adicionada com sucesso.');
+                    resetExpenseFormState();
+                    await loadExpensesTable();
+                    await refreshFinancialDashboard();
+                });
+                document.getElementById('expenseCancelEditButton')?.addEventListener('click', () => resetExpenseFormState());
+                resetExpenseFormState();
+            });
             safeRun('set initial form modes', () => {
                 setPartFormMode('create');
                 setAccessoryFormMode('create');
@@ -8668,6 +8708,110 @@ async function calcularFrete(cep) {
                 });
                 shippingSelect.dataset.bound = 'true';
             }
+        }
+
+        let editingExpenseId = null;
+        let currentExpensesRows = [];
+
+        function formatExpensePaymentMethod(value) {
+            const labels = { dinheiro: 'Dinheiro', cartao_credito: 'Cartão de crédito', cartao_debito: 'Cartão de débito', pix: 'Pix', transferencia: 'Transferência' };
+            return labels[value] || 'Não informado';
+        }
+
+        function formatExpensePaymentStatus(value) {
+            const labels = { pago: 'Pago', pendente: 'Pendente', agendado: 'Agendado' };
+            return labels[value || 'pago'] || 'Pago';
+        }
+
+        function formatExpenseCategory(value) {
+            const labels = { estoque: 'Estoque', transporte: 'Transporte', marketing: 'Marketing', pessoal: 'Pessoal', fornecedor: 'Fornecedor', reembolso: 'Reembolso', avaria_perda: 'Avaria/perda', ferramentas: 'Ferramentas', outros: 'Outros' };
+            return labels[value] || 'Não informado';
+        }
+
+        function resetExpenseFormState() {
+            editingExpenseId = null;
+            const form = document.getElementById('expenseForm');
+            if (form) form.reset();
+            const dateInput = document.getElementById('expenseDate');
+            if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+            const submitButton = document.getElementById('expenseSubmitButton');
+            if (submitButton) submitButton.textContent = 'Adicionar despesa';
+            const cancelButton = document.getElementById('expenseCancelEditButton');
+            if (cancelButton) cancelButton.style.display = 'none';
+        }
+
+        async function loadExpensesTable() {
+            const client = ensureSupabaseClient(true);
+            if (!client) return;
+            const tbody = document.getElementById('expensesTable');
+            if (!tbody) return;
+            const { data, error } = await client.from('despesas').select('*').order('data', { ascending: false }).order('id', { ascending: false });
+            if (error) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--error);">Erro ao carregar despesas.</td></tr>';
+                return;
+            }
+            currentExpensesRows = Array.isArray(data) ? data : [];
+            renderExpensesRows(currentExpensesRows);
+        }
+
+        function renderExpensesRows(rows) {
+            const tbody = document.getElementById('expensesTable');
+            if (!tbody) return;
+            if (!rows.length) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-secondary);">Nenhuma despesa cadastrada.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.map((expense) => `<tr>
+                <td>${escapeHtml(expense.tipo || '-')}</td>
+                <td>${escapeHtml(formatExpenseCategory(expense.categoria))}</td>
+                <td>R$ ${Number(expense.valor || 0).toFixed(2)}</td>
+                <td>${escapeHtml(formatExpensePaymentStatus(expense.status_pagamento))}</td>
+                <td>${escapeHtml(expense.descricao || '-')}<br><small style="color:var(--text-secondary);">Forma: ${escapeHtml(formatExpensePaymentMethod(expense.forma_pagamento))} · Fornecedor: ${escapeHtml(expense.fornecedor || 'Não informado')}</small></td>
+                <td>${escapeHtml(expense.data || '-')}</td>
+                <td>${expense.pedido_id ?? '-'}</td>
+                <td><div class="action-buttons"><button class="btn-small btn-edit" onclick="startExpenseEdit(${expense.id})">Editar</button><button class="btn-small btn-delete" onclick="deleteExpense(${expense.id})">Excluir</button></div></td>
+            </tr>`).join('');
+        }
+
+        function startExpenseEdit(expenseId) {
+            const expense = currentExpensesRows.find((row) => Number(row.id) === Number(expenseId));
+            if (!expense) return;
+            editingExpenseId = expense.id;
+            document.getElementById('expenseType').value = expense.tipo || 'estoque';
+            document.getElementById('expenseCategory').value = expense.categoria || 'outros';
+            document.getElementById('expenseValue').value = expense.valor ?? '';
+            document.getElementById('expensePaymentMethod').value = expense.forma_pagamento || 'dinheiro';
+            document.getElementById('expensePaymentStatus').value = expense.status_pagamento || 'pago';
+            document.getElementById('expenseDate').value = expense.data || '';
+            document.getElementById('expenseOrderId').value = expense.pedido_id ?? '';
+            document.getElementById('expenseSupplier').value = expense.fornecedor || '';
+            document.getElementById('expenseDescription').value = expense.descricao || '';
+            document.getElementById('expenseSubmitButton').textContent = 'Atualizar despesa';
+            document.getElementById('expenseCancelEditButton').style.display = 'inline-flex';
+        }
+
+        async function deleteExpense(expenseId) {
+            if (!confirm('Deseja realmente excluir esta despesa?')) return;
+            const client = ensureSupabaseClient(true);
+            if (!client) return;
+            const { error } = await client.from('despesas').delete().eq('id', expenseId);
+            if (error) return alert('Erro ao excluir despesa.');
+            alert('Despesa excluída com sucesso.');
+            if (editingExpenseId === expenseId) resetExpenseFormState();
+            await loadExpensesTable();
+            await refreshFinancialDashboard();
+        }
+
+        async function filterExpensesByDate() {
+            const start = document.getElementById('expenseFilterStart')?.value;
+            const end = document.getElementById('expenseFilterEnd')?.value;
+            const filtered = currentExpensesRows.filter((expense) => {
+                const date = String(expense.data || '');
+                if (start && date < start) return false;
+                if (end && date > end) return false;
+                return true;
+            });
+            renderExpensesRows(filtered);
         }
 
         function switchAdminTab(tabName, ev = null) {
