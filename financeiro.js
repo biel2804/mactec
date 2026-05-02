@@ -239,8 +239,12 @@
     expenseForm.addEventListener('submit', handleExpenseSubmit);
   });
 
-  window.loadExpensesTable = loadExpensesTable;
-  window.filterExpensesByDate = filterExpensesByDate;
+  if (typeof window.loadExpensesTable !== 'function') {
+    window.loadExpensesTable = loadExpensesTable;
+  }
+  if (typeof window.filterExpensesByDate !== 'function') {
+    window.filterExpensesByDate = filterExpensesByDate;
+  }
   window.recalculateOrderFinance = recalculateOrderFinance;
   window.FinanceiroModule = {
     JUROS_PARCELAMENTO,
