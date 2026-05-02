@@ -10359,6 +10359,16 @@ async function getMelhorEnvioShipping(cep, type) {
             return String(numericValue);
         }
 
+        function resolveServiceOrderInternalId(record) {
+            if (!record) return null;
+            return parsePersistedServiceOrderId(
+                record.id ||
+                record.os_id ||
+                record.ordem_servico_id ||
+                record.service_order_id
+            );
+        }
+
         function getServiceOrderPreviewHtml(data) {
             if (!data) {
                 return '<p style="margin:0; color:#333;">Salve ou edite uma O.S. para carregar a pré-visualização.</p>';
@@ -10997,10 +11007,25 @@ async function getMelhorEnvioShipping(cep, type) {
                     tbody.innerHTML = '<tr><td colspan="7" class="os-list-empty">Nenhuma ordem de serviço para este filtro</td></tr>';
                     return;
                 }
+                const missingInternalIdWarned = new Set();
                 filteredOrders.forEach(os => {
+                    const serviceOrderId = resolveServiceOrderInternalId(os);
                     const brand = (os.marca || '').trim();
                     const model = (os.modelo || '').trim();
                     const deviceLabel = [brand, model].filter(Boolean).join(' ') || 'Não informado';
+                    const hasValidInternalId = Boolean(serviceOrderId);
+                    if (!hasValidInternalId) {
+                        const warningKey = String(os?.numero_os || os?.cliente_nome || Math.random());
+                        if (!missingInternalIdWarned.has(warningKey)) {
+                            missingInternalIdWarned.add(warningKey);
+                            console.warn('O.S. sem ID interno para ações na tabela.', {
+                                id: os?.id,
+                                numero_os: os?.numero_os,
+                                pedido_id: os?.pedido_id,
+                                record: os
+                            });
+                        }
+                    }
                     const row = tbody.insertRow();
                     row.innerHTML = `
                         <td><span class="os-list-value">${escapeHtml(os.numero_os || '-')}</span></td>
@@ -11011,11 +11036,11 @@ async function getMelhorEnvioShipping(cep, type) {
                         <td>${os.data_criacao ? new Date(os.data_criacao).toLocaleDateString('pt-BR') : '-'}</td>
                         <td>
                             <div class="os-list-actions">
-                                <button type="button" class="os-action-icon os-action-edit js-service-order-action" data-action="edit" data-id="${escapeHtml(String(os.id || ""))}" data-service-order-id="${escapeHtml(String(os.id || ""))}" title="Editar O.S." aria-label="Editar O.S.">✎</button>
-                                <button type="button" class="os-action-icon os-action-pdf js-service-order-action" data-action="print" data-id="${escapeHtml(String(os.id || ""))}" data-service-order-id="${escapeHtml(String(os.id || ""))}" title="Gerar PDF" aria-label="Gerar PDF">▣</button>
-                                <button type="button" class="os-action-icon os-action-finalize js-service-order-action" data-action="finalize" data-id="${escapeHtml(String(os.id || ""))}" data-service-order-id="${escapeHtml(String(os.id || ""))}" title="Finalizar O.S." aria-label="Finalizar O.S.">✓</button>
-                                <button type="button" class="os-action-icon os-action-archive js-service-order-action" data-action="archive" data-id="${escapeHtml(String(os.id || ""))}" data-service-order-id="${escapeHtml(String(os.id || ""))}" title="Arquivar O.S." aria-label="Arquivar O.S.">▤</button>
-                                <button type="button" class="os-action-icon os-action-cancel js-service-order-action" data-action="cancel" data-id="${escapeHtml(String(os.id || ""))}" data-service-order-id="${escapeHtml(String(os.id || ""))}" title="Cancelar O.S." aria-label="Cancelar O.S.">×</button>
+                                <button type="button" class="os-action-icon os-action-edit js-service-order-action" data-action="edit" data-id="${escapeHtml(serviceOrderId || '')}" data-service-order-id="${escapeHtml(serviceOrderId || '')}" title="Editar O.S." aria-label="Editar O.S." ${hasValidInternalId ? '' : 'disabled aria-disabled="true"'}>✎</button>
+                                <button type="button" class="os-action-icon os-action-pdf js-service-order-action" data-action="print" data-id="${escapeHtml(serviceOrderId || '')}" data-service-order-id="${escapeHtml(serviceOrderId || '')}" title="Gerar PDF" aria-label="Gerar PDF" ${hasValidInternalId ? '' : 'disabled aria-disabled="true"'}>▣</button>
+                                <button type="button" class="os-action-icon os-action-finalize js-service-order-action" data-action="finalize" data-id="${escapeHtml(serviceOrderId || '')}" data-service-order-id="${escapeHtml(serviceOrderId || '')}" title="Finalizar O.S." aria-label="Finalizar O.S." ${hasValidInternalId ? '' : 'disabled aria-disabled="true"'}>✓</button>
+                                <button type="button" class="os-action-icon os-action-archive js-service-order-action" data-action="archive" data-id="${escapeHtml(serviceOrderId || '')}" data-service-order-id="${escapeHtml(serviceOrderId || '')}" title="Arquivar O.S." aria-label="Arquivar O.S." ${hasValidInternalId ? '' : 'disabled aria-disabled="true"'}>▤</button>
+                                <button type="button" class="os-action-icon os-action-cancel js-service-order-action" data-action="cancel" data-id="${escapeHtml(serviceOrderId || '')}" data-service-order-id="${escapeHtml(serviceOrderId || '')}" title="Cancelar O.S." aria-label="Cancelar O.S." ${hasValidInternalId ? '' : 'disabled aria-disabled="true"'}>×</button>
                             </div>
                         </td>
                     `;
