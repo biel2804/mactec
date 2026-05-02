@@ -2673,6 +2673,49 @@
             opacity: 0.8;
         }
 
+        .expense-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.75rem;
+            margin-bottom: 0.9rem;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(30, 41, 59, 0.85));
+            border: 1px solid rgba(16, 185, 129, 0.28);
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        .expense-toolbar .toolbar-search {
+            min-width: 220px;
+            flex: 1 1 280px;
+        }
+        .expense-toolbar .toolbar-filters {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        .expense-toolbar .toolbar-filters input { min-width: 140px; }
+        .expense-toolbar .toolbar-actions {
+            display: inline-flex;
+            gap: 0.45rem;
+            margin-left: auto;
+        }
+        #expensesTable tr.is-selected { background: rgba(16, 185, 129, 0.16); box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.45); }
+        .expense-status-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0.2rem 0.58rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            border: 1px solid transparent;
+        }
+        .expense-status-pago { color: #bbf7d0; background: rgba(34, 197, 94, 0.16); border-color: rgba(34, 197, 94, 0.45); box-shadow: 0 0 8px rgba(34, 197, 94, 0.28); }
+        .expense-status-pendente { color: #fef3c7; background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.5); box-shadow: 0 0 8px rgba(245, 158, 11, 0.2); }
+        .expense-status-agendado { color: #dbeafe; background: rgba(99, 102, 241, 0.22); border-color: rgba(99, 102, 241, 0.45); box-shadow: 0 0 8px rgba(99, 102, 241, 0.2); }
+
         /* Quote System */
         .quote-container {
             max-width: 900px;
@@ -4097,10 +4140,18 @@
                         </div>
                     </form>
                 </div>
-                <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
-                    <input type="date" id="expenseFilterStart">
-                    <input type="date" id="expenseFilterEnd">
-                    <button class="btn btn-secondary" onclick="filterExpensesByDate()">Filtrar período</button>
+                <div class="expense-toolbar">
+                    <input id="expenseSearchInput" class="toolbar-search" type="text" placeholder="Pesquisar por descrição, fornecedor, categoria, tipo ou pedido">
+                    <div class="toolbar-filters">
+                        <span style="color:var(--text-secondary); font-size:0.82rem;">Filtros:</span>
+                        <input type="date" id="expenseFilterStart">
+                        <input type="date" id="expenseFilterEnd">
+                    </div>
+                    <div class="toolbar-actions">
+                        <button id="expenseToolbarEditButton" class="btn btn-secondary" type="button" disabled>Editar</button>
+                        <button id="expenseToolbarDeleteButton" class="btn btn-secondary" type="button" disabled>Excluir</button>
+                        <button id="expenseToolbarCancelButton" class="btn btn-secondary" type="button">Cancelar</button>
+                    </div>
                 </div>
                 <div class="table-container">
                     <table>
@@ -6683,6 +6734,21 @@
                     await refreshFinancialDashboard();
                 });
                 document.getElementById('expenseCancelEditButton')?.addEventListener('click', () => resetExpenseFormState());
+                document.getElementById('expenseFilterStart')?.addEventListener('change', () => filterExpensesByDate());
+                document.getElementById('expenseFilterEnd')?.addEventListener('change', () => filterExpensesByDate());
+                document.getElementById('expenseSearchInput')?.addEventListener('input', () => filterExpensesByDate());
+                document.getElementById('expenseToolbarEditButton')?.addEventListener('click', () => {
+                    if (!selectedExpenseId) return;
+                    startExpenseEdit(selectedExpenseId);
+                });
+                document.getElementById('expenseToolbarDeleteButton')?.addEventListener('click', () => {
+                    if (!selectedExpenseId) return;
+                    deleteExpense(selectedExpenseId);
+                });
+                document.getElementById('expenseToolbarCancelButton')?.addEventListener('click', () => {
+                    clearSelectedExpense();
+                    if (editingExpenseId) resetExpenseFormState();
+                });
                 resetExpenseFormState();
             });
             safeRun('set initial form modes', () => {
@@ -8711,6 +8777,7 @@ async function calcularFrete(cep) {
         }
 
         let editingExpenseId = null;
+        let selectedExpenseId = null;
         let currentExpensesRows = [];
 
         function formatExpensePaymentMethod(value) {
@@ -8738,6 +8805,53 @@ async function calcularFrete(cep) {
             if (submitButton) submitButton.textContent = 'Adicionar despesa';
             const cancelButton = document.getElementById('expenseCancelEditButton');
             if (cancelButton) cancelButton.style.display = 'none';
+            updateExpenseToolbarState();
+        }
+
+        function getExpenseStatusBadge(statusValue) {
+            const statusKey = statusValue || 'pago';
+            const classMap = { pago: 'expense-status-pago', pendente: 'expense-status-pendente', agendado: 'expense-status-agendado' };
+            return `<span class="expense-status-badge ${classMap[statusKey] || 'expense-status-pago'}">${escapeHtml(formatExpensePaymentStatus(statusKey))}</span>`;
+        }
+
+        function selectExpenseRow(expenseId) {
+            selectedExpenseId = Number(expenseId) || null;
+            updateExpenseToolbarState();
+            renderExpensesRows(getFilteredExpensesRows());
+        }
+
+        function clearSelectedExpense() {
+            selectedExpenseId = null;
+            updateExpenseToolbarState();
+            renderExpensesRows(getFilteredExpensesRows());
+        }
+
+        function updateExpenseToolbarState() {
+            const hasSelection = Number.isFinite(Number(selectedExpenseId)) && Number(selectedExpenseId) > 0;
+            const editButton = document.getElementById('expenseToolbarEditButton');
+            const deleteButton = document.getElementById('expenseToolbarDeleteButton');
+            if (editButton) editButton.disabled = !hasSelection;
+            if (deleteButton) deleteButton.disabled = !hasSelection;
+        }
+
+        function getFilteredExpensesRows() {
+            const start = document.getElementById('expenseFilterStart')?.value;
+            const end = document.getElementById('expenseFilterEnd')?.value;
+            const term = (document.getElementById('expenseSearchInput')?.value || '').trim().toLowerCase();
+            return currentExpensesRows.filter((expense) => {
+                const date = String(expense.data || '');
+                if (start && date < start) return false;
+                if (end && date > end) return false;
+                if (!term) return true;
+                const haystack = [
+                    expense.descricao,
+                    expense.fornecedor,
+                    formatExpenseCategory(expense.categoria),
+                    expense.tipo,
+                    expense.pedido_id
+                ].map((item) => String(item || '').toLowerCase()).join(' ');
+                return haystack.includes(term);
+            });
         }
 
         async function loadExpensesTable() {
@@ -8751,7 +8865,8 @@ async function calcularFrete(cep) {
                 return;
             }
             currentExpensesRows = Array.isArray(data) ? data : [];
-            renderExpensesRows(currentExpensesRows);
+            renderExpensesRows(getFilteredExpensesRows());
+            updateExpenseToolbarState();
         }
 
         function renderExpensesRows(rows) {
@@ -8761,15 +8876,15 @@ async function calcularFrete(cep) {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-secondary);">Nenhuma despesa cadastrada.</td></tr>';
                 return;
             }
-            tbody.innerHTML = rows.map((expense) => `<tr>
+            tbody.innerHTML = rows.map((expense) => `<tr class="${Number(selectedExpenseId) === Number(expense.id) ? 'is-selected' : ''}" onclick="selectExpenseRow(${expense.id})">
                 <td>${escapeHtml(expense.tipo || '-')}</td>
                 <td>${escapeHtml(formatExpenseCategory(expense.categoria))}</td>
                 <td>R$ ${Number(expense.valor || 0).toFixed(2)}</td>
-                <td>${escapeHtml(formatExpensePaymentStatus(expense.status_pagamento))}</td>
+                <td>${getExpenseStatusBadge(expense.status_pagamento)}</td>
                 <td>${escapeHtml(expense.descricao || '-')}<br><small style="color:var(--text-secondary);">Forma: ${escapeHtml(formatExpensePaymentMethod(expense.forma_pagamento))} · Fornecedor: ${escapeHtml(expense.fornecedor || 'Não informado')}</small></td>
                 <td>${escapeHtml(expense.data || '-')}</td>
                 <td>${expense.pedido_id ?? '-'}</td>
-                <td><div class="action-buttons"><button class="btn-small btn-edit" onclick="startExpenseEdit(${expense.id})">Editar</button><button class="btn-small btn-delete" onclick="deleteExpense(${expense.id})">Excluir</button></div></td>
+                <td><div class="action-buttons"><button class="btn-small btn-secondary" type="button" onclick="event.stopPropagation(); selectExpenseRow(${expense.id});">Sel</button><button class="btn-small btn-edit" type="button" onclick="event.stopPropagation(); startExpenseEdit(${expense.id});">Editar</button><button class="btn-small btn-delete" type="button" onclick="event.stopPropagation(); deleteExpense(${expense.id});">Excluir</button></div></td>
             </tr>`).join('');
         }
 
@@ -8788,6 +8903,7 @@ async function calcularFrete(cep) {
             document.getElementById('expenseDescription').value = expense.descricao || '';
             document.getElementById('expenseSubmitButton').textContent = 'Atualizar despesa';
             document.getElementById('expenseCancelEditButton').style.display = 'inline-flex';
+            selectExpenseRow(expense.id);
         }
 
         async function deleteExpense(expenseId) {
@@ -8798,20 +8914,13 @@ async function calcularFrete(cep) {
             if (error) return alert('Erro ao excluir despesa.');
             alert('Despesa excluída com sucesso.');
             if (editingExpenseId === expenseId) resetExpenseFormState();
+            if (Number(selectedExpenseId) === Number(expenseId)) selectedExpenseId = null;
             await loadExpensesTable();
             await refreshFinancialDashboard();
         }
 
         async function filterExpensesByDate() {
-            const start = document.getElementById('expenseFilterStart')?.value;
-            const end = document.getElementById('expenseFilterEnd')?.value;
-            const filtered = currentExpensesRows.filter((expense) => {
-                const date = String(expense.data || '');
-                if (start && date < start) return false;
-                if (end && date > end) return false;
-                return true;
-            });
-            renderExpensesRows(filtered);
+            renderExpensesRows(getFilteredExpensesRows());
         }
 
         function switchAdminTab(tabName, ev = null) {
