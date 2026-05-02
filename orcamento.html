@@ -6737,17 +6737,23 @@
                 document.getElementById('walkInServiceOrderForm')?.addEventListener('submit', handleWalkInServiceOrderSubmit);
             });
             safeRun('bind serviceOrdersTable click', () => {
-                document.getElementById('serviceOrdersTable')?.addEventListener('click', (event) => {
+                document.getElementById('serviceOrdersTable')?.addEventListener('click', async (event) => {
                     const button = event.target.closest('.js-service-order-action');
                     if (!button) return;
-                    const id = String(button.dataset.id || '');
-                    if (!id) return;
-                    const action = button.dataset.action;
-                    if (action === 'edit') editServiceOrder(id);
-                    if (action === 'print') printServiceOrder(id);
-                    if (action === 'finalize') finalizeServiceOrder(id);
-                    if (action === 'archive') archiveServiceOrder(id);
-                    if (action === 'cancel') cancelServiceOrder(id);
+                    const action = String(button.dataset.action || '').trim();
+                    const rawServiceOrderId = String(button.dataset.id || button.dataset.serviceOrderId || '').trim();
+                    const serviceOrderId = parsePersistedServiceOrderId(rawServiceOrderId);
+                    if (!action) return;
+                    if (!serviceOrderId) {
+                        showAlert('ID interno da O.S. não encontrado para esta ação.', 'error');
+                        console.warn('Ação de O.S. ignorada por ID inválido na tabela.', { action, rawServiceOrderId, button });
+                        return;
+                    }
+                    if (action === 'edit') await editServiceOrder(serviceOrderId);
+                    if (action === 'print') await printServiceOrder(serviceOrderId);
+                    if (action === 'finalize') await finalizeServiceOrder(serviceOrderId);
+                    if (action === 'archive') await archiveServiceOrder(serviceOrderId);
+                    if (action === 'cancel') await cancelServiceOrder(serviceOrderId);
                 });
             });
             safeRun('bind serviceOrdersKanban click', () => {
@@ -11005,11 +11011,11 @@ async function getMelhorEnvioShipping(cep, type) {
                         <td>${os.data_criacao ? new Date(os.data_criacao).toLocaleDateString('pt-BR') : '-'}</td>
                         <td>
                             <div class="os-list-actions">
-                                <button type="button" class="os-action-icon os-action-edit js-service-order-action" data-action="edit" data-id="${os.id}" title="Editar O.S." aria-label="Editar O.S.">✎</button>
-                                <button type="button" class="os-action-icon os-action-pdf js-service-order-action" data-action="print" data-id="${os.id}" title="Gerar PDF" aria-label="Gerar PDF">▣</button>
-                                <button type="button" class="os-action-icon os-action-finalize js-service-order-action" data-action="finalize" data-id="${os.id}" title="Finalizar O.S." aria-label="Finalizar O.S.">✓</button>
-                                <button type="button" class="os-action-icon os-action-archive js-service-order-action" data-action="archive" data-id="${os.id}" title="Arquivar O.S." aria-label="Arquivar O.S.">▤</button>
-                                <button type="button" class="os-action-icon os-action-cancel js-service-order-action" data-action="cancel" data-id="${os.id}" title="Cancelar O.S." aria-label="Cancelar O.S.">×</button>
+                                <button type="button" class="os-action-icon os-action-edit js-service-order-action" data-action="edit" data-id="${escapeHtml(String(os.id || ""))}" data-service-order-id="${escapeHtml(String(os.id || ""))}" title="Editar O.S." aria-label="Editar O.S.">✎</button>
+                                <button type="button" class="os-action-icon os-action-pdf js-service-order-action" data-action="print" data-id="${escapeHtml(String(os.id || ""))}" data-service-order-id="${escapeHtml(String(os.id || ""))}" title="Gerar PDF" aria-label="Gerar PDF">▣</button>
+                                <button type="button" class="os-action-icon os-action-finalize js-service-order-action" data-action="finalize" data-id="${escapeHtml(String(os.id || ""))}" data-service-order-id="${escapeHtml(String(os.id || ""))}" title="Finalizar O.S." aria-label="Finalizar O.S.">✓</button>
+                                <button type="button" class="os-action-icon os-action-archive js-service-order-action" data-action="archive" data-id="${escapeHtml(String(os.id || ""))}" data-service-order-id="${escapeHtml(String(os.id || ""))}" title="Arquivar O.S." aria-label="Arquivar O.S.">▤</button>
+                                <button type="button" class="os-action-icon os-action-cancel js-service-order-action" data-action="cancel" data-id="${escapeHtml(String(os.id || ""))}" data-service-order-id="${escapeHtml(String(os.id || ""))}" title="Cancelar O.S." aria-label="Cancelar O.S.">×</button>
                             </div>
                         </td>
                     `;
