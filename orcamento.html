@@ -6732,7 +6732,10 @@
                 bindPhoneField('adminCustomerPhone');
             });
             safeRun('bind expenseForm submit', () => {
-                document.getElementById('expenseForm')?.addEventListener('submit', async (event) => {
+                const expenseForm = document.getElementById('expenseForm');
+                if (expenseForm && expenseForm.dataset.expenseSubmitBound !== 'true') {
+                    expenseForm.dataset.expenseSubmitBound = 'true';
+                    expenseForm.addEventListener('submit', async (event) => {
                     event.preventDefault();
                     const client = ensureSupabaseClient(true);
                     if (!client) return;
@@ -6761,23 +6764,31 @@
                     await loadExpensesTable();
                     await refreshFinancialDashboard();
                 });
+                }
                 document.getElementById('expenseCancelEditButton')?.addEventListener('click', () => resetExpenseFormState());
                 document.getElementById('expenseFilterStart')?.addEventListener('change', () => filterExpensesByDate());
                 document.getElementById('expenseFilterEnd')?.addEventListener('change', () => filterExpensesByDate());
                 document.getElementById('expenseSearchInput')?.addEventListener('input', () => filterExpensesByDate());
                 document.getElementById('expenseApplyFilterButton')?.addEventListener('click', () => filterExpensesByDate());
-                document.getElementById('expensesTable')?.addEventListener('click', (event) => {
-                    const actionButton = event.target.closest('[data-expense-action]');
-                    const row = event.target.closest('tr.expense-row');
-                    if (actionButton) {
-                        const expenseId = actionButton.dataset.expenseId;
-                        const action = actionButton.dataset.expenseAction;
-                        if (action === 'select') return selectExpenseRow(expenseId);
-                        if (action === 'edit') { selectExpenseRow(expenseId); return startExpenseEdit(expenseId); }
-                        if (action === 'delete') { selectExpenseRow(expenseId); return deleteExpense(expenseId); }
+                const expensesTable = document.getElementById('expensesTable');
+                if (expensesTable) {
+                    expensesTable.dataset.expenseManagedBy = 'orcamento';
+                    if (expensesTable.dataset.expenseActionsBound !== 'true') {
+                        expensesTable.dataset.expenseActionsBound = 'true';
+                        expensesTable.addEventListener('click', (event) => {
+                            const actionButton = event.target.closest('[data-expense-action]');
+                            const row = event.target.closest('tr.expense-row');
+                            if (actionButton) {
+                                const expenseId = actionButton.dataset.expenseId;
+                                const action = actionButton.dataset.expenseAction;
+                                if (action === 'select') return selectExpenseRow(expenseId);
+                                if (action === 'edit') { selectExpenseRow(expenseId); return startExpenseEdit(expenseId); }
+                                if (action === 'delete') { selectExpenseRow(expenseId); return deleteExpense(expenseId); }
+                            }
+                            if (row?.dataset?.expenseId) selectExpenseRow(row.dataset.expenseId);
+                        });
                     }
-                    if (row?.dataset?.expenseId) selectExpenseRow(row.dataset.expenseId);
-                });
+                }
                 document.getElementById('expenseToolbarEditButton')?.addEventListener('click', () => {
                     if (!selectedExpenseId) return;
                     startExpenseEdit(selectedExpenseId);

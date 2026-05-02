@@ -165,6 +165,7 @@
   async function loadExpensesTable(filters = {}) {
     const tbody = document.getElementById('expensesTable');
     if (!tbody || !window.ensureSupabaseClient) return;
+    if (tbody.dataset.expenseManagedBy === 'orcamento') return;
     const data = await loadExpenses(filters);
     if (!data || data.length === 0) {
       tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-secondary);">Nenhuma despesa encontrada</td></tr>';
@@ -232,7 +233,10 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('expenseForm')?.addEventListener('submit', handleExpenseSubmit);
+    const expenseForm = document.getElementById('expenseForm');
+    if (!expenseForm || expenseForm.dataset.expenseSubmitBound === 'true') return;
+    expenseForm.dataset.expenseSubmitBound = 'true';
+    expenseForm.addEventListener('submit', handleExpenseSubmit);
   });
 
   window.loadExpensesTable = loadExpensesTable;
