@@ -167,17 +167,34 @@
     if (!tbody || !window.ensureSupabaseClient) return;
     const data = await loadExpenses(filters);
     if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">Nenhuma despesa encontrada</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-secondary);">Nenhuma despesa encontrada</td></tr>';
       return;
     }
 
     tbody.innerHTML = data.map((d) => `
-      <tr>
+      <tr class="expense-row" data-expense-id="${d.id}">
+        <td class="expense-select-col">
+          <input
+            type="checkbox"
+            class="expense-select-checkbox"
+            data-expense-action="select"
+            data-expense-id="${d.id}"
+            aria-label="Selecionar despesa"
+          />
+        </td>
         <td>${d.tipo || '-'}</td>
+        <td>${d.categoria || d.tipo || '-'}</td>
         <td class="text-expense">R$ ${toNumber(d.valor).toFixed(2)}</td>
+        <td>${d.status_pagamento || '-'}</td>
         <td>${d.descricao || '-'}</td>
         <td>${d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '-'}</td>
         <td>${d.pedido_id || '-'}</td>
+        <td>
+          <div class="expense-row-actions">
+            <button type="button" class="expense-icon-btn" data-expense-action="edit" data-expense-id="${d.id}" title="Editar despesa">✎</button>
+            <button type="button" class="expense-icon-btn danger" data-expense-action="delete" data-expense-id="${d.id}" title="Excluir despesa">🗑</button>
+          </div>
+        </td>
       </tr>
     `).join('');
   }
