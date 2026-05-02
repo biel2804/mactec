@@ -8860,6 +8860,18 @@ async function calcularFrete(cep) {
             updateExpenseToolbarState();
         }
 
+
+        function formatExpenseDateBR(value) {
+            if (!value) return '-';
+            const raw = String(value).trim();
+            const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (match) {
+                const [, year, month, day] = match;
+                return `${day}/${month}/${year}`;
+            }
+            return raw;
+        }
+
         function normalizeExpenseStatusPagamento(status) {
             const raw = String(status || 'pago').trim().toLowerCase();
             if (raw === 'pendente') return 'pendente';
@@ -8970,7 +8982,7 @@ async function calcularFrete(cep) {
                     <td>${typeof formatCurrency === 'function' ? formatCurrency(expense.valor || 0) : ('R$ ' + Number(expense.valor || 0).toFixed(2))}</td>
                     <td>${getExpenseStatusBadge(expense.status_pagamento)}</td>
                     <td>${escapeHtml(expense.descricao || '-')}<br><small style="color:var(--text-secondary);">Forma: ${escapeHtml(formatExpensePaymentMethod(expense.forma_pagamento))} · Fornecedor: ${escapeHtml(expense.fornecedor || 'Não informado')}</small></td>
-                    <td>${typeof formatDateBR === 'function' ? formatDateBR(expense.data) : escapeHtml(expense.data || '-')}</td>
+                    <td>${escapeHtml(formatExpenseDateBR(expense.data))}</td>
                     <td>${expense.pedido_id ?? '-'}</td>
                     <td><div class="expense-row-actions"><button type="button" class="expense-icon-btn" data-expense-action="edit" data-expense-id="${id}" title="Editar despesa">✎</button><button type="button" class="expense-icon-btn danger" data-expense-action="delete" data-expense-id="${id}" title="Excluir despesa">🗑</button></div></td>
                 </tr>`;

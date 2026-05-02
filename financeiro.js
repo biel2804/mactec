@@ -8,6 +8,17 @@
     return Number(toNumber(value).toFixed(2));
   }
 
+  function formatExpenseDateBR(value) {
+    if (!value) return '-';
+    const raw = String(value).trim();
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const [, year, month, day] = match;
+      return `${day}/${month}/${year}`;
+    }
+    return raw;
+  }
+
   const JUROS_PARCELAMENTO = {
     1: 0,
     2: 0,
@@ -188,7 +199,7 @@
         <td class="text-expense">R$ ${toNumber(d.valor).toFixed(2)}</td>
         <td>${d.status_pagamento || '-'}</td>
         <td>${d.descricao || '-'}</td>
-        <td>${d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '-'}</td>
+        <td>${formatExpenseDateBR(d.data)}</td>
         <td>${d.pedido_id || '-'}</td>
         <td>
           <div class="expense-row-actions">
