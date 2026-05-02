@@ -2713,13 +2713,21 @@
         #adminPanel .expense-toolbar-btn.muted { border-color: rgba(148,163,184,.28); }
         #adminPanel .expense-toolbar-btn.muted span { color:#94a3b8; }
         #adminPanel .expense-toolbar-btn:disabled { opacity:.38; cursor:not-allowed; }
-        #adminPanel tr.expense-row.is-selected { background: rgba(34,197,94,.08)!important; outline:1px solid rgba(34,197,94,.34); outline-offset:-1px; }
+        #adminPanel .expense-toolbar-icon-action { width:40px; height:38px; border-radius:10px; border:1px solid rgba(34,197,94,.42); background:rgba(15,23,42,.92); color:#22c55e; font-size:16px; font-weight:900; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition: transform .15s ease, border-color .15s ease, background .15s ease, box-shadow .15s ease, opacity .15s ease; }
+        #adminPanel .expense-toolbar-icon-action:hover:not(:disabled) { transform:translateY(-1px); border-color:rgba(34,197,94,.85); box-shadow:0 0 18px rgba(34,197,94,.12); }
+        #adminPanel .expense-toolbar-icon-action.danger { color:#ef4444; border-color:rgba(239,68,68,.42); }
+        #adminPanel .expense-toolbar-icon-action.muted { color:#94a3b8; border-color:rgba(148,163,184,.30); }
+        #adminPanel .expense-toolbar-icon-action:disabled { opacity:.34; cursor:not-allowed; transform:none; box-shadow:none; }
+        #adminPanel .expense-select-col { width:42px; min-width:42px; text-align:center; }
+        #adminPanel .expense-select-checkbox { width:18px; height:18px; accent-color:#22c55e; cursor:pointer; }
+        #adminPanel tr.expense-row.is-selected { background: rgba(34,197,94,.10)!important; box-shadow: inset 3px 0 0 rgba(34,197,94,.92); }
         #adminPanel .expense-row-actions { display:flex; align-items:center; gap:8px; justify-content:flex-start; }
         #adminPanel .expense-icon-btn {
             width:30px; height:30px; border-radius:9px; border:1px solid rgba(34,197,94,.30); background:rgba(15,23,42,.74); color:#22c55e;
             display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px;
         }
         #adminPanel .expense-icon-btn.danger { color:#ef4444; border-color: rgba(239,68,68,.32); }
+        #adminPanel .expense-icon-btn:hover { border-color: rgba(34,197,94,.75); box-shadow:0 0 14px rgba(34,197,94,.12); }
         #adminPanel .expense-status-badge { display:inline-flex; align-items:center; justify-content:center; min-width:78px; height:24px; padding:0 12px; border-radius:999px; font-size:12px; font-weight:900; border:1px solid transparent; }
         #adminPanel .expense-status-badge.is-paid { color:#86efac; background:rgba(34,197,94,.18); border-color:rgba(34,197,94,.42); box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 0 16px rgba(34,197,94,.15); }
         #adminPanel .expense-status-badge.is-pending { color:#fde68a; background:rgba(245,158,11,.16); border-color:rgba(245,158,11,.40); box-shadow:0 0 14px rgba(245,158,11,.10); }
@@ -2728,6 +2736,7 @@
             #adminPanel .expense-action-toolbar { align-items:stretch; gap:8px; padding:10px; }
             #adminPanel .expense-search-wrap { min-width:240px; }
             #adminPanel .expense-toolbar-btn, #adminPanel .expense-toolbar-search, #adminPanel .expense-toolbar-date { height:36px; }
+            #adminPanel .expense-toolbar-icon-action { width:38px; height:36px; }
         }
 
         /* Quote System */
@@ -4157,7 +4166,7 @@
                 <div class="expense-action-toolbar">
                     <div class="expense-search-wrap">
                         <span class="expense-toolbar-icon">🔍</span>
-                        <input id="expenseSearchInput" class="expense-toolbar-search" type="text" placeholder="Pesquisar" autocomplete="off">
+                        <input id="expenseSearchInput" class="expense-toolbar-search" type="text" placeholder="Buscar despesas..." autocomplete="off">
                     </div>
                     <div class="expense-filter-wrap">
                         <span class="expense-toolbar-icon">▾</span>
@@ -4167,15 +4176,15 @@
                         <button id="expenseApplyFilterButton" class="expense-toolbar-btn compact" type="button">Filtrar</button>
                     </div>
                     <div class="expense-toolbar-actions">
-                        <button id="expenseToolbarEditButton" class="expense-toolbar-btn" type="button" disabled><span>✎</span>Editar</button>
-                        <button id="expenseToolbarDeleteButton" class="expense-toolbar-btn danger" type="button" disabled><span>🗑</span>Excluir</button>
-                        <button id="expenseToolbarCancelButton" class="expense-toolbar-btn muted" type="button" disabled><span>×</span>Cancelar</button>
+                        <button id="expenseToolbarEditButton" class="expense-toolbar-icon-action" type="button" title="Editar despesa selecionada" disabled>✎</button>
+                        <button id="expenseToolbarDeleteButton" class="expense-toolbar-icon-action danger" type="button" title="Excluir despesa selecionada" disabled>🗑</button>
+                        <button id="expenseToolbarCancelButton" class="expense-toolbar-icon-action muted" type="button" title="Cancelar seleção/edição" disabled>×</button>
                     </div>
                 </div>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Status pagamento</th><th>Descrição</th><th>Data</th><th>Pedido</th><th>Ações</th></tr></thead>
-                        <tbody id="expensesTable"><tr><td colspan="8" style="text-align:center;color:var(--text-secondary);">Carregando despesas...</td></tr></tbody>
+                        <thead><tr><th class="expense-select-col"><span class="sr-only">Selecionar</span></th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Status pagamento</th><th>Descrição</th><th>Data</th><th>Pedido</th><th>Ações</th></tr></thead>
+                        <tbody id="expensesTable"><tr><td colspan="9" style="text-align:center;color:var(--text-secondary);">Carregando despesas...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -8840,21 +8849,38 @@ async function calcularFrete(cep) {
             updateExpenseToolbarState();
         }
 
+        function normalizeExpenseStatusPagamento(status) {
+            const raw = String(status || 'pago').trim().toLowerCase();
+            if (raw === 'pendente') return 'pendente';
+            if (raw === 'agendado') return 'agendado';
+            return 'pago';
+        }
+
         function getExpenseStatusBadge(statusValue) {
-            const statusKey = statusValue || 'pago';
-            const classMap = { pago: 'is-paid', pendente: 'is-pending', agendado: 'is-scheduled' };
-            return `<span class="expense-status-badge ${classMap[statusKey] || 'is-paid'}">${escapeHtml(formatExpensePaymentStatus(statusKey))}</span>`;
+            const normalized = normalizeExpenseStatusPagamento(statusValue);
+            const labels = { pago: 'Pago', pendente: 'Pendente', agendado: 'Agendado' };
+            const classes = { pago: 'is-paid', pendente: 'is-pending', agendado: 'is-scheduled' };
+            return `<span class="expense-status-badge ${classes[normalized]}">${labels[normalized]}</span>`;
         }
 
         function selectExpenseRow(expenseId) {
             selectedExpenseId = String(expenseId || '').trim() || null;
-            document.querySelectorAll('#adminPanel tr.expense-row').forEach((row) => { row.classList.toggle('is-selected', row.dataset.expenseId === selectedExpenseId); });
+            document.querySelectorAll('#adminPanel tr.expense-row').forEach((row) => {
+                const isSelected = row.dataset.expenseId === selectedExpenseId;
+                row.classList.toggle('is-selected', isSelected);
+                const checkbox = row.querySelector('.expense-select-checkbox');
+                if (checkbox) checkbox.checked = isSelected;
+            });
             updateExpenseToolbarState();
         }
 
         function clearSelectedExpense() {
             selectedExpenseId = null;
-            document.querySelectorAll('#adminPanel tr.expense-row.is-selected').forEach((row) => row.classList.remove('is-selected'));
+            document.querySelectorAll('#adminPanel tr.expense-row').forEach((row) => {
+                row.classList.remove('is-selected');
+                const checkbox = row.querySelector('.expense-select-checkbox');
+                if (checkbox) checkbox.checked = false;
+            });
             updateExpenseToolbarState();
         }
 
@@ -8893,37 +8919,52 @@ async function calcularFrete(cep) {
             if (!client) return;
             const tbody = document.getElementById('expensesTable');
             if (!tbody) return;
-            const { data, error } = await client.from('despesas').select('*').order('data', { ascending: false }).order('id', { ascending: false });
+            let data = null;
+            let error = null;
+            ({ data, error } = await client.from('despesas').select('*').order('data', { ascending: false }).order('created_at', { ascending: false }).order('id', { ascending: false }));
             if (error) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--error);">Erro ao carregar despesas.</td></tr>';
+                const message = String(error.message || '').toLowerCase();
+                const canFallback = message.includes('created_at') || message.includes('column') || message.includes('schema cache');
+                if (canFallback) {
+                    ({ data, error } = await client.from('despesas').select('*').order('data', { ascending: false }).order('id', { ascending: false }));
+                }
+            }
+            if (error) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--error);">Erro ao carregar despesas.</td></tr>';
                 return;
             }
             currentExpensesRows = Array.isArray(data) ? data : [];
-            renderExpensesRows(getFilteredExpensesRows());
+            renderExpensesRows(currentExpensesRows);
             updateExpenseToolbarState();
         }
 
-        function renderExpensesRows(rows) {
+        function renderExpensesRows(expenses = []) {
+            currentExpensesRows = Array.isArray(expenses) ? expenses : [];
             const tbody = document.getElementById('expensesTable');
             if (!tbody) return;
+            const rows = getFilteredExpensesRows();
             if (!rows.length) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-secondary);">Nenhuma despesa cadastrada.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-secondary);">Nenhuma despesa cadastrada.</td></tr>';
+                updateExpenseToolbarState();
                 return;
             }
             tbody.innerHTML = rows.map((expense) => {
                 const id = expense.id;
                 const selectedClass = String(id) === String(selectedExpenseId) ? ' is-selected' : '';
+                const checkedAttr = String(id) === String(selectedExpenseId) ? 'checked' : '';
                 return `<tr class="expense-row${selectedClass}" data-expense-id="${id}">
+                    <td class="expense-select-col"><input type="checkbox" class="expense-select-checkbox" data-expense-action="select" data-expense-id="${id}" ${checkedAttr} aria-label="Selecionar despesa"></td>
                     <td>${escapeHtml(expense.tipo || '-')}</td>
-                    <td>${escapeHtml(formatExpenseCategory(expense.categoria))}</td>
-                    <td>R$ ${Number(expense.valor || 0).toFixed(2)}</td>
+                    <td>${escapeHtml(formatExpenseCategory(expense.categoria || expense.tipo || '-'))}</td>
+                    <td>${typeof formatCurrency === 'function' ? formatCurrency(expense.valor || 0) : ('R$ ' + Number(expense.valor || 0).toFixed(2))}</td>
                     <td>${getExpenseStatusBadge(expense.status_pagamento)}</td>
                     <td>${escapeHtml(expense.descricao || '-')}<br><small style="color:var(--text-secondary);">Forma: ${escapeHtml(formatExpensePaymentMethod(expense.forma_pagamento))} · Fornecedor: ${escapeHtml(expense.fornecedor || 'Não informado')}</small></td>
-                    <td>${escapeHtml(expense.data || '-')}</td>
+                    <td>${typeof formatDateBR === 'function' ? formatDateBR(expense.data) : escapeHtml(expense.data || '-')}</td>
                     <td>${expense.pedido_id ?? '-'}</td>
-                    <td><div class="expense-row-actions"><button type="button" class="expense-icon-btn" data-expense-action="select" data-expense-id="${id}" title="Selecionar">✓</button><button type="button" class="expense-icon-btn" data-expense-action="edit" data-expense-id="${id}" title="Editar">✎</button><button type="button" class="expense-icon-btn danger" data-expense-action="delete" data-expense-id="${id}" title="Excluir">🗑</button></div></td>
+                    <td><div class="expense-row-actions"><button type="button" class="expense-icon-btn" data-expense-action="edit" data-expense-id="${id}" title="Editar despesa">✎</button><button type="button" class="expense-icon-btn danger" data-expense-action="delete" data-expense-id="${id}" title="Excluir despesa">🗑</button></div></td>
                 </tr>`;
             }).join('');
+            updateExpenseToolbarState();
         }
 
         function startExpenseEdit(expenseId) {
@@ -8958,7 +8999,7 @@ async function calcularFrete(cep) {
         }
 
         async function filterExpensesByDate() {
-            renderExpensesRows(getFilteredExpensesRows());
+            renderExpensesRows(currentExpensesRows);
         }
 
         function switchAdminTab(tabName, ev = null) {
