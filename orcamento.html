@@ -5887,6 +5887,11 @@
                 throw new Error('Número operacional do pedido (numero_pedido) não retornado após salvar o pedido.');
             }
 
+            console.info('[Checkout] Enviando pedido para WhatsApp da empresa', {
+                numeroPedido,
+                companyWhatsApp: getCompanyWhatsAppNumber()
+            });
+
             const mensagemPedido = gerarMensagemPedido({
                 numeroPedido,
                 createdAt: savedOrder?.created_at || new Date(),
@@ -5952,9 +5957,17 @@
         const LOJA_WHATSAPP = '5511945462973';
 
         function getCompanyWhatsAppNumber() {
-            const normalizedCompanyNumber = String(COMPANY_WHATSAPP || '').replace(/\D/g, '');
-            const normalizedFallbackNumber = String(LOJA_WHATSAPP || '').replace(/\D/g, '');
-            return normalizedCompanyNumber || normalizedFallbackNumber;
+            const configuredNumber =
+                window.runtimeSettings?.telefone_whatsapp ||
+                window.appSettings?.telefone_whatsapp ||
+                COMPANY_WHATSAPP ||
+                '';
+            const fallbackNumber = '11945462973';
+            const rawNumber = String(configuredNumber || fallbackNumber).replace(/\D+/g, '');
+
+            if (!rawNumber) return '5511945462973';
+            if (rawNumber.startsWith('55')) return rawNumber;
+            return `55${rawNumber}`;
         }
 
         function abrirWhatsApp(mensagem = '') {
