@@ -10851,7 +10851,7 @@ async function getMelhorEnvioShipping(cep, type) {
                     .from('ordens_servico')
                     .update(payload)
                     .eq('id', persistedServiceOrderId)
-                    .select('id, numero_os, status, status_os, updated_at')
+                    .select('id, numero_os, status, updated_at')
                     .single();
 
                 if (error) throw error;
@@ -10867,7 +10867,7 @@ async function getMelhorEnvioShipping(cep, type) {
             const { data, error } = await client
                 .from('ordens_servico')
                 .insert(payload)
-                .select('id, numero_os, status, status_os, created_at')
+                .select('id, numero_os, status, created_at')
                 .single();
 
             if (error) throw error;
@@ -11127,7 +11127,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 .from('ordens_servico')
                 .update({ status })
                 .eq('id', persistedServiceOrderId)
-                .select('id, numero_os, status, status_os, updated_at')
+                .select('id, numero_os, status, updated_at')
                 .single();
             if (error) throw error;
             if (!data?.id) throw new Error('Supabase não retornou ID da O.S. após atualização de status');
