@@ -28,7 +28,7 @@
     return String(value || '').trim().toLowerCase();
   }
 
-  const CONVERSATION_SELECT_FIELDS = 'id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at, archived, arquivada';
+  const CONVERSATION_SELECT_FIELDS = 'id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at, archived';
   const CONVERSATION_FALLBACK_FIELDS = 'id, telefone, nome_cliente, ultima_mensagem, ultima_interacao_em, modo_atendimento, criado_em, kanban_column_id, valor_negocio, prioridade, updated_at';
   const ARCHIVE_STATE_STORAGE_KEY = 'waConversationArchiveState';
 
