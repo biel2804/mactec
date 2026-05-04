@@ -11123,14 +11123,30 @@ async function getMelhorEnvioShipping(cep, type) {
             if (!client) throw new Error('Supabase não configurado.');
             const persistedServiceOrderId = parsePersistedServiceOrderId(id);
             if (!persistedServiceOrderId) throw new Error('ID da O.S. inválido.');
+
+            const { data: existingServiceOrder, error: existingServiceOrderError } = await client
+                .from('ordens_servico')
+                .select('id, numero_os, status')
+                .eq('id', persistedServiceOrderId)
+                .maybeSingle();
+
+            if (existingServiceOrderError) throw existingServiceOrderError;
+            if (!existingServiceOrder?.id) {
+                throw new Error('O.S. não encontrada ou sem permissão de leitura para atualização.');
+            }
+
             const { data, error } = await client
                 .from('ordens_servico')
                 .update({ status })
                 .eq('id', persistedServiceOrderId)
                 .select('id, numero_os, status, updated_at')
-                .single();
+                .maybeSingle();
+
             if (error) throw error;
-            if (!data?.id) throw new Error('Supabase não retornou ID da O.S. após atualização de status');
+            if (!data?.id) {
+                throw new Error('Não foi possível atualizar a O.S. Verifique se ela ainda existe e se o usuário atual tem permissão para alterar ordens de serviço.');
+            }
+
             await loadServiceOrdersTable();
         }
 
