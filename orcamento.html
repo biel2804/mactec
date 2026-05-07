@@ -6820,7 +6820,7 @@
                         valor: Number(document.getElementById('expenseValue').value || 0),
                         forma_pagamento: document.getElementById('expensePaymentMethod').value || null,
                         status_pagamento: document.getElementById('expensePaymentStatus').value || 'pago',
-                        data: document.getElementById('expenseDate').value || null,
+                        data: normalizeExpenseDateForInput(document.getElementById('expenseDate').value) || null,
                         pedido_id: document.getElementById('expenseOrderId').value ? Number(document.getElementById('expenseOrderId').value) : null,
                         fornecedor: document.getElementById('expenseSupplier').value.trim() || null,
                         descricao: document.getElementById('expenseDescription').value.trim() || null
@@ -8947,6 +8947,17 @@ async function calcularFrete(cep) {
             return raw;
         }
 
+        function normalizeExpenseDateForInput(value) {
+            if (!value) return '';
+            const raw = String(value).trim();
+            const isoDateMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (isoDateMatch) {
+                const [, year, month, day] = isoDateMatch;
+                return `${year}-${month}-${day}`;
+            }
+            return '';
+        }
+
         function normalizeExpenseStatusPagamento(status) {
             const raw = String(status || 'pago').trim().toLowerCase();
             if (raw === 'pendente') return 'pendente';
@@ -9074,7 +9085,7 @@ async function calcularFrete(cep) {
             document.getElementById('expenseValue').value = expense.valor ?? '';
             document.getElementById('expensePaymentMethod').value = expense.forma_pagamento || 'dinheiro';
             document.getElementById('expensePaymentStatus').value = expense.status_pagamento || 'pago';
-            document.getElementById('expenseDate').value = expense.data || '';
+            document.getElementById('expenseDate').value = normalizeExpenseDateForInput(expense.data);
             document.getElementById('expenseOrderId').value = expense.pedido_id ?? '';
             document.getElementById('expenseSupplier').value = expense.fornecedor || '';
             document.getElementById('expenseDescription').value = expense.descricao || '';

@@ -19,6 +19,25 @@
     return raw;
   }
 
+  function normalizeExpenseDateForInput(value) {
+    if (!value) return '';
+    const raw = String(value).trim();
+    const isoDateMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoDateMatch) {
+      const [, year, month, day] = isoDateMatch;
+      return `${year}-${month}-${day}`;
+    }
+    return '';
+  }
+
+  function getTodayExpenseDateForInput() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   const JUROS_PARCELAMENTO = {
     1: 0,
     2: 0,
@@ -220,7 +239,7 @@
       tipo: document.getElementById('expenseType').value,
       valor: toNumber(document.getElementById('expenseValue').value),
       descricao: document.getElementById('expenseDescription').value.trim() || null,
-      data: document.getElementById('expenseDate').value || new Date().toISOString().slice(0, 10),
+      data: normalizeExpenseDateForInput(document.getElementById('expenseDate').value) || getTodayExpenseDateForInput(),
       pedido_id: document.getElementById('expenseOrderId').value.trim() || null
     };
 
