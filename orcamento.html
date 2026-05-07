@@ -10864,6 +10864,8 @@ async function getMelhorEnvioShipping(cep, type) {
             }
         }
 
+        const SERVICE_ORDER_SAVE_RETURN_COLUMNS = 'id, numero_os, status, created_at, updated_at';
+
         async function saveServiceOrderRecord(payload, serviceOrderId = null) {
             const client = ensureSupabaseClient(true);
             if (!client) throw new Error('Supabase não configurado.');
@@ -10875,14 +10877,14 @@ async function getMelhorEnvioShipping(cep, type) {
                     .from('ordens_servico')
                     .update(payload)
                     .eq('id', persistedServiceOrderId)
-                    .select('id, numero_os, status, updated_at')
-                    .single();
+                    .select(SERVICE_ORDER_SAVE_RETURN_COLUMNS)
+                    .maybeSingle();
 
                 if (error) throw error;
 
-                if (!data || !data.id) {
+                if (!data?.id) {
                     console.error('Erro: Supabase não retornou ID da O.S.', { data, payload });
-                    throw new Error('Falha ao obter ID interno da O.S. após salvar.');
+                    throw new Error('O.S. salva, mas o Supabase não retornou ID interno válido.');
                 }
 
                 return data;
@@ -10890,15 +10892,15 @@ async function getMelhorEnvioShipping(cep, type) {
 
             const { data, error } = await client
                 .from('ordens_servico')
-                .insert(payload)
-                .select('id, numero_os, status, created_at')
-                .single();
+                .insert([payload])
+                .select(SERVICE_ORDER_SAVE_RETURN_COLUMNS)
+                .maybeSingle();
 
             if (error) throw error;
 
-            if (!data || !data.id) {
+            if (!data?.id) {
                 console.error('Erro: Supabase não retornou ID da O.S.', { data, payload });
-                throw new Error('Falha ao obter ID interno da O.S. após salvar.');
+                throw new Error('O.S. salva, mas o Supabase não retornou ID interno válido.');
             }
 
             return data;
