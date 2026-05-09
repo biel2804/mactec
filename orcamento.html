@@ -49,20 +49,39 @@
         }
 
         :root[data-theme="light"] {
-            --bg-main: #F8F9FA;
-            --bg-secondary: #E7F1FF;
-            --text-main: #000000;
-            --text-secondary: #4b5563;
-            --accent: #001F3F;
-            --card-bg: #ffffff;
-            --border: #d1d5db;
+            --light-bg-main: #f4f8ff;
+            --light-bg-soft: #eaf3ff;
+            --light-bg-panel: #ffffff;
+            --light-card-bg: rgba(255, 255, 255, 0.84);
+            --light-card-bg-solid: #ffffff;
+            --light-card-border: rgba(148, 163, 184, 0.32);
+            --light-text-main: #002b4f;
+            --light-text-muted: #52677f;
+            --light-primary-blue: #007aff;
+            --light-primary-blue-dark: #00325f;
+            --light-primary-green: #22c55e;
+            --light-danger: #ef4444;
+            --light-warning: #f59e0b;
+            --light-shadow-soft: 0 14px 35px rgba(15, 23, 42, 0.08);
+            --light-shadow-card: 0 10px 28px rgba(15, 23, 42, 0.06);
+            --light-focus-ring: rgba(0, 122, 255, 0.18);
+            --light-bg-gradient: radial-gradient(circle at top left, rgba(0, 122, 255, 0.08), transparent 34%), radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.08), transparent 32%), linear-gradient(135deg, #f4f8ff 0%, #f8fbff 48%, #ecfdf5 100%);
+
+            --bg-main: var(--light-bg-main);
+            --bg-secondary: var(--light-bg-soft);
+            --text-main: var(--light-text-main);
+            --text-secondary: var(--light-text-muted);
+            --accent: var(--light-primary-blue);
+            --card-bg: var(--light-card-bg);
+            --border: var(--light-card-border);
             --accent-contrast: #ffffff;
-            --accent-hover: #001735;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --error: #ef4444;
-            --shipping-bg: #ffffff;
+            --accent-hover: var(--light-primary-blue-dark);
+            --success: var(--light-primary-green);
+            --warning: var(--light-warning);
+            --error: var(--light-danger);
+            --shipping-bg: var(--light-card-bg-solid);
             --overlay-bg: rgba(15, 23, 42, 0.35);
+            --body-bg: var(--light-bg-gradient);
         }
 
         :root {
@@ -78,13 +97,103 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--primary-dark);
+            background: var(--body-bg, var(--primary-dark));
             color: var(--text-primary);
             line-height: 1.6;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             touch-action: manipulation;
+        }
+
+        :root[data-theme="light"] body {
+            background-attachment: fixed;
+        }
+
+        :root[data-theme="light"] nav,
+        :root[data-theme="light"] footer,
+        :root[data-theme="light"] .why-choose,
+        :root[data-theme="light"] .admin-header,
+        :root[data-theme="light"] .admin-sidebar {
+            background: rgba(255, 255, 255, 0.88);
+            border-color: var(--light-card-border);
+            box-shadow: var(--light-shadow-card);
+        }
+
+        :root[data-theme="light"] nav {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        :root[data-theme="light"] .service-card,
+        :root[data-theme="light"] .step-card,
+        :root[data-theme="light"] .order-tracking-card,
+        :root[data-theme="light"] .order-tracking-result {
+            background: var(--light-card-bg) !important;
+            border-color: var(--light-card-border) !important;
+            box-shadow: var(--light-shadow-card);
+            border-radius: 14px;
+        }
+
+        :root[data-theme="light"] .service-card:hover {
+            border-color: rgba(0, 122, 255, 0.42);
+            box-shadow: var(--light-shadow-soft);
+        }
+
+        :root[data-theme="light"] .section-title,
+        :root[data-theme="light"] .hero h1,
+        :root[data-theme="light"] .service-card h3,
+        :root[data-theme="light"] .step-card h3,
+        :root[data-theme="light"] .admin-header h1 {
+            color: var(--light-text-main);
+        }
+
+        :root[data-theme="light"] .btn-primary {
+            background: var(--light-primary-blue);
+            color: #ffffff;
+        }
+
+        :root[data-theme="light"] .btn-primary:hover {
+            background: var(--light-primary-blue-dark);
+            box-shadow: 0 8px 18px rgba(0, 122, 255, 0.18);
+        }
+
+        :root[data-theme="light"] .btn-secondary {
+            color: var(--light-primary-blue);
+            border-color: var(--light-primary-blue);
+        }
+
+        :root[data-theme="light"] .btn-secondary:hover {
+            background: var(--light-primary-blue);
+            color: #ffffff;
+        }
+
+        :root[data-theme="light"] input,
+        :root[data-theme="light"] select,
+        :root[data-theme="light"] textarea,
+        :root[data-theme="light"] .form-group input,
+        :root[data-theme="light"] .form-group select,
+        :root[data-theme="light"] .form-group textarea,
+        :root[data-theme="light"] .order-tracking-form input {
+            background-color: var(--light-card-bg-solid);
+            border-color: #cbd5e1;
+            color: var(--light-text-main);
+        }
+
+        :root[data-theme="light"] input:focus,
+        :root[data-theme="light"] select:focus,
+        :root[data-theme="light"] textarea:focus,
+        :root[data-theme="light"] .form-group input:focus,
+        :root[data-theme="light"] .form-group select:focus,
+        :root[data-theme="light"] .form-group textarea:focus,
+        :root[data-theme="light"] .order-tracking-form input:focus {
+            border-color: var(--light-primary-blue);
+            box-shadow: 0 0 0 3px var(--light-focus-ring);
+        }
+
+        :root[data-theme="light"] input::placeholder,
+        :root[data-theme="light"] textarea::placeholder {
+            color: var(--light-text-muted);
         }
 
         html {
