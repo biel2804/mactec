@@ -196,6 +196,169 @@
             color: var(--light-text-muted);
         }
 
+        /* Tema Claro Premium MacTec — página pública */
+        :root[data-theme="light"] nav#siteNav {
+            background: rgba(255, 255, 255, 0.78);
+            border-bottom: 1px solid var(--light-card-border);
+            box-shadow: var(--light-shadow-card);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        :root[data-theme="light"] #siteNav .nav-logo {
+            color: var(--light-primary-blue-dark);
+        }
+
+        :root[data-theme="light"] #siteNav .nav-menu a,
+        :root[data-theme="light"] #siteNav .menu-toggle,
+        :root[data-theme="light"] #siteNav .theme-toggle-btn,
+        :root[data-theme="light"] #siteNav .admin-access-btn {
+            color: var(--light-text-main);
+        }
+
+        :root[data-theme="light"] #siteNav .nav-menu a:hover {
+            color: var(--light-primary-blue);
+        }
+
+        :root[data-theme="light"] #siteNav .menu-toggle,
+        :root[data-theme="light"] #siteNav .theme-toggle-btn,
+        :root[data-theme="light"] #siteNav .admin-access-btn {
+            background: rgba(255, 255, 255, 0.72);
+            border-color: var(--light-card-border);
+        }
+
+        :root[data-theme="light"] #siteNav .menu-toggle:hover,
+        :root[data-theme="light"] #siteNav .theme-toggle-btn:hover,
+        :root[data-theme="light"] #siteNav .admin-access-btn:hover {
+            border-color: rgba(0, 122, 255, 0.45);
+            color: var(--light-primary-blue);
+            box-shadow: 0 8px 18px rgba(0, 122, 255, 0.12);
+        }
+
+        :root[data-theme="light"] .hero {
+            background:
+                radial-gradient(circle at 20% 20%, rgba(0, 122, 255, 0.10), transparent 34%),
+                radial-gradient(circle at 80% 70%, rgba(34, 197, 94, 0.10), transparent 32%),
+                linear-gradient(135deg, #f4f8ff 0%, #f8fbff 52%, #ecfdf5 100%);
+            border-bottom: 1px solid var(--light-card-border);
+            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.72);
+        }
+
+        :root[data-theme="light"] .hero h1 {
+            color: var(--light-primary-blue-dark);
+            text-shadow: none;
+        }
+
+        :root[data-theme="light"] .hero p,
+        :root[data-theme="light"] .service-card p,
+        :root[data-theme="light"] .step-card p,
+        :root[data-theme="light"] .why-choose-list p {
+            color: var(--light-text-muted);
+        }
+
+        :root[data-theme="light"] .hero-buttons .btn {
+            border-radius: 10px;
+        }
+
+        :root[data-theme="light"] .hero-buttons .btn-primary {
+            background: var(--light-primary-blue);
+            border: 1px solid var(--light-primary-blue);
+            color: #ffffff;
+            box-shadow: 0 10px 22px rgba(0, 122, 255, 0.16);
+        }
+
+        :root[data-theme="light"] .hero-buttons .btn-primary:hover {
+            background: var(--light-primary-blue-dark);
+            border-color: var(--light-primary-blue-dark);
+            color: #ffffff;
+            box-shadow: 0 12px 26px rgba(0, 50, 95, 0.18);
+        }
+
+        :root[data-theme="light"] .hero-buttons .btn-secondary {
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(0, 122, 255, 0.28);
+            color: var(--light-primary-blue-dark);
+            box-shadow: var(--light-shadow-card);
+        }
+
+        :root[data-theme="light"] .hero-buttons .btn-secondary:hover {
+            background: rgba(0, 122, 255, 0.08);
+            border-color: rgba(0, 122, 255, 0.42);
+            color: var(--light-primary-blue-dark);
+        }
+
+        :root[data-theme="light"] .services,
+        :root[data-theme="light"] .steps {
+            color: var(--light-text-main);
+        }
+
+        :root[data-theme="light"] .section-title {
+            color: var(--light-primary-blue-dark);
+        }
+
+        :root[data-theme="light"] .service-card,
+        :root[data-theme="light"] .step-card {
+            background: var(--light-card-bg) !important;
+            border: 1px solid var(--light-card-border) !important;
+            border-radius: 16px;
+            box-shadow: var(--light-shadow-card);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        :root[data-theme="light"] .service-card:hover,
+        :root[data-theme="light"] .step-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(0, 122, 255, 0.34) !important;
+            box-shadow: var(--light-shadow-soft);
+        }
+
+        :root[data-theme="light"] .service-icon {
+            filter: saturate(1.08);
+        }
+
+        :root[data-theme="light"] .service-card h3,
+        :root[data-theme="light"] .step-card h3,
+        :root[data-theme="light"] .why-choose-list strong {
+            color: var(--light-primary-blue-dark);
+        }
+
+        :root[data-theme="light"] .why-choose {
+            background:
+                radial-gradient(circle at 12% 8%, rgba(0, 122, 255, 0.08), transparent 30%),
+                var(--light-card-bg);
+            border-block: 1px solid var(--light-card-border);
+            box-shadow: var(--light-shadow-card);
+        }
+
+        :root[data-theme="light"] .why-choose-list li {
+            border-bottom-color: var(--light-card-border);
+        }
+
+        :root[data-theme="light"] .why-choose-list .icon {
+            color: var(--light-primary-green);
+        }
+
+        :root[data-theme="light"] .step-number {
+            background: var(--light-primary-blue-dark);
+            color: #ffffff;
+            box-shadow: 0 10px 20px rgba(0, 50, 95, 0.18);
+        }
+
+        :root[data-theme="light"] footer:not(.tracking-card-footer) {
+            background: rgba(255, 255, 255, 0.86);
+            border-top: 1px solid var(--light-card-border);
+            color: var(--light-text-muted);
+            box-shadow: 0 -10px 24px rgba(15, 23, 42, 0.04);
+        }
+
+        :root[data-theme="light"] footer:not(.tracking-card-footer) a {
+            color: var(--light-primary-blue);
+        }
+
+        :root[data-theme="light"] .whatsapp-float {
+            box-shadow: 0 14px 30px rgba(37, 211, 102, 0.28), 0 4px 14px rgba(15, 23, 42, 0.16);
+        }
+
         html {
             font-size: 16px;
         }
