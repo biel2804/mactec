@@ -3671,6 +3671,287 @@
             }
         }
 
+
+        /* Tema Claro Premium MacTec — modais públicos (BLOCO 3) */
+        :root[data-theme="light"] #howItWorksModal,
+        :root[data-theme="light"] #customerIdentificationModal,
+        :root[data-theme="light"] #newCustomerModal,
+        :root[data-theme="light"] #ordersTrackingModal,
+        :root[data-theme="light"] #quoteModal,
+        :root[data-theme="light"] #accessoriesModal,
+        :root[data-theme="light"] #cartModal {
+            background: rgba(15, 23, 42, 0.48);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+
+        :root[data-theme="light"] #howItWorksModal > .modal-content,
+        :root[data-theme="light"] #customerIdentificationModal > .modal-content,
+        :root[data-theme="light"] #newCustomerModal > .modal-content,
+        :root[data-theme="light"] #ordersTrackingModal > .modal-content,
+        :root[data-theme="light"] #quoteModal > .modal-content,
+        :root[data-theme="light"] #accessoriesModal > .modal-content,
+        :root[data-theme="light"] #cartModal > .modal-content {
+            background: rgba(255, 255, 255, 0.90);
+            border: 1px solid var(--light-card-border);
+            border-radius: 20px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+            color: var(--light-text-main);
+        }
+
+        :root[data-theme="light"] #ordersTrackingModal > .modal-content,
+        :root[data-theme="light"] #cartModal > .modal-content {
+            width: min(800px, 96vw);
+        }
+
+        :root[data-theme="light"] #howItWorksModal .modal-content h2,
+        :root[data-theme="light"] #customerIdentificationModal .modal-content h2,
+        :root[data-theme="light"] #newCustomerModal .modal-content h2,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-modal-title,
+        :root[data-theme="light"] #quoteModal .modal-content h2,
+        :root[data-theme="light"] #accessoriesModal .modal-content h2,
+        :root[data-theme="light"] #cartModal .modal-content h2,
+        :root[data-theme="light"] #quoteModal .quote-section h3,
+        :root[data-theme="light"] #cartModal .cart-payment-panel-title {
+            color: var(--light-primary-blue-dark) !important;
+            text-shadow: none;
+        }
+
+        :root[data-theme="light"] #howItWorksModal .modal-content p,
+        :root[data-theme="light"] #customerIdentificationModal .modal-content p,
+        :root[data-theme="light"] #newCustomerModal .modal-content p,
+        :root[data-theme="light"] #ordersTrackingModal .order-tracking-card p,
+        :root[data-theme="light"] #accessoriesModal #accessoriesContainer p,
+        :root[data-theme="light"] #identificationStatus,
+        :root[data-theme="light"] #newCustomerCepStatus,
+        :root[data-theme="light"] #newCustomerStatus,
+        :root[data-theme="light"] #installmentsHint,
+        :root[data-theme="light"] #cartModal .cart-item-meta,
+        :root[data-theme="light"] #quoteModal small,
+        :root[data-theme="light"] #cartModal .summary-shipping-label {
+            color: var(--light-text-muted) !important;
+        }
+
+        :root[data-theme="light"] #howItWorksModal .modal-content strong,
+        :root[data-theme="light"] #howItWorksModal .modal-actions label,
+        :root[data-theme="light"] #cartModal .cart-item-title,
+        :root[data-theme="light"] #quoteModal .shipping-card-title,
+        :root[data-theme="light"] #quoteModal .shipping-highlight,
+        :root[data-theme="light"] #quoteModal .shipping-service-options h4 {
+            color: var(--light-text-main) !important;
+        }
+
+        :root[data-theme="light"] #quoteModal .close,
+        :root[data-theme="light"] #accessoriesModal .close,
+        :root[data-theme="light"] #cartModal .close,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-modal-close,
+        :root[data-theme="light"] #closeIdentificationModalBtn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.72) !important;
+            border: 1px solid var(--light-card-border) !important;
+            color: var(--light-text-muted) !important;
+            box-shadow: none;
+            line-height: 1;
+        }
+
+        :root[data-theme="light"] #quoteModal .close:hover,
+        :root[data-theme="light"] #accessoriesModal .close:hover,
+        :root[data-theme="light"] #cartModal .close:hover,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-modal-close:hover,
+        :root[data-theme="light"] #closeIdentificationModalBtn:hover {
+            background: #ffffff !important;
+            border-color: rgba(0, 122, 255, 0.34) !important;
+            color: var(--light-primary-blue-dark) !important;
+            transform: translateY(-1px);
+        }
+
+        :root[data-theme="light"] #customerIdentificationModal input,
+        :root[data-theme="light"] #newCustomerModal input,
+        :root[data-theme="light"] #ordersTrackingModal input,
+        :root[data-theme="light"] #quoteModal input,
+        :root[data-theme="light"] #quoteModal select,
+        :root[data-theme="light"] #cartModal select {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: var(--light-text-main);
+            border-radius: 10px;
+        }
+
+        :root[data-theme="light"] #customerIdentificationModal input:focus,
+        :root[data-theme="light"] #newCustomerModal input:focus,
+        :root[data-theme="light"] #ordersTrackingModal input:focus,
+        :root[data-theme="light"] #quoteModal input:focus,
+        :root[data-theme="light"] #quoteModal select:focus,
+        :root[data-theme="light"] #cartModal select:focus {
+            border-color: var(--light-primary-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.14);
+        }
+
+        :root[data-theme="light"] #customerIdentificationModal .form-group label,
+        :root[data-theme="light"] #newCustomerModal .form-group label,
+        :root[data-theme="light"] #quoteModal .form-group label,
+        :root[data-theme="light"] #cartModal .form-group label {
+            color: var(--light-primary-blue-dark);
+        }
+
+        :root[data-theme="light"] #howItWorksModal button,
+        :root[data-theme="light"] #customerIdentificationModal .btn-primary,
+        :root[data-theme="light"] #newCustomerModal .btn-primary,
+        :root[data-theme="light"] #ordersTrackingModal .btn-primary,
+        :root[data-theme="light"] #quoteModal .btn-primary,
+        :root[data-theme="light"] #cartModal .btn-primary {
+            background: var(--light-primary-blue) !important;
+            border: 1px solid var(--light-primary-blue) !important;
+            color: #ffffff !important;
+            box-shadow: 0 10px 22px rgba(0, 122, 255, 0.16);
+        }
+
+        :root[data-theme="light"] #howItWorksModal button:hover,
+        :root[data-theme="light"] #customerIdentificationModal .btn-primary:hover,
+        :root[data-theme="light"] #newCustomerModal .btn-primary:hover,
+        :root[data-theme="light"] #ordersTrackingModal .btn-primary:hover,
+        :root[data-theme="light"] #quoteModal .btn-primary:hover,
+        :root[data-theme="light"] #cartModal .btn-primary:hover {
+            background: var(--light-primary-blue-dark) !important;
+            border-color: var(--light-primary-blue-dark) !important;
+            color: #ffffff !important;
+            box-shadow: 0 12px 26px rgba(0, 50, 95, 0.18);
+        }
+
+        :root[data-theme="light"] #customerIdentificationModal .btn-secondary,
+        :root[data-theme="light"] #newCustomerModal .btn-secondary,
+        :root[data-theme="light"] #cartModal .btn-secondary {
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(0, 122, 255, 0.28);
+            color: var(--light-primary-blue-dark);
+            box-shadow: var(--light-shadow-card);
+        }
+
+        :root[data-theme="light"] #customerIdentificationModal #closeIdentificationModalBtn {
+            color: var(--light-text-muted) !important;
+            box-shadow: none;
+        }
+
+        :root[data-theme="light"] #customerIdentificationModal .btn-secondary:hover,
+        :root[data-theme="light"] #newCustomerModal .btn-secondary:hover,
+        :root[data-theme="light"] #cartModal .btn-secondary:hover {
+            background: rgba(0, 122, 255, 0.08);
+            border-color: rgba(0, 122, 255, 0.42);
+            color: var(--light-primary-blue-dark);
+        }
+
+        :root[data-theme="light"] #ordersTrackingModal .order-tracking-card,
+        :root[data-theme="light"] #ordersTrackingModal .order-tracking-result,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-result-card,
+        :root[data-theme="light"] #quoteModal .quote-container,
+        :root[data-theme="light"] #quoteModal .quote-summary,
+        :root[data-theme="light"] #quoteModal .price-breakdown,
+        :root[data-theme="light"] #quoteModal .shipping-options-empty,
+        :root[data-theme="light"] #quoteModal .shipping-card,
+        :root[data-theme="light"] #quoteModal .shipping-service-options,
+        :root[data-theme="light"] #quoteModal .shipping-service-option,
+        :root[data-theme="light"] #cartModal .cart-container,
+        :root[data-theme="light"] #cartModal .cart-item,
+        :root[data-theme="light"] #cartModal .cart-summary-panel,
+        :root[data-theme="light"] #existingCustomerCard,
+        :root[data-theme="light"] #customerProfileSummary {
+            background: rgba(255, 255, 255, 0.82) !important;
+            border: 1px solid var(--light-card-border) !important;
+            border-radius: 16px;
+            box-shadow: var(--light-shadow-card);
+            color: var(--light-text-main);
+        }
+
+        :root[data-theme="light"] #quoteModal .quote-summary {
+            border-left: 4px solid var(--light-primary-blue);
+        }
+
+        :root[data-theme="light"] #quoteModal .shipping-card:hover,
+        :root[data-theme="light"] #quoteModal .shipping-card.selected {
+            border-color: rgba(0, 122, 255, 0.42) !important;
+            box-shadow: 0 12px 26px rgba(0, 122, 255, 0.12);
+        }
+
+        :root[data-theme="light"] #quoteModal .summary-row,
+        :root[data-theme="light"] #cartModal .cart-summary-row,
+        :root[data-theme="light"] #cartModal .cart-payment-row,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-result-head {
+            border-color: var(--light-card-border);
+            color: var(--light-text-main);
+        }
+
+        :root[data-theme="light"] #quoteModal .summary-row.total,
+        :root[data-theme="light"] #cartModal .cart-summary-row.total,
+        :root[data-theme="light"] #cartModal #cartFinalTotal,
+        :root[data-theme="light"] #quoteModal .shipping-price,
+        :root[data-theme="light"] #quoteModal .shipping-service-price,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-result-order-number {
+            color: var(--light-primary-blue) !important;
+        }
+
+        :root[data-theme="light"] #ordersTrackingModal .tracking-result-card::before {
+            background: linear-gradient(90deg, rgba(0, 122, 255, 0), rgba(0, 122, 255, 0.58), rgba(0, 122, 255, 0));
+        }
+
+        :root[data-theme="light"] #ordersTrackingModal .tracking-meta-item,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-timeline,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-card-footer {
+            background: rgba(248, 251, 255, 0.86);
+            border-color: var(--light-card-border);
+            color: var(--light-text-main);
+        }
+
+        :root[data-theme="light"] #ordersTrackingModal .tracking-meta-label,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-timeline-label,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-result-status-label {
+            color: var(--light-text-muted);
+        }
+
+        :root[data-theme="light"] #ordersTrackingModal .tracking-meta-value,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-timeline-title,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-result-title {
+            color: var(--light-primary-blue-dark);
+        }
+
+        :root[data-theme="light"] #ordersTrackingModal .tracking-timeline-item:not(:last-child)::before {
+            background: var(--light-card-border);
+        }
+
+        @media (max-width: 768px) {
+            :root[data-theme="light"] #howItWorksModal > .modal-content,
+            :root[data-theme="light"] #customerIdentificationModal > .modal-content,
+            :root[data-theme="light"] #newCustomerModal > .modal-content,
+            :root[data-theme="light"] #ordersTrackingModal > .modal-content,
+            :root[data-theme="light"] #quoteModal > .modal-content,
+            :root[data-theme="light"] #accessoriesModal > .modal-content,
+            :root[data-theme="light"] #cartModal > .modal-content {
+                width: min(94vw, 760px);
+                max-width: 94vw;
+                margin: 5vh auto;
+                padding: 1rem;
+                max-height: 90vh;
+                overflow-x: hidden;
+            }
+
+            :root[data-theme="light"] #customerIdentificationModal .modal-actions,
+            :root[data-theme="light"] #newCustomerModal .modal-actions,
+            :root[data-theme="light"] #cartModal .cart-actions,
+            :root[data-theme="light"] #ordersTrackingModal .order-tracking-form {
+                flex-wrap: wrap;
+            }
+
+            :root[data-theme="light"] #ordersTrackingModal .order-tracking-form .btn,
+            :root[data-theme="light"] #cartModal .cart-actions .btn {
+                width: 100%;
+            }
+        }
+
         @media (max-width: 480px) {
             .admin-header {
                 padding: 0.9rem 0.75rem;
