@@ -5158,6 +5158,62 @@
                 width: 100%;
             }
         }
+
+        /* Auditoria visual final — ajustes finos do Tema Claro Premium MacTec */
+        :root[data-theme="light"] .service-card,
+        :root[data-theme="light"] .step-card,
+        :root[data-theme="light"] .order-tracking-card,
+        :root[data-theme="light"] .order-tracking-result,
+        :root[data-theme="light"] .why-choose {
+            background: rgba(255, 255, 255, 0.82) !important;
+            border: 1px solid var(--light-card-border) !important;
+            border-radius: 18px;
+            box-shadow: var(--light-shadow-card);
+            color: var(--light-text-main);
+        }
+
+        :root[data-theme="light"] .service-card p,
+        :root[data-theme="light"] .step-card p,
+        :root[data-theme="light"] .why-choose-list p,
+        :root[data-theme="light"] .order-tracking-card p,
+        :root[data-theme="light"] .order-tracking-feedback,
+        :root[data-theme="light"] #ordersTrackingModal .tracking-card-footer,
+        :root[data-theme="light"] #quoteModal .shipping-meta,
+        :root[data-theme="light"] #cartModal .cart-item-meta {
+            color: var(--light-text-muted) !important;
+        }
+
+        :root[data-theme="light"] #ordersTrackingModal .tracking-modal,
+        :root[data-theme="light"] #quoteModal > .modal-content,
+        :root[data-theme="light"] #cartModal > .modal-content,
+        :root[data-theme="light"] #quoteModal .quote-container,
+        :root[data-theme="light"] #cartModal .cart-container {
+            max-width: min(96vw, 960px);
+        }
+
+        :root[data-theme="light"] #ordersTrackingModal .tracking-result-body,
+        :root[data-theme="light"] #quoteModal .quote-container,
+        :root[data-theme="light"] #cartModal .cart-container {
+            min-width: 0;
+        }
+
+        :root[data-theme="light"] #adminPanel .table-container,
+        :root[data-theme="light"] #service-orders#service-orders .os-kanban-board,
+        :root[data-theme="light"] #service-orders#service-orders .os-list-table-container {
+            scrollbar-color: rgba(0, 122, 255, 0.42) rgba(226, 232, 240, 0.72);
+        }
+
+        @media (max-width: 768px) {
+            :root[data-theme="light"] #ordersTrackingModal .tracking-result-body {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            :root[data-theme="light"] #ordersTrackingModal .tracking-result-head,
+            :root[data-theme="light"] #quoteModal .shipping-card-header,
+            :root[data-theme="light"] #cartModal .cart-item-header {
+                min-width: 0;
+            }
+        }
     </style>
 </head>
 <body>
