@@ -1496,3 +1496,137 @@ body {
     backdrop-filter: blur(18px);
   }
 }
+
+/* BLOCO 11B — Correções mobile Central WhatsApp */
+@media (max-width: 1024px) {
+  .wa-shell,
+  .wa-sidebar,
+  .wa-workspace {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .wa-shell {
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 980px) {
+  .wa-shell,
+  .wa-shell.is-mobile-layout,
+  .wa-workspace {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .wa-sidebar,
+  .wa-workspace {
+    overflow-x: hidden;
+  }
+}
+
+.wa-message-bubble,
+.wa-message-bubble p,
+.wa-message-text,
+.wa-message-content {
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 480px) {
+  .wa-header,
+  .wa-header-actions,
+  .wa-chat-header,
+  .wa-chat-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .wa-header-title,
+  .wa-chat-contact,
+  .wa-mode-indicator {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .wa-header-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .wa-header-actions,
+  .wa-chat-actions {
+    row-gap: 6px;
+  }
+
+  .wa-message-bubble {
+    max-width: 86%;
+  }
+
+  .wa-conversation-context-drawer,
+  .wa-conversation-context-panel {
+    width: min(94vw, 340px);
+    max-width: 94vw;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .wa-kanban-board {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    grid-auto-columns: minmax(260px, 85vw);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wa-kanban-column {
+    min-width: 0;
+    max-width: 85vw;
+  }
+
+  .wa-context-inline-wide {
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .wa-filter-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .wa-filter-tab {
+    min-width: 0;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 390px) {
+  .wa-reply-row {
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .wa-reply-textarea {
+    min-width: 0;
+  }
+
+  #waSendReplyBtn {
+    min-width: 44px;
+  }
+
+  .wa-attach-btn {
+    flex-shrink: 0;
+  }
+}

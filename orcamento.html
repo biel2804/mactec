@@ -5264,6 +5264,323 @@
                 min-width: 0;
             }
         }
+
+
+        /* BLOCO 11B — Correções mobile responsivas */
+        @media (max-width: 1024px) {
+            #adminPanel,
+            #adminPanel .admin-content,
+            #adminPanel .admin-section,
+            #adminPanel .dashboard-grid,
+            #adminPanel .table-container,
+            #adminPanel .admin-table-wrapper,
+            #adminPanel .table-wrapper,
+            #adminPanel #service-orders,
+            #adminPanel #logistics {
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            #adminPanel .table-container,
+            #adminPanel .admin-table-wrapper,
+            #adminPanel .table-wrapper,
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                box-shadow: inset -12px 0 16px -18px rgba(15, 23, 42, 0.35);
+            }
+        }
+
+        @media (max-width: 768px) {
+            #adminPanel #service-orders .os-layout,
+            #adminPanel #service-orders .os-summary-grid,
+            #adminPanel #logistics .logistics-summary-grid,
+            #adminPanel #logistics .logistics-main-grid {
+                grid-template-columns: minmax(0, 1fr);
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            #adminPanel #service-orders .os-list-table-container,
+            #adminPanel #service-orders .os-kanban-board,
+            #adminPanel #logistics .logistics-calendar-grid {
+                max-width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #siteNav,
+            #siteNav .container,
+            #siteNav .nav-content,
+            .hero,
+            .hero-content,
+            .services-grid,
+            .steps-grid,
+            .service-card,
+            .step-card,
+            .quote-container,
+            .cart-container,
+            .quote-summary,
+            .shipping-options,
+            #adminPanel,
+            #adminPanel .admin-content,
+            #adminPanel .admin-section,
+            #adminPanel .admin-card,
+            #adminPanel #service-orders,
+            #adminPanel #logistics {
+                max-width: 100%;
+                min-width: 0;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            #siteNav .nav-search,
+            .nav-search {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 8px;
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            #siteNav .cart-icon-btn,
+            .cart-icon-btn {
+                margin-left: 0 !important;
+                flex-shrink: 0;
+            }
+
+            #siteNav .theme-toggle-btn,
+            #siteNav .admin-access-btn,
+            #siteNav .cart-icon-btn {
+                max-width: 100%;
+            }
+
+            .hero-buttons {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .hero-buttons .btn {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .services-grid,
+            .steps-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .service-card,
+            .step-card {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .modal-content,
+            #quoteModal > .modal-content,
+            #cartModal > .modal-content,
+            #customerIdentificationModal > .modal-content,
+            #newCustomerModal > .modal-content,
+            #accessoriesModal > .modal-content,
+            #howItWorksModal .modal-content {
+                width: min(94vw, 640px);
+                max-width: 94vw;
+                max-height: 90vh;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding-left: 18px;
+                padding-right: 18px;
+                min-width: 0;
+            }
+
+            .modal-actions,
+            .cart-actions,
+            .identification-actions,
+            .quote-actions,
+            .form-actions,
+            #customerIdentificationModal .modal-actions,
+            #newCustomerModal .modal-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .modal-actions > *,
+            .cart-actions > *,
+            .identification-actions > *,
+            .quote-actions > *,
+            .form-actions > *,
+            #customerIdentificationModal .modal-actions > *,
+            #newCustomerModal .modal-actions > * {
+                width: 100%;
+                max-width: none;
+            }
+
+            .modal-content input,
+            .modal-content select,
+            .modal-content textarea,
+            #quoteModal input,
+            #quoteModal select,
+            #quoteModal textarea,
+            #cartModal input,
+            #cartModal select,
+            #cartModal textarea,
+            #customerIdentificationModal input,
+            #customerIdentificationModal select,
+            #customerIdentificationModal textarea,
+            #newCustomerModal input,
+            #newCustomerModal select,
+            #newCustomerModal textarea,
+            #accessoriesModal input,
+            #accessoriesModal select,
+            #accessoriesModal textarea {
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            .quote-address-grid,
+            .finance-grid,
+            #adminPanel #service-orders .os-layout,
+            .os-summary-grid,
+            #adminPanel #logistics .logistics-summary-grid,
+            .logistics-main-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .shipping-options,
+            .shipping-service-option-main,
+            .shipping-card-header,
+            .summary-row,
+            .quote-summary,
+            .cart-summary-row,
+            .finance-card p,
+            .os-kanban-card,
+            .logistics-delivery-item,
+            .logistics-day {
+                min-width: 0;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .summary-row,
+            .cart-summary-row,
+            .shipping-card-header,
+            .shipping-service-option-main {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .admin-header,
+            .admin-header-actions,
+            .admin-mobile-nav-btn,
+            .expense-action-toolbar,
+            .expense-search-wrap,
+            .os-list-actions,
+            .logistics-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            .admin-header-actions,
+            .expense-action-toolbar,
+            .expense-search-wrap,
+            .expense-toolbar-search,
+            .expense-toolbar-date {
+                width: 100%;
+            }
+
+            .expense-toolbar-search,
+            .expense-toolbar-date {
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            #adminPanel .table-container,
+            #adminPanel .admin-table-wrapper,
+            #adminPanel .table-wrapper,
+            .os-list-table-container,
+            .logistics-calendar-grid {
+                max-width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                box-shadow: inset -12px 0 16px -18px rgba(15, 23, 42, 0.35);
+            }
+
+            #adminPanel table,
+            .os-list-table {
+                max-width: none;
+            }
+
+            .os-kanban-board {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 12px;
+                max-width: 100%;
+                min-width: 0;
+                overflow-x: visible;
+            }
+
+            .os-kanban-column {
+                width: 100%;
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .logistics-actions > * {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 430px) {
+            #siteNav .header-logo-img,
+            .header-logo-img {
+                width: 52px;
+                height: 52px;
+            }
+
+            .cart-modal-content,
+            .cart-container,
+            .cart-item,
+            .cart-item-info,
+            .cart-item-name,
+            .cart-summary-row {
+                max-width: 100%;
+                min-width: 0;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .cart-item,
+            .cart-summary-row {
+                flex-wrap: wrap;
+            }
+
+            .cart-actions > * {
+                width: 100%;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 390px) {
+            #siteNav .nav-search,
+            .nav-search,
+            .admin-header-actions,
+            .expense-action-toolbar,
+            .os-list-actions,
+            .logistics-actions {
+                gap: 6px;
+            }
+        }
     </style>
 </head>
 <body>
