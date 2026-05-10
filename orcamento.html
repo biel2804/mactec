@@ -1985,6 +1985,266 @@
             color: #64748b;
         }
 
+        /* Tema Claro Premium MacTec — Financeiro / Despesas (Bloco 8) */
+        :root[data-theme="light"] #dashboard,
+        :root[data-theme="light"] #despesas {
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid var(--light-card-border);
+            border-radius: 20px;
+            box-shadow: var(--light-shadow-card);
+            color: var(--light-text-main);
+            padding: 1rem;
+        }
+
+        :root[data-theme="light"] #dashboard > h2,
+        :root[data-theme="light"] #despesas > h2 {
+            color: var(--light-primary-blue-dark) !important;
+        }
+
+        :root[data-theme="light"] #dashboard .finance-grid {
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        :root[data-theme="light"] #dashboard .finance-card {
+            background: var(--light-card-bg) !important;
+            border: 1px solid var(--light-card-border) !important;
+            border-radius: 18px !important;
+            box-shadow: var(--light-shadow-card);
+            color: var(--light-text-main);
+        }
+
+        :root[data-theme="light"] #dashboard .finance-card h3 {
+            color: var(--light-text-muted);
+            font-weight: 700;
+        }
+
+        :root[data-theme="light"] #dashboard .finance-card p {
+            color: var(--light-primary-blue-dark);
+            font-weight: 800;
+            letter-spacing: -0.01em;
+        }
+
+        :root[data-theme="light"] #dashboard :is(#serviceRevenue, #totalCharged, #avgTicket) {
+            color: #047857 !important;
+        }
+
+        :root[data-theme="light"] #dashboard #totalExpenses,
+        :root[data-theme="light"] #despesas #expensesTable td:nth-child(4) {
+            color: #b91c1c !important;
+            font-weight: 800;
+        }
+
+        :root[data-theme="light"] #dashboard :is(#grossProfit, #netResult) {
+            color: var(--light-primary-blue-dark) !important;
+        }
+
+        :root[data-theme="light"] #dashboard .dashboard-range-actions,
+        :root[data-theme="light"] #despesas > div[style*="background: var(--secondary-dark)"],
+        :root[data-theme="light"] #despesas .expense-action-toolbar {
+            background: rgba(255, 255, 255, 0.84) !important;
+            border: 1px solid var(--light-card-border) !important;
+            border-radius: 16px !important;
+            box-shadow: var(--light-shadow-card);
+        }
+
+        :root[data-theme="light"] #dashboard .dashboard-range-actions {
+            padding: 0.75rem;
+        }
+
+        :root[data-theme="light"] #despesas > div[style*="background: var(--secondary-dark)"] {
+            border-radius: 18px !important;
+        }
+
+        :root[data-theme="light"] #despesas .form-group label,
+        :root[data-theme="light"] #despesas .expense-toolbar-label {
+            color: var(--light-primary-blue-dark);
+            font-weight: 700;
+        }
+
+        :root[data-theme="light"] #despesas :is(input, select, textarea),
+        :root[data-theme="light"] #despesas .expense-toolbar-search,
+        :root[data-theme="light"] #despesas .expense-toolbar-date {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: var(--light-text-main);
+            box-shadow: none;
+        }
+
+        :root[data-theme="light"] #despesas :is(input, select, textarea):focus,
+        :root[data-theme="light"] #despesas .expense-toolbar-search:focus,
+        :root[data-theme="light"] #despesas .expense-toolbar-date:focus {
+            border-color: var(--light-primary-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.14);
+            outline: none;
+        }
+
+        :root[data-theme="light"] #despesas :is(input, textarea)::placeholder,
+        :root[data-theme="light"] #despesas .expense-toolbar-search::placeholder {
+            color: var(--light-text-muted);
+        }
+
+        :root[data-theme="light"] #despesas .expense-toolbar-icon {
+            color: var(--light-primary-blue);
+        }
+
+        :root[data-theme="light"] #dashboard .btn.btn-secondary,
+        :root[data-theme="light"] #despesas .btn.btn-secondary,
+        :root[data-theme="light"] #despesas .expense-toolbar-btn,
+        :root[data-theme="light"] #despesas .expense-toolbar-icon-action,
+        :root[data-theme="light"] #despesas .expense-icon-btn {
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid var(--light-card-border);
+            color: var(--light-primary-blue-dark);
+        }
+
+        :root[data-theme="light"] #dashboard .btn.btn-secondary:hover,
+        :root[data-theme="light"] #despesas .btn.btn-secondary:hover,
+        :root[data-theme="light"] #despesas .expense-toolbar-btn:hover,
+        :root[data-theme="light"] #despesas .expense-toolbar-icon-action:hover:not(:disabled),
+        :root[data-theme="light"] #despesas .expense-icon-btn:hover {
+            background: rgba(0, 122, 255, 0.08);
+            border-color: rgba(0, 122, 255, 0.28);
+            color: var(--light-primary-blue-dark);
+            box-shadow: 0 8px 18px rgba(0, 122, 255, 0.10);
+        }
+
+        :root[data-theme="light"] #despesas .btn.btn-primary,
+        :root[data-theme="light"] #despesas #expenseSubmitButton {
+            background: var(--light-primary-blue);
+            border: 1px solid var(--light-primary-blue);
+            color: #ffffff;
+            box-shadow: 0 8px 18px rgba(0, 122, 255, 0.18);
+        }
+
+        :root[data-theme="light"] #despesas .btn.btn-primary:hover,
+        :root[data-theme="light"] #despesas #expenseSubmitButton:hover {
+            background: var(--light-primary-blue-dark);
+            border-color: var(--light-primary-blue-dark);
+            color: #ffffff;
+        }
+
+        :root[data-theme="light"] #despesas .expense-toolbar-icon-action.danger,
+        :root[data-theme="light"] #despesas .expense-icon-btn.danger {
+            background: rgba(239, 68, 68, 0.12);
+            border-color: rgba(239, 68, 68, 0.24);
+            color: #b91c1c;
+        }
+
+        :root[data-theme="light"] #despesas .expense-toolbar-icon-action.muted {
+            background: rgba(100, 116, 139, 0.12);
+            border-color: rgba(100, 116, 139, 0.20);
+            color: #334155;
+        }
+
+        :root[data-theme="light"] #despesas .expense-toolbar-icon-action:disabled {
+            opacity: 0.42;
+            cursor: not-allowed;
+        }
+
+        :root[data-theme="light"] #despesas .table-container {
+            background: #ffffff;
+            border: 1px solid var(--light-card-border);
+            border-radius: 16px;
+            box-shadow: var(--light-shadow-card);
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        :root[data-theme="light"] #despesas .table-container table {
+            background: #ffffff;
+            border: 0;
+            margin-bottom: 0;
+        }
+
+        :root[data-theme="light"] #despesas .table-container thead th {
+            background: linear-gradient(135deg, rgba(0, 122, 255, 0.10), rgba(34, 197, 94, 0.06));
+            border-bottom: 1px solid var(--light-card-border);
+            color: var(--light-primary-blue-dark);
+            font-weight: 700;
+        }
+
+        :root[data-theme="light"] #despesas .table-container tbody tr:nth-child(odd) {
+            background: #ffffff;
+        }
+
+        :root[data-theme="light"] #despesas .table-container tbody tr:nth-child(even) {
+            background: rgba(241, 247, 255, 0.72);
+        }
+
+        :root[data-theme="light"] #despesas .table-container tbody tr:hover {
+            background: rgba(0, 122, 255, 0.08);
+        }
+
+        :root[data-theme="light"] #despesas .table-container td {
+            border-bottom: 1px solid rgba(148, 163, 184, 0.20);
+            color: var(--light-text-main);
+        }
+
+        :root[data-theme="light"] #despesas .table-container td small {
+            color: var(--light-text-muted) !important;
+        }
+
+        :root[data-theme="light"] #despesas .table-container td[colspan] {
+            background: rgba(255, 255, 255, 0.84);
+            color: var(--light-text-muted) !important;
+            border-radius: 16px;
+        }
+
+        :root[data-theme="light"] #despesas tr.expense-row.is-selected {
+            background: rgba(0, 122, 255, 0.10) !important;
+            box-shadow: inset 3px 0 0 var(--light-primary-blue);
+        }
+
+        :root[data-theme="light"] #despesas .expense-select-checkbox {
+            accent-color: var(--light-primary-blue);
+        }
+
+        :root[data-theme="light"] #despesas .expense-status-badge {
+            background: rgba(100, 116, 139, 0.12);
+            border: 1px solid rgba(100, 116, 139, 0.20);
+            color: #334155;
+        }
+
+        :root[data-theme="light"] #despesas .expense-status-badge.is-paid {
+            background: rgba(34, 197, 94, 0.12);
+            border-color: rgba(34, 197, 94, 0.22);
+            color: #047857;
+            box-shadow: none;
+        }
+
+        :root[data-theme="light"] #despesas .expense-status-badge.is-pending,
+        :root[data-theme="light"] #despesas .expense-status-badge.is-scheduled {
+            background: rgba(245, 158, 11, 0.14);
+            border-color: rgba(245, 158, 11, 0.24);
+            color: #92400e;
+            box-shadow: none;
+        }
+
+        @media (max-width: 768px) {
+            :root[data-theme="light"] #dashboard,
+            :root[data-theme="light"] #despesas {
+                padding: 0.75rem;
+            }
+
+            :root[data-theme="light"] #dashboard .finance-grid {
+                grid-template-columns: 1fr;
+            }
+
+            :root[data-theme="light"] #despesas .expense-action-toolbar {
+                flex-wrap: wrap;
+                overflow-x: visible;
+            }
+
+            :root[data-theme="light"] #despesas .expense-search-wrap,
+            :root[data-theme="light"] #despesas .expense-filter-wrap,
+            :root[data-theme="light"] #despesas .expense-toolbar-actions {
+                flex: 1 1 100%;
+                min-width: 0;
+                flex-wrap: wrap;
+            }
+        }
+
         :root[data-theme="light"] #adminPanel .status-badge,
         :root[data-theme="light"] #adminPanel .badge,
         :root[data-theme="light"] #adminPanel .status-chip {
