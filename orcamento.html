@@ -9341,6 +9341,58 @@
             }
         }
 
+        function getIphoneModelSortWeight(modelName) {
+            const value = String(modelName || '').trim().toLowerCase();
+            const hasPlus = /\bplus\b/.test(value);
+
+            if (/se\s*2020/.test(value)) return 835;
+            if (/\b6g\b/.test(value)) return 600 + (hasPlus ? 2 : 0);
+            if (/\b6s\b/.test(value)) return 620 + (hasPlus ? 2 : 0);
+            if (/\b6\b/.test(value)) return 610 + (hasPlus ? 2 : 0);
+            if (/\b7g\b/.test(value)) return hasPlus ? 720 : 700;
+            if (/\b7\b/.test(value)) return 710 + (hasPlus ? 2 : 0);
+            if (/\b8g\b/.test(value)) return hasPlus ? 820 : 800;
+            if (/\b8\b/.test(value)) return 810 + (hasPlus ? 2 : 0);
+            if (/\bx\b/.test(value) && !/\bxr\b|\bxs\b/.test(value)) return 1000;
+            if (/\bxr\b/.test(value)) return 1010;
+            if (/\bxs\s*max\b/.test(value)) return 1030;
+            if (/\bxs\b/.test(value)) return 1020;
+
+            const generationMatch = value.match(/\b(11|12|13|14|15)\b/);
+            if (!generationMatch) return 99900;
+
+            let variantWeight = 0;
+
+            if (/\bmini\b/.test(value)) variantWeight = 1;
+            else if (hasPlus) variantWeight = 2;
+            else if (/\bpro\s*max\b/.test(value)) variantWeight = 4;
+            else if (/\bpro\b/.test(value)) variantWeight = 3;
+            else if (/\bmax\b/.test(value)) variantWeight = 4;
+
+            return Number(generationMatch[1]) * 100 + variantWeight;
+        }
+
+        function sortDeviceModels(models, brand) {
+            const normalizedBrand = String(brand || '').trim().toLowerCase();
+
+            return [...models].sort((a, b) => {
+                const modelA = String(a || '').trim();
+                const modelB = String(b || '').trim();
+
+                if (normalizedBrand === 'iphone') {
+                    const weightA = getIphoneModelSortWeight(modelA);
+                    const weightB = getIphoneModelSortWeight(modelB);
+
+                    if (weightA !== weightB) return weightA - weightB;
+                }
+
+                return modelA.localeCompare(modelB, 'pt-BR', {
+                    numeric: true,
+                    sensitivity: 'base'
+                });
+            });
+        }
+
         // Load Models based on selected brand
         async function loadModels() {
             const brand = document.getElementById('brandSelect').value;
@@ -9372,9 +9424,10 @@
                 }
 
                 const models = [...new Set(data.map(p => p.modelo).filter(m => m))];
+                const orderedModels = sortDeviceModels(models, brand);
                 console.log('Modelos unicos:', models);
 
-                models.forEach(model => {
+                orderedModels.forEach(model => {
                     const option = document.createElement('option');
                     option.value = model;
                     option.textContent = model;
