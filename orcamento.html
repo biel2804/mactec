@@ -9372,6 +9372,33 @@
             return Number(generationMatch[1]) * 100 + variantWeight;
         }
 
+        function getMotorolaModelSortWeight(modelName) {
+            const value = String(modelName || '').trim().toLowerCase();
+
+            let familyWeight = 90;
+
+            if (/\bmoto\s*c(?=\b|\d)/.test(value) || /^c\d/.test(value)) familyWeight = 1;
+            else if (/\bmoto\s*e(?=\b|\d)/.test(value) || /^e\d/.test(value)) familyWeight = 2;
+            else if (/\bmoto\s*g(?=\b|\d)/.test(value) || /^g\d/.test(value)) familyWeight = 3;
+            else if (/\bmoto\s*one\b/.test(value) || /^one\b/.test(value)) familyWeight = 4;
+            else if (/\bmoto\s*z(?=\b|\d)/.test(value) || /^z\d/.test(value)) familyWeight = 5;
+            else if (/\bedge\b/.test(value)) familyWeight = 6;
+
+            const numberMatches = value.match(/\d+/g);
+            const primaryNumber = numberMatches ? Number(numberMatches[0]) : 999;
+
+            let variantWeight = 0;
+
+            if (/\bplay\b/.test(value)) variantWeight = 1;
+            else if (/\bpower\b/.test(value)) variantWeight = 2;
+            else if (/\bplus\b/.test(value)) variantWeight = 3;
+            else if (/\blite\b/.test(value)) variantWeight = 4;
+            else if (/\b5g\b/.test(value)) variantWeight = 5;
+            else if (/\bc\/\s*aro\b/.test(value)) variantWeight = 8;
+
+            return familyWeight * 100000 + primaryNumber * 100 + variantWeight;
+        }
+
         function sortDeviceModels(models, brand) {
             const normalizedBrand = String(brand || '').trim().toLowerCase();
 
@@ -9382,6 +9409,13 @@
                 if (normalizedBrand === 'iphone') {
                     const weightA = getIphoneModelSortWeight(modelA);
                     const weightB = getIphoneModelSortWeight(modelB);
+
+                    if (weightA !== weightB) return weightA - weightB;
+                }
+
+                if (normalizedBrand === 'motorola') {
+                    const weightA = getMotorolaModelSortWeight(modelA);
+                    const weightB = getMotorolaModelSortWeight(modelB);
 
                     if (weightA !== weightB) return weightA - weightB;
                 }
