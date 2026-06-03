@@ -13072,7 +13072,7 @@ async function getMelhorEnvioShipping(cep, type) {
             }
         }
 
-        const SERVICE_ORDER_SAVE_RETURN_COLUMNS = 'id, numero_os, status, created_at, updated_at';
+        const SERVICE_ORDER_SAVE_RETURN_COLUMNS = 'id, numero_os, status';
 
         async function saveServiceOrderRecord(payload, serviceOrderId = null) {
             const client = ensureSupabaseClient(true);
@@ -13086,7 +13086,7 @@ async function getMelhorEnvioShipping(cep, type) {
                     .update(payload)
                     .eq('id', persistedServiceOrderId)
                     .select(SERVICE_ORDER_SAVE_RETURN_COLUMNS)
-                    .maybeSingle();
+                    .single();
 
                 if (error) throw error;
 
@@ -13102,7 +13102,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 .from('ordens_servico')
                 .insert([payload])
                 .select(SERVICE_ORDER_SAVE_RETURN_COLUMNS)
-                .maybeSingle();
+                .single();
 
             if (error) throw error;
 
@@ -13373,8 +13373,8 @@ async function getMelhorEnvioShipping(cep, type) {
                 .from('ordens_servico')
                 .update({ status })
                 .eq('id', persistedServiceOrderId)
-                .select('id, numero_os, status, updated_at')
-                .maybeSingle();
+                .select('id, numero_os, status')
+                .single();
 
             if (error) throw error;
             if (!data?.id) {
