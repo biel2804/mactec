@@ -3604,6 +3604,21 @@
             box-shadow: 0 0 14px rgba(192, 132, 252, 0.16);
             border-color: rgba(192, 132, 252, 0.85);
         }
+        #adminPanel #service-orders .os-action-budget {
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.45);
+        }
+        #adminPanel #service-orders .os-action-budget:hover {
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.16);
+            border-color: rgba(56, 189, 248, 0.85);
+        }
+        #customerBudgetModal .customer-budget-preview {
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.5);
+        }
         #adminPanel #service-orders .os-action-finalize {
             color: #22c55e;
             border-color: rgba(34, 197, 94, 0.45);
@@ -6736,6 +6751,49 @@
                 </div>
             </div>
 
+            <div id="customerBudgetModal" class="modal" style="display:none;">
+                <div class="modal-content" style="max-width: 920px;">
+                    <span class="close" onclick="closeCustomerBudgetModal()">&times;</span>
+                    <h3 style="color: var(--accent-green); margin-bottom: 1rem;">Orçamento do Cliente</h3>
+                    <input type="hidden" id="customerBudgetId">
+                    <input type="hidden" id="customerBudgetServiceOrderId">
+                    <div class="os-grid-2">
+                        <div class="form-group"><label for="customerBudgetClientName">Cliente</label><input type="text" id="customerBudgetClientName"></div>
+                        <div class="form-group"><label for="customerBudgetClientPhone">Telefone</label><input type="tel" id="customerBudgetClientPhone"></div>
+                    </div>
+                    <div class="os-grid">
+                        <div class="form-group"><label for="customerBudgetDevice">Aparelho</label><input type="text" id="customerBudgetDevice"></div>
+                        <div class="form-group"><label for="customerBudgetBrand">Marca</label><input type="text" id="customerBudgetBrand"></div>
+                        <div class="form-group"><label for="customerBudgetModel">Modelo</label><input type="text" id="customerBudgetModel"></div>
+                    </div>
+                    <div class="os-grid-2">
+                        <div class="form-group"><label for="customerBudgetDefect">Defeito relatado</label><textarea id="customerBudgetDefect" rows="3"></textarea></div>
+                        <div class="form-group"><label for="customerBudgetServiceDescription">Descrição do serviço</label><textarea id="customerBudgetServiceDescription" rows="3"></textarea></div>
+                    </div>
+                    <div class="os-grid-2">
+                        <div class="form-group"><label for="customerBudgetServiceTitle">Título do serviço</label><input type="text" id="customerBudgetServiceTitle"></div>
+                        <div class="form-group"><label for="customerBudgetPartQuality">Qualidade da peça</label><input type="text" id="customerBudgetPartQuality"></div>
+                    </div>
+                    <div class="os-grid">
+                        <div class="form-group"><label for="customerBudgetServiceValue">Valor serviço (R$)</label><input type="number" id="customerBudgetServiceValue" step="0.01" min="0"></div>
+                        <div class="form-group"><label for="customerBudgetFreightValue">Valor frete (R$)</label><input type="number" id="customerBudgetFreightValue" step="0.01" min="0"></div>
+                        <div class="form-group"><label for="customerBudgetTotalValue">Valor total (R$)</label><input type="number" id="customerBudgetTotalValue" step="0.01" min="0"></div>
+                    </div>
+                    <div class="os-grid">
+                        <div class="form-group"><label for="customerBudgetDeadline">Prazo estimado</label><input type="text" id="customerBudgetDeadline"></div>
+                        <div class="form-group"><label for="customerBudgetWarranty">Garantia</label><input type="text" id="customerBudgetWarranty"></div>
+                        <div class="form-group"><label for="customerBudgetPaymentMethod">Forma de pagamento</label><input type="text" id="customerBudgetPaymentMethod"></div>
+                    </div>
+                    <div class="form-group"><label for="customerBudgetClientNotes">Observações para o cliente</label><textarea id="customerBudgetClientNotes" rows="3"></textarea></div>
+                    <div style="display:flex; gap:0.75rem; justify-content:flex-end; flex-wrap:wrap;">
+                        <button type="button" class="btn btn-primary" onclick="saveCustomerBudgetDraft()">Salvar rascunho</button>
+                        <button type="button" class="btn btn-secondary" onclick="renderCustomerBudgetPreview(collectCustomerBudgetFormPayload())">Visualizar</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeCustomerBudgetModal()">Fechar</button>
+                    </div>
+                    <div id="customerBudgetPreview" class="customer-budget-preview" style="display:none;"></div>
+                </div>
+            </div>
+
             <!-- Settings Tab -->
             <div id="settings" class="tab-content">
                 <h2 style="color: var(--accent-green); margin-bottom: 1rem;">Configurações</h2>
@@ -8885,6 +8943,7 @@
                     }
                     if (action === 'edit') await editServiceOrder(serviceOrderId);
                     if (action === 'print') await printServiceOrder(serviceOrderId);
+                    if (action === 'budget') await generateCustomerBudgetFromServiceOrder(serviceOrderId);
                     if (action === 'finalize') await finalizeServiceOrder(serviceOrderId);
                     if (action === 'archive') await archiveServiceOrder(serviceOrderId);
                     if (action === 'cancel') await cancelServiceOrder(serviceOrderId);
@@ -12575,6 +12634,7 @@ async function getMelhorEnvioShipping(cep, type) {
         ];
         let currentServiceOrderId = null;
         let currentServiceOrderPreviewData = null;
+        let currentCustomerBudgetDraft = null;
         let currentServiceOrderView = SERVICE_ORDER_VIEW.KANBAN;
         const MOBILE_PREVIEW_MAX_WIDTH = 768;
 
@@ -12683,6 +12743,214 @@ async function getMelhorEnvioShipping(cep, type) {
                 .single();
             if (error) throw error;
             return data;
+        }
+
+
+        function parseCustomerBudgetServiceOrderId(serviceOrderId) {
+            const persistedServiceOrderId = parsePersistedServiceOrderId(serviceOrderId);
+            const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+            return uuidPattern.test(String(persistedServiceOrderId || '')) ? persistedServiceOrderId : null;
+        }
+
+        async function generateCustomerBudgetFromServiceOrder(serviceOrderId) {
+            try {
+                const persistedServiceOrderId = parseCustomerBudgetServiceOrderId(serviceOrderId);
+                if (!persistedServiceOrderId) throw new Error('ID UUID da O.S. inválido.');
+
+                const existingBudget = await loadCustomerBudgetByServiceOrder(persistedServiceOrderId);
+                if (existingBudget?.status_orcamento === 'rascunho') {
+                    openCustomerBudgetModal(existingBudget);
+                    showAlert('Rascunho de orçamento carregado.', 'info');
+                    return;
+                }
+
+                const serviceOrder = await loadServiceOrderForCustomerBudget(persistedServiceOrderId);
+                const budget = await createCustomerBudgetDraft(serviceOrder);
+                openCustomerBudgetModal(budget);
+                showAlert('Rascunho de orçamento criado.', 'success');
+            } catch (error) {
+                showAlert(`Erro ao gerar orçamento: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadCustomerBudgetByServiceOrder(serviceOrderId) {
+            const persistedServiceOrderId = parseCustomerBudgetServiceOrderId(serviceOrderId);
+            if (!persistedServiceOrderId) throw new Error('ID UUID da O.S. inválido para orçamento.');
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+            const { data, error } = await client
+                .from('orcamentos_os')
+                .select('*')
+                .eq('ordem_servico_id', persistedServiceOrderId)
+                .eq('status_orcamento', 'rascunho')
+                .order('atualizado_em', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            if (error) throw error;
+            return data || null;
+        }
+
+        async function loadServiceOrderForCustomerBudget(serviceOrderId) {
+            const persistedServiceOrderId = parseCustomerBudgetServiceOrderId(serviceOrderId);
+            if (!persistedServiceOrderId) throw new Error('ID UUID da O.S. inválido para carregar orçamento.');
+            const serviceOrder = await fetchServiceOrderById(persistedServiceOrderId);
+            if (!serviceOrder?.id) throw new Error('O.S. não encontrada.');
+            return serviceOrder;
+        }
+
+        async function createCustomerBudgetDraft(serviceOrder) {
+            const persistedServiceOrderId = parseCustomerBudgetServiceOrderId(serviceOrder?.id);
+            if (!persistedServiceOrderId) throw new Error('O.S. sem ID UUID válido para orçamento.');
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+            const serviceValue = Number(serviceOrder.valor_total || 0);
+            const brand = String(serviceOrder.marca || '').trim();
+            const model = String(serviceOrder.modelo || '').trim();
+            const payload = {
+                ordem_servico_id: persistedServiceOrderId,
+                numero_orcamento: `ORC-${Date.now()}`,
+                cliente_nome: serviceOrder.cliente_nome || null,
+                cliente_telefone: serviceOrder.cliente_telefone || null,
+                aparelho: [brand, model].filter(Boolean).join(' ') || null,
+                marca: brand || null,
+                modelo: model || null,
+                defeito_relatado: serviceOrder.servico || null,
+                servico_titulo: serviceOrder.servico || null,
+                descricao_servico: serviceOrder.servico || null,
+                peca_qualidade: serviceOrder.peca || null,
+                valor_servico: serviceValue,
+                valor_frete: 0,
+                valor_total: serviceValue,
+                prazo_estimado: null,
+                garantia: null,
+                forma_pagamento: null,
+                observacoes_cliente: serviceOrder.observacoes || null,
+                status_orcamento: 'rascunho'
+            };
+            const { data, error } = await client
+                .from('orcamentos_os')
+                .insert([payload])
+                .select('*')
+                .single();
+            if (error) throw error;
+            return data;
+        }
+
+        function setCustomerBudgetFieldValue(id, value) {
+            const field = document.getElementById(id);
+            if (field) field.value = value ?? '';
+        }
+
+        function openCustomerBudgetModal(budget) {
+            currentCustomerBudgetDraft = budget || null;
+            setCustomerBudgetFieldValue('customerBudgetId', budget?.id);
+            setCustomerBudgetFieldValue('customerBudgetServiceOrderId', budget?.ordem_servico_id);
+            setCustomerBudgetFieldValue('customerBudgetClientName', budget?.cliente_nome);
+            setCustomerBudgetFieldValue('customerBudgetClientPhone', budget?.cliente_telefone);
+            setCustomerBudgetFieldValue('customerBudgetDevice', budget?.aparelho);
+            setCustomerBudgetFieldValue('customerBudgetBrand', budget?.marca);
+            setCustomerBudgetFieldValue('customerBudgetModel', budget?.modelo);
+            setCustomerBudgetFieldValue('customerBudgetDefect', budget?.defeito_relatado);
+            setCustomerBudgetFieldValue('customerBudgetServiceTitle', budget?.servico_titulo);
+            setCustomerBudgetFieldValue('customerBudgetServiceDescription', budget?.descricao_servico);
+            setCustomerBudgetFieldValue('customerBudgetPartQuality', budget?.peca_qualidade);
+            setCustomerBudgetFieldValue('customerBudgetServiceValue', budget?.valor_servico);
+            setCustomerBudgetFieldValue('customerBudgetFreightValue', budget?.valor_frete ?? 0);
+            setCustomerBudgetFieldValue('customerBudgetTotalValue', budget?.valor_total);
+            setCustomerBudgetFieldValue('customerBudgetDeadline', budget?.prazo_estimado);
+            setCustomerBudgetFieldValue('customerBudgetWarranty', budget?.garantia);
+            setCustomerBudgetFieldValue('customerBudgetPaymentMethod', budget?.forma_pagamento);
+            setCustomerBudgetFieldValue('customerBudgetClientNotes', budget?.observacoes_cliente);
+            const preview = document.getElementById('customerBudgetPreview');
+            if (preview) {
+                preview.style.display = 'none';
+                preview.innerHTML = '';
+            }
+            const modal = document.getElementById('customerBudgetModal');
+            if (modal) modal.style.display = 'block';
+        }
+
+        function collectCustomerBudgetFormPayload() {
+            const getValue = (id) => document.getElementById(id)?.value.trim() || null;
+            const getMoney = (id) => {
+                const value = Number(document.getElementById(id)?.value || 0);
+                return Number.isFinite(value) ? value : 0;
+            };
+            const budgetId = getValue('customerBudgetId');
+            const serviceOrderId = parseCustomerBudgetServiceOrderId(getValue('customerBudgetServiceOrderId'));
+            if (!budgetId) throw new Error('Rascunho de orçamento não encontrado.');
+            if (!serviceOrderId) throw new Error('ID UUID da O.S. inválido no orçamento.');
+            return {
+                id: budgetId,
+                ordem_servico_id: serviceOrderId,
+                cliente_nome: getValue('customerBudgetClientName'),
+                cliente_telefone: getValue('customerBudgetClientPhone'),
+                aparelho: getValue('customerBudgetDevice'),
+                marca: getValue('customerBudgetBrand'),
+                modelo: getValue('customerBudgetModel'),
+                defeito_relatado: getValue('customerBudgetDefect'),
+                servico_titulo: getValue('customerBudgetServiceTitle'),
+                descricao_servico: getValue('customerBudgetServiceDescription'),
+                peca_qualidade: getValue('customerBudgetPartQuality'),
+                valor_servico: getMoney('customerBudgetServiceValue'),
+                valor_frete: getMoney('customerBudgetFreightValue'),
+                valor_total: getMoney('customerBudgetTotalValue'),
+                prazo_estimado: getValue('customerBudgetDeadline'),
+                garantia: getValue('customerBudgetWarranty'),
+                forma_pagamento: getValue('customerBudgetPaymentMethod'),
+                observacoes_cliente: getValue('customerBudgetClientNotes'),
+                status_orcamento: 'rascunho'
+            };
+        }
+
+        async function saveCustomerBudgetDraft() {
+            try {
+                const payload = collectCustomerBudgetFormPayload();
+                const client = ensureSupabaseClient(true);
+                if (!client) throw new Error('Supabase não configurado.');
+                const { id, ...updatePayload } = payload;
+                const { data, error } = await client
+                    .from('orcamentos_os')
+                    .update(updatePayload)
+                    .eq('id', id)
+                    .eq('status_orcamento', 'rascunho')
+                    .select('*')
+                    .single();
+                if (error) throw error;
+                if (!data?.id) throw new Error('Nenhum rascunho foi atualizado.');
+                currentCustomerBudgetDraft = data;
+                openCustomerBudgetModal(data);
+                renderCustomerBudgetPreview(data);
+                showAlert('Rascunho salvo com sucesso.', 'success');
+            } catch (error) {
+                showAlert(`Erro ao salvar rascunho: ${error.message}`, 'error');
+            }
+        }
+
+        function renderCustomerBudgetPreview(budget) {
+            const preview = document.getElementById('customerBudgetPreview');
+            if (!preview) return;
+            const safe = (value, fallback = '-') => escapeHtml(value || fallback);
+            preview.innerHTML = `
+                <h4 style="margin-top:0; color: var(--accent-green);">Prévia do orçamento</h4>
+                <p><strong>Cliente:</strong> ${safe(budget.cliente_nome)} ${budget.cliente_telefone ? `| ${safe(formatPhoneForDisplay(budget.cliente_telefone))}` : ''}</p>
+                <p><strong>Aparelho:</strong> ${safe(budget.aparelho || [budget.marca, budget.modelo].filter(Boolean).join(' '))}</p>
+                <p><strong>Defeito relatado:</strong> ${safe(budget.defeito_relatado)}</p>
+                <p><strong>Serviço:</strong> ${safe(budget.servico_titulo)}</p>
+                <p><strong>Descrição:</strong> ${safe(budget.descricao_servico)}</p>
+                <p><strong>Peça/qualidade:</strong> ${safe(budget.peca_qualidade)}</p>
+                <p><strong>Valores:</strong> Serviço ${formatCurrencyBRL(budget.valor_servico)} + Frete ${formatCurrencyBRL(budget.valor_frete)} = <strong>${formatCurrencyBRL(budget.valor_total)}</strong></p>
+                <p><strong>Prazo:</strong> ${safe(budget.prazo_estimado)} | <strong>Garantia:</strong> ${safe(budget.garantia)}</p>
+                <p><strong>Pagamento:</strong> ${safe(budget.forma_pagamento)}</p>
+                <p><strong>Observações:</strong> ${safe(budget.observacoes_cliente)}</p>
+            `;
+            preview.style.display = 'block';
+        }
+
+        function closeCustomerBudgetModal() {
+            const modal = document.getElementById('customerBudgetModal');
+            if (modal) modal.style.display = 'none';
+            currentCustomerBudgetDraft = null;
         }
 
         async function refreshServiceOrderPreviewFromForm() {
@@ -13280,6 +13548,7 @@ async function getMelhorEnvioShipping(cep, type) {
                             <div class="os-list-actions">
                                 <button type="button" class="os-action-icon os-action-edit js-service-order-action" data-action="edit" data-id="${escapeHtml(serviceOrderId || '')}" data-service-order-id="${escapeHtml(serviceOrderId || '')}" title="Editar O.S." aria-label="Editar O.S." ${hasValidInternalId ? '' : 'disabled aria-disabled="true"'}>✎</button>
                                 <button type="button" class="os-action-icon os-action-pdf js-service-order-action" data-action="print" data-id="${escapeHtml(serviceOrderId || '')}" data-service-order-id="${escapeHtml(serviceOrderId || '')}" title="Gerar PDF" aria-label="Gerar PDF" ${hasValidInternalId ? '' : 'disabled aria-disabled="true"'}>▣</button>
+                                <button type="button" class="os-action-icon os-action-budget js-service-order-action" data-action="budget" data-id="${escapeHtml(serviceOrderId || '')}" data-service-order-id="${escapeHtml(serviceOrderId || '')}" title="Gerar orçamento" aria-label="Gerar orçamento" ${hasValidInternalId ? '' : 'disabled aria-disabled="true"'}>$</button>
                                 <button type="button" class="os-action-icon os-action-finalize js-service-order-action" data-action="finalize" data-id="${escapeHtml(serviceOrderId || '')}" data-service-order-id="${escapeHtml(serviceOrderId || '')}" title="Finalizar O.S." aria-label="Finalizar O.S." ${hasValidInternalId ? '' : 'disabled aria-disabled="true"'}>✓</button>
                                 <button type="button" class="os-action-icon os-action-archive js-service-order-action" data-action="archive" data-id="${escapeHtml(serviceOrderId || '')}" data-service-order-id="${escapeHtml(serviceOrderId || '')}" title="Arquivar O.S." aria-label="Arquivar O.S." ${hasValidInternalId ? '' : 'disabled aria-disabled="true"'}>▤</button>
                                 <button type="button" class="os-action-icon os-action-cancel js-service-order-action" data-action="cancel" data-id="${escapeHtml(serviceOrderId || '')}" data-service-order-id="${escapeHtml(serviceOrderId || '')}" title="Cancelar O.S." aria-label="Cancelar O.S." ${hasValidInternalId ? '' : 'disabled aria-disabled="true"'}>×</button>
