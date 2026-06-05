@@ -3614,10 +3614,126 @@
         }
         #customerBudgetModal .customer-budget-preview {
             margin-top: 1rem;
+            padding: 0;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            border-radius: 16px;
+            background: #f8fafc;
+            color: #0f172a;
+            overflow: hidden;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+        }
+        #customerBudgetModal .budget-preview-document {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            color: #0f172a;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        #customerBudgetModal .budget-preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.25rem;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 4px solid #16a34a;
+            background: #ffffff;
+        }
+        #customerBudgetModal .budget-preview-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 0;
+        }
+        #customerBudgetModal .budget-preview-logo {
+            width: 76px;
+            height: 76px;
+            object-fit: contain;
+            flex: 0 0 auto;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            padding: 0.35rem;
+        }
+        #customerBudgetModal .budget-preview-company {
+            margin: 0;
+            color: #0f172a;
+            font-size: 1.45rem;
+            line-height: 1.1;
+        }
+        #customerBudgetModal .budget-preview-subtitle,
+        #customerBudgetModal .budget-preview-meta {
+            margin: 0.25rem 0 0;
+            color: #475569;
+            font-size: 0.9rem;
+        }
+        #customerBudgetModal .budget-preview-number {
+            text-align: right;
+            color: #0f172a;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
+        }
+        #customerBudgetModal .budget-preview-body {
+            padding: 1.25rem 1.5rem 1.5rem;
+        }
+        #customerBudgetModal .budget-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+        #customerBudgetModal .budget-preview-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #ffffff;
             padding: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: rgba(15, 23, 42, 0.5);
+        }
+        #customerBudgetModal .budget-preview-card.budget-preview-card-full {
+            grid-column: 1 / -1;
+        }
+        #customerBudgetModal .budget-preview-card h5 {
+            margin: 0 0 0.65rem;
+            color: #15803d;
+            font-size: 0.82rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        #customerBudgetModal .budget-preview-card p {
+            margin: 0.35rem 0;
+            color: #0f172a;
+            line-height: 1.45;
+        }
+        #customerBudgetModal .budget-preview-label {
+            display: inline-block;
+            min-width: 115px;
+            color: #64748b;
+            font-weight: 700;
+        }
+        #customerBudgetModal .budget-preview-total {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #15803d, #22c55e);
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 800;
+        }
+        #customerBudgetModal .budget-preview-total span:last-child {
+            font-size: 1.4rem;
+        }
+        @media (max-width: 720px) {
+            #customerBudgetModal .budget-preview-header,
+            #customerBudgetModal .budget-preview-total {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+            #customerBudgetModal .budget-preview-number {
+                text-align: left;
+            }
+            #customerBudgetModal .budget-preview-grid {
+                grid-template-columns: 1fr;
+            }
         }
         #adminPanel #service-orders .os-action-finalize {
             color: #22c55e;
@@ -12635,6 +12751,8 @@ async function getMelhorEnvioShipping(cep, type) {
         let currentServiceOrderId = null;
         let currentServiceOrderPreviewData = null;
         let currentCustomerBudgetDraft = null;
+        const CUSTOMER_BUDGET_LOGO_URL = 'assets/logo.png';
+        const CUSTOMER_BUDGET_DEFAULT_WARRANTY = 'Garantia de 90 dias para o serviço executado e peça aplicada, conforme condições de uso e ausência de dano físico, líquido ou intervenção de terceiros.';
         let currentServiceOrderView = SERVICE_ORDER_VIEW.KANBAN;
         const MOBILE_PREVIEW_MAX_WIDTH = 768;
 
@@ -12821,9 +12939,9 @@ async function getMelhorEnvioShipping(cep, type) {
                 valor_servico: serviceValue,
                 valor_frete: 0,
                 valor_total: serviceValue,
-                prazo_estimado: null,
-                garantia: null,
-                forma_pagamento: null,
+                prazo_estimado: 'Até 3 dias úteis após aprovação',
+                garantia: CUSTOMER_BUDGET_DEFAULT_WARRANTY,
+                forma_pagamento: 'A combinar',
                 observacoes_cliente: serviceOrder.observacoes || null,
                 status_orcamento: 'rascunho'
             };
@@ -12931,18 +13049,61 @@ async function getMelhorEnvioShipping(cep, type) {
             const preview = document.getElementById('customerBudgetPreview');
             if (!preview) return;
             const safe = (value, fallback = '-') => escapeHtml(value || fallback);
+            const displayDevice = budget.aparelho || [budget.marca, budget.modelo].filter(Boolean).join(' ');
             preview.innerHTML = `
-                <h4 style="margin-top:0; color: var(--accent-green);">Prévia do orçamento</h4>
-                <p><strong>Cliente:</strong> ${safe(budget.cliente_nome)} ${budget.cliente_telefone ? `| ${safe(formatPhoneForDisplay(budget.cliente_telefone))}` : ''}</p>
-                <p><strong>Aparelho:</strong> ${safe(budget.aparelho || [budget.marca, budget.modelo].filter(Boolean).join(' '))}</p>
-                <p><strong>Defeito relatado:</strong> ${safe(budget.defeito_relatado)}</p>
-                <p><strong>Serviço:</strong> ${safe(budget.servico_titulo)}</p>
-                <p><strong>Descrição:</strong> ${safe(budget.descricao_servico)}</p>
-                <p><strong>Peça/qualidade:</strong> ${safe(budget.peca_qualidade)}</p>
-                <p><strong>Valores:</strong> Serviço ${formatCurrencyBRL(budget.valor_servico)} + Frete ${formatCurrencyBRL(budget.valor_frete)} = <strong>${formatCurrencyBRL(budget.valor_total)}</strong></p>
-                <p><strong>Prazo:</strong> ${safe(budget.prazo_estimado)} | <strong>Garantia:</strong> ${safe(budget.garantia)}</p>
-                <p><strong>Pagamento:</strong> ${safe(budget.forma_pagamento)}</p>
-                <p><strong>Observações:</strong> ${safe(budget.observacoes_cliente)}</p>
+                <article class="budget-preview-document" aria-label="Prévia profissional do orçamento">
+                    <header class="budget-preview-header">
+                        <div class="budget-preview-brand">
+                            <img class="budget-preview-logo" src="${CUSTOMER_BUDGET_LOGO_URL}" alt="Logo MacTec Support">
+                            <div>
+                                <h4 class="budget-preview-company">MacTec Support</h4>
+                                <p class="budget-preview-subtitle">Orçamento técnico para aprovação do cliente</p>
+                                <p class="budget-preview-meta">Atendimento especializado em manutenção e suporte técnico</p>
+                            </div>
+                        </div>
+                        <div class="budget-preview-number">
+                            <div>Orçamento</div>
+                            <div>${safe(budget.numero_orcamento || currentCustomerBudgetDraft?.numero_orcamento || budget.id, 'Rascunho')}</div>
+                        </div>
+                    </header>
+                    <div class="budget-preview-body">
+                        <div class="budget-preview-grid">
+                            <section class="budget-preview-card">
+                                <h5>Cliente</h5>
+                                <p><span class="budget-preview-label">Nome:</span>${safe(budget.cliente_nome)}</p>
+                                <p><span class="budget-preview-label">Telefone:</span>${budget.cliente_telefone ? safe(formatPhoneForDisplay(budget.cliente_telefone)) : '-'}</p>
+                            </section>
+                            <section class="budget-preview-card">
+                                <h5>Aparelho</h5>
+                                <p><span class="budget-preview-label">Dispositivo:</span>${safe(displayDevice)}</p>
+                                <p><span class="budget-preview-label">Marca/modelo:</span>${safe([budget.marca, budget.modelo].filter(Boolean).join(' / '))}</p>
+                            </section>
+                            <section class="budget-preview-card budget-preview-card-full">
+                                <h5>Serviço proposto</h5>
+                                <p><span class="budget-preview-label">Defeito:</span>${safe(budget.defeito_relatado)}</p>
+                                <p><span class="budget-preview-label">Serviço:</span>${safe(budget.servico_titulo)}</p>
+                                <p><span class="budget-preview-label">Descrição:</span>${safe(budget.descricao_servico)}</p>
+                                <p><span class="budget-preview-label">Peça:</span>${safe(budget.peca_qualidade)}</p>
+                            </section>
+                            <section class="budget-preview-card">
+                                <h5>Condições</h5>
+                                <p><span class="budget-preview-label">Prazo:</span>${safe(budget.prazo_estimado)}</p>
+                                <p><span class="budget-preview-label">Garantia:</span>${safe(budget.garantia)}</p>
+                                <p><span class="budget-preview-label">Pagamento:</span>${safe(budget.forma_pagamento)}</p>
+                            </section>
+                            <section class="budget-preview-card">
+                                <h5>Valores</h5>
+                                <p><span class="budget-preview-label">Serviço:</span>${formatCurrencyBRL(budget.valor_servico)}</p>
+                                <p><span class="budget-preview-label">Frete:</span>${formatCurrencyBRL(budget.valor_frete)}</p>
+                                <p><span class="budget-preview-label">Observações:</span>${safe(budget.observacoes_cliente)}</p>
+                            </section>
+                        </div>
+                        <div class="budget-preview-total">
+                            <span>Total para aprovação</span>
+                            <span>${formatCurrencyBRL(budget.valor_total)}</span>
+                        </div>
+                    </div>
+                </article>
             `;
             preview.style.display = 'block';
         }
