@@ -6904,6 +6904,7 @@
                     <div style="display:flex; gap:0.75rem; justify-content:flex-end; flex-wrap:wrap;">
                         <button type="button" class="btn btn-primary" onclick="saveCustomerBudgetDraft()">Salvar rascunho</button>
                         <button type="button" class="btn btn-secondary" onclick="renderCustomerBudgetPreview(collectCustomerBudgetFormPayload())">Visualizar</button>
+                        <button type="button" class="btn btn-secondary" onclick="printCustomerBudget()">Imprimir orçamento</button>
                         <button type="button" class="btn btn-secondary" onclick="closeCustomerBudgetModal()">Fechar</button>
                     </div>
                     <div id="customerBudgetPreview" class="customer-budget-preview" style="display:none;"></div>
@@ -13045,25 +13046,32 @@ async function getMelhorEnvioShipping(cep, type) {
             }
         }
 
-        function renderCustomerBudgetPreview(budget) {
-            const preview = document.getElementById('customerBudgetPreview');
-            if (!preview) return;
+        function buildCustomerBudgetPreviewHtml(budget) {
             const safe = (value, fallback = '-') => escapeHtml(value || fallback);
             const displayDevice = budget.aparelho || [budget.marca, budget.modelo].filter(Boolean).join(' ');
-            preview.innerHTML = `
+            const budgetDate = budget.criado_em || budget.created_at || budget.atualizado_em || new Date().toISOString();
+            const parsedBudgetDate = budgetDate ? new Date(budgetDate) : null;
+            const displayDate = parsedBudgetDate && !Number.isNaN(parsedBudgetDate.getTime()) ? parsedBudgetDate.toLocaleDateString('pt-BR') : '-';
+            const clientNotes = budget.observacoes_cliente ? `
+                            <section class="budget-preview-card budget-preview-card-full">
+                                <h5>Observações para o cliente</h5>
+                                <p>${safe(budget.observacoes_cliente)}</p>
+                            </section>` : '';
+            return `
                 <article class="budget-preview-document" aria-label="Prévia profissional do orçamento">
                     <header class="budget-preview-header">
                         <div class="budget-preview-brand">
                             <img class="budget-preview-logo" src="${CUSTOMER_BUDGET_LOGO_URL}" alt="Logo MacTec Support">
                             <div>
                                 <h4 class="budget-preview-company">MacTec Support</h4>
-                                <p class="budget-preview-subtitle">Orçamento técnico para aprovação do cliente</p>
+                                <p class="budget-preview-subtitle">Orçamento de serviço para aprovação</p>
                                 <p class="budget-preview-meta">Atendimento especializado em manutenção e suporte técnico</p>
                             </div>
                         </div>
                         <div class="budget-preview-number">
                             <div>Orçamento</div>
                             <div>${safe(budget.numero_orcamento || currentCustomerBudgetDraft?.numero_orcamento || budget.id, 'Rascunho')}</div>
+                            <div>Data ${safe(displayDate)}</div>
                         </div>
                     </header>
                     <div class="budget-preview-body">
@@ -13089,14 +13097,14 @@ async function getMelhorEnvioShipping(cep, type) {
                                 <h5>Condições</h5>
                                 <p><span class="budget-preview-label">Prazo:</span>${safe(budget.prazo_estimado)}</p>
                                 <p><span class="budget-preview-label">Garantia:</span>${safe(budget.garantia)}</p>
-                                <p><span class="budget-preview-label">Pagamento:</span>${safe(budget.forma_pagamento)}</p>
                             </section>
                             <section class="budget-preview-card">
                                 <h5>Valores</h5>
                                 <p><span class="budget-preview-label">Serviço:</span>${formatCurrencyBRL(budget.valor_servico)}</p>
                                 <p><span class="budget-preview-label">Frete:</span>${formatCurrencyBRL(budget.valor_frete)}</p>
-                                <p><span class="budget-preview-label">Observações:</span>${safe(budget.observacoes_cliente)}</p>
+                                <p><span class="budget-preview-label">Condição de pagamento:</span>${safe(budget.forma_pagamento)}</p>
                             </section>
+                            ${clientNotes}
                         </div>
                         <div class="budget-preview-total">
                             <span>Total para aprovação</span>
@@ -13105,7 +13113,61 @@ async function getMelhorEnvioShipping(cep, type) {
                     </div>
                 </article>
             `;
+        }
+
+        function renderCustomerBudgetPreview(budget) {
+            const preview = document.getElementById('customerBudgetPreview');
+            if (!preview) return;
+            preview.innerHTML = buildCustomerBudgetPreviewHtml(budget);
             preview.style.display = 'block';
+        }
+
+        function getCustomerBudgetPrintableHtml(budget) {
+            const budgetNumber = escapeHtml(budget.numero_orcamento || currentCustomerBudgetDraft?.numero_orcamento || budget.id || 'rascunho');
+            return `
+                    <!DOCTYPE html>
+                    <html lang="pt-BR">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Orçamento ${budgetNumber}</title>
+                        <style>
+                            * { box-sizing: border-box; }
+                            body { margin: 0; padding: 24px; background: #f8fafc; color: #0f172a; font-family: Arial, Helvetica, sans-serif; }
+                            .budget-preview-document { max-width: 920px; margin: 0 auto; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); color: #0f172a; }
+                            .budget-preview-header { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; padding: 1.25rem 1.5rem; border-bottom: 4px solid #16a34a; background: #ffffff; }
+                            .budget-preview-brand { display: flex; align-items: center; gap: 1rem; min-width: 0; }
+                            .budget-preview-logo { width: 76px; height: 76px; object-fit: contain; flex: 0 0 auto; border-radius: 14px; border: 1px solid #e2e8f0; background: #ffffff; padding: 0.35rem; }
+                            .budget-preview-company { margin: 0; color: #0f172a; font-size: 1.45rem; line-height: 1.1; }
+                            .budget-preview-subtitle, .budget-preview-meta { margin: 0.25rem 0 0; color: #475569; font-size: 0.9rem; }
+                            .budget-preview-number { text-align: right; color: #0f172a; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+                            .budget-preview-body { padding: 1.25rem 1.5rem 1.5rem; }
+                            .budget-preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+                            .budget-preview-card { border: 1px solid #e2e8f0; border-radius: 14px; background: #ffffff; padding: 1rem; }
+                            .budget-preview-card.budget-preview-card-full { grid-column: 1 / -1; }
+                            .budget-preview-card h5 { margin: 0 0 0.65rem; color: #15803d; font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; }
+                            .budget-preview-card p { margin: 0.35rem 0; color: #0f172a; line-height: 1.45; }
+                            .budget-preview-label { display: inline-block; min-width: 150px; color: #64748b; font-weight: 700; }
+                            .budget-preview-total { margin-top: 1rem; padding: 1rem; border-radius: 14px; background: linear-gradient(135deg, #15803d, #22c55e); color: #ffffff; display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-weight: 800; }
+                            .budget-preview-total span:last-child { font-size: 1.4rem; }
+                            @media print { body { padding: 0; background: #ffffff; } .budget-preview-document { max-width: none; } }
+                        </style>
+                    </head>
+                    <body>${buildCustomerBudgetPreviewHtml(budget)}</body>
+                    </html>
+                `;
+        }
+
+        function printCustomerBudget() {
+            try {
+                const budget = collectCustomerBudgetFormPayload();
+                const printWindow = window.open('', '', 'width=920,height=700');
+                if (!printWindow) throw new Error('Não foi possível abrir a janela de impressão.');
+                printWindow.document.write(getCustomerBudgetPrintableHtml(budget));
+                printWindow.document.close();
+                setTimeout(() => printWindow.print(), 500);
+            } catch (error) {
+                showAlert(`Erro ao imprimir orçamento: ${error.message}`, 'error');
+            }
         }
 
         function closeCustomerBudgetModal() {
