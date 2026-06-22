@@ -5712,7 +5712,277 @@
                 gap: 6px;
             }
         }
-    </style>
+    
+
+        /* Correção cirúrgica mobile do painel administrativo MacTec Support */
+        @media (max-width: 768px) {
+            html,
+            body {
+                overflow-x: hidden;
+            }
+
+            #adminPanel,
+            #adminPanel * {
+                max-width: 100%;
+            }
+
+            #adminPanel {
+                overflow-x: hidden;
+            }
+
+            #adminPanel .admin-header {
+                position: sticky;
+                top: 0;
+                z-index: 60;
+                padding: 0.75rem;
+                min-height: 64px;
+                gap: 0.6rem;
+            }
+
+            #adminPanel .admin-header h1 {
+                font-size: 1.1rem;
+                line-height: 1.2;
+            }
+
+            #adminPanel .admin-header-actions {
+                width: auto;
+                margin-left: auto;
+                justify-content: flex-end;
+            }
+
+            #adminPanel .admin-mobile-nav-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #adminPanel .admin-sidebar {
+                top: 64px;
+                bottom: 0;
+                width: min(300px, 86vw);
+                transform: translateX(-105%);
+                transition: transform 0.25s ease;
+                z-index: 70;
+                overflow-y: auto;
+                overflow-x: hidden;
+                box-shadow: 10px 0 28px rgba(0, 0, 0, 0.32);
+            }
+
+            #adminPanel .admin-sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            #adminPanel .admin-sidebar.collapsed {
+                width: min(300px, 86vw);
+            }
+
+            #adminPanel .admin-sidebar.collapsed .admin-tab .tab-label {
+                display: inline;
+            }
+
+            #adminPanel .admin-sidebar-overlay {
+                position: fixed;
+                inset: 64px 0 0 0;
+                z-index: 65;
+                background: rgba(0, 0, 0, 0.55);
+            }
+
+            #adminPanel .admin-sidebar-overlay.active {
+                display: block;
+            }
+
+            #adminPanel .admin-content,
+            #adminPanel .admin-content.sidebar-collapsed {
+                margin-left: 0;
+                width: 100%;
+                padding: 0.85rem;
+                overflow-x: hidden;
+            }
+
+            #adminPanel .btn,
+            #adminPanel button,
+            #adminPanel .admin-btn,
+            #adminPanel .btn-small,
+            #adminPanel .table-actions button,
+            #adminPanel .action-buttons button,
+            #adminPanel .os-action-icon,
+            #adminPanel #service-orders .os-preview-actions .btn,
+            #adminPanel #service-orders .os-list-action-btn {
+                min-height: 44px;
+                height: auto;
+            }
+
+            #adminPanel input,
+            #adminPanel select,
+            #adminPanel textarea {
+                width: 100%;
+                min-width: 0;
+            }
+
+            #adminPanel #dashboard .finance-grid,
+            #adminPanel #service-orders .os-summary-grid,
+            #adminPanel #service-orders .os-layout,
+            #adminPanel #service-orders .os-grid,
+            #adminPanel #service-orders .os-grid-2,
+            #adminPanel #serviceOrderForm > div[style*="grid-template-columns"],
+            #customerBudgetModal .os-grid,
+            #customerBudgetModal .os-grid-2,
+            #adminPanel #service-orders .os-kanban-board {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            #adminPanel #service-orders .os-preview-panel {
+                display: block;
+                width: 100%;
+                min-width: 0;
+            }
+
+            #adminPanel #service-orders .os-preview {
+                max-height: none;
+                width: 100%;
+                min-width: 0;
+                overflow-x: hidden;
+                overflow-wrap: anywhere;
+            }
+
+            #adminPanel #service-orders .os-kanban-board {
+                overflow-x: hidden !important;
+            }
+
+            #adminPanel #service-orders .os-kanban-cards {
+                max-height: none;
+                overflow-y: visible;
+            }
+
+            #adminPanel #service-orders .os-list-table-container {
+                overflow: visible !important;
+                max-height: none;
+                border: 0;
+                background: transparent;
+                box-shadow: none;
+            }
+
+            #adminPanel #service-orders .os-list-table,
+            #adminPanel #service-orders .os-list-table thead,
+            #adminPanel #service-orders .os-list-table tbody,
+            #adminPanel #service-orders .os-list-table tr,
+            #adminPanel #service-orders .os-list-table td {
+                display: block;
+                width: 100%;
+                min-width: 0;
+            }
+
+            #adminPanel #service-orders .os-list-table {
+                min-width: 0 !important;
+                border: 0;
+                background: transparent;
+            }
+
+            #adminPanel #service-orders .os-list-table thead {
+                display: none;
+            }
+
+            #adminPanel #service-orders .os-list-table tbody tr {
+                margin-bottom: 0.75rem;
+                padding: 0.85rem;
+                border: 1px solid rgba(148, 163, 184, 0.24);
+                border-radius: 14px;
+                background: var(--card-bg);
+            }
+
+            #adminPanel #service-orders .os-list-table tbody td {
+                padding: 0.32rem 0;
+                border-bottom: 0;
+                white-space: normal !important;
+                text-align: left !important;
+                overflow-wrap: anywhere;
+            }
+
+            #adminPanel #service-orders .os-list-table tbody td:nth-child(1)::before { content: "O.S. #"; }
+            #adminPanel #service-orders .os-list-table tbody td:nth-child(2)::before { content: "Cliente: "; }
+            #adminPanel #service-orders .os-list-table tbody td:nth-child(3)::before { content: "Dispositivo: "; }
+            #adminPanel #service-orders .os-list-table tbody td:nth-child(4)::before { content: "Defeito: "; }
+            #adminPanel #service-orders .os-list-table tbody td:nth-child(5)::before { content: "Status: "; }
+            #adminPanel #service-orders .os-list-table tbody td:nth-child(6)::before { content: "Data: "; }
+            #adminPanel #service-orders .os-list-table tbody td::before {
+                font-weight: 700;
+                color: var(--accent-green);
+            }
+
+            #adminPanel #service-orders .os-list-table tbody td:nth-child(7)::before,
+            #adminPanel #service-orders .os-list-table tbody td[colspan]::before {
+                content: none;
+            }
+
+            #adminPanel #service-orders .os-list-value,
+            #adminPanel #service-orders .os-list-defect {
+                max-width: 100%;
+                white-space: normal;
+                overflow: visible;
+                text-overflow: clip;
+                display: inline;
+            }
+
+            #adminPanel #service-orders .os-list-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                justify-content: flex-start;
+                white-space: normal;
+                padding-top: 0.35rem;
+            }
+
+            #adminPanel #service-orders .os-action-icon {
+                width: 44px;
+                min-width: 44px;
+            }
+
+            #customerBudgetModal {
+                padding: 0;
+                overflow: hidden;
+            }
+
+            #customerBudgetModal .modal-content {
+                width: 100% !important;
+                height: 100vh;
+                max-width: 100% !important;
+                max-height: 100vh;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding: 1rem;
+            }
+
+            #customerBudgetModal .customer-budget-preview,
+            #customerBudgetModal .budget-preview-document,
+            #customerBudgetModal .budget-preview-body,
+            #customerBudgetModal .budget-preview-card,
+            #customerBudgetModal .budget-preview-total {
+                width: 100%;
+                min-width: 0;
+                overflow-x: hidden;
+                overflow-wrap: anywhere;
+                word-break: normal;
+            }
+
+            #customerBudgetModal .budget-preview-header,
+            #customerBudgetModal .budget-preview-brand,
+            #customerBudgetModal .budget-preview-total {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            #customerBudgetModal .budget-preview-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            #customerBudgetModal .budget-preview-label {
+                min-width: 0;
+                margin-right: 0.25rem;
+            }
+        }
+</style>
 </head>
 <body>
     <div id="howItWorksModal" class="modal-overlay" style="display:none;">
