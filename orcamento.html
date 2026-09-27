@@ -6630,6 +6630,7 @@
                             <button type="button" class="btn btn-secondary" onclick="closeAdminCustomerModal()">Cancelar</button>
                         </div>
                         <p id="adminCustomerStatus" style="margin-top:0.75rem; color:var(--text-secondary);"></p>
+                        <section id="customerOrderHistory" style="display:none; margin-top:1rem; border-top:1px solid var(--border-color); padding-top:1rem;"></section>
                     </form>
                 </div>
             </div>
@@ -6941,6 +6942,8 @@
                                 <div class="form-group">
                                     <label for="walkInWhatsApp">WhatsApp</label>
                                     <input type="tel" id="walkInWhatsApp" required>
+                                    <input type="hidden" id="walkInCustomerId" value="">
+                                    <div id="walkInCustomerLookup" style="display:none; width:100%; margin-top:.5rem; padding:.75rem; border:1px solid var(--border-color); border-radius:8px;"></div>
                                 </div>
                             </div>
                             <div class="os-grid-2">
@@ -7028,6 +7031,8 @@
                                     <div class="form-group" style="margin-bottom: 0;">
                                         <label for="osPhone">Telefone (opcional):</label>
                                         <input type="tel" id="osPhone" placeholder="(11) 99999-9999">
+                                        <input type="hidden" id="osCustomerId" value="">
+                                        <div id="osCustomerLookup" style="display:none; width:100%; margin-top:.5rem; padding:.75rem; border:1px solid var(--border-color); border-radius:8px;"></div>
                                     </div>
                                 </div>
                                 <div class="os-grid">
@@ -7444,12 +7449,15 @@
             });
         }
 
-        function normalizePhone(value) {
+        // Identidade de telefone compartilhada por cadastro, painel, O.S. e balcão.
+        function normalizePhoneNumber(value) {
             const digits = String(value || '').replace(/\D/g, '');
-            if (digits.length === 13 && digits.startsWith('55')) {
-                return digits.slice(2);
-            }
-            return digits;
+            return digits.length === 13 && digits.startsWith('55') ? digits.slice(2) : digits;
+        }
+
+        // Mantido para os pontos legados do orçamento que já usam este nome.
+        function normalizePhone(value) {
+            return normalizePhoneNumber(value);
         }
 
         function formatPhoneForDisplay(value) {
@@ -7486,25 +7494,108 @@
             return [cidade, estado].filter(Boolean).join(' - ');
         }
 
-        async function findCustomerByPhone(rawPhone) {
-            const telefoneNormalizado = normalizePhone(rawPhone);
+        const CUSTOMER_SELECT_COLUMNS = 'id, nome, telefone, telefone_normalizado, email, cep, rua, numero, bairro, cidade, estado, endereco';
+
+        async function findCustomersByPhone(rawPhone) {
+            const telefoneNormalizado = normalizePhoneNumber(rawPhone);
             if (!isValidBrazilMobilePhone(telefoneNormalizado)) {
                 throw new Error('Informe um celular/WhatsApp válido com 11 dígitos (DDD + número).');
             }
-
             const client = ensureSupabaseClient(true);
-            if (!client) {
-                throw new Error('Supabase não configurado.');
-            }
+            if (!client) throw new Error('Supabase não configurado.');
 
-            const { data, error } = await client
-                .from('clientes')
-                .select('id, nome, telefone, telefone_normalizado, email, cep, rua, numero, bairro, cidade, estado, endereco')
-                .eq('telefone_normalizado', telefoneNormalizado)
-                .maybeSingle();
-
+            const { data, error } = await client.from('clientes')
+                .select(CUSTOMER_SELECT_COLUMNS)
+                // Inclui o prefixo legado +55, pois migrations antigas apenas removiam máscara.
+                .in('telefone_normalizado', [telefoneNormalizado, `55${telefoneNormalizado}`])
+                .order('created_at', { ascending: true });
             if (error) throw error;
-            return data || null;
+            return data || [];
+        }
+
+        async function findCustomerByPhone(rawPhone) {
+            const customers = await findCustomersByPhone(rawPhone);
+            return customers.length === 1 ? customers[0] : null;
+        }
+
+        function renderCustomerSelection(containerId, customers, onSelect, emptyMessage = '') {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            if (!customers.length) {
+                container.innerHTML = emptyMessage ? `<small>${escapeHtml(emptyMessage)}</small>` : '';
+                container.style.display = emptyMessage ? 'block' : 'none';
+                return;
+            }
+            const heading = customers.length === 1 ? 'Cliente encontrado' : 'Clientes encontrados — selecione o cadastro correto';
+            container.innerHTML = `<strong>${heading}</strong>${customers.map((customer, index) => `
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin-top:.65rem; flex-wrap:wrap;">
+                    <span><b>${escapeHtml(customer.nome || 'Sem nome')}</b><br><small>${escapeHtml(formatPhoneForDisplay(customer.telefone || customer.telefone_normalizado || ''))}</small></span>
+                    <button type="button" class="btn btn-secondary js-customer-selection" data-index="${index}">Selecionar cliente</button>
+                </div>`).join('')}`;
+            container.style.display = 'block';
+            container.querySelectorAll('.js-customer-selection').forEach((button) => {
+                button.addEventListener('click', () => onSelect(customers[Number(button.dataset.index)]));
+            });
+        }
+
+        function bindCustomerPhoneLookup(inputId, resultId, onSelect) {
+            const input = document.getElementById(inputId);
+            if (!input || input.dataset.customerLookupBound === 'true') return;
+            let debounceId = null;
+            input.addEventListener('input', () => {
+                window.clearTimeout(debounceId);
+                const digits = normalizePhoneNumber(input.value);
+                if (digits.length < 11) {
+                    renderCustomerSelection(resultId, [], null, 'Informe um celular com DDD para buscar um cliente.');
+                    return;
+                }
+                debounceId = window.setTimeout(async () => {
+                    try {
+                        const customers = await findCustomersByPhone(input.value);
+                        renderCustomerSelection(resultId, customers, onSelect, 'Nenhum cliente encontrado para este telefone.');
+                        if (!customers.length) {
+                            const container = document.getElementById(resultId);
+                            container.innerHTML += '<button type="button" class="btn btn-secondary js-create-customer" style="margin-top:.65rem;">Cadastrar novo cliente</button>';
+                            container.querySelector('.js-create-customer')?.addEventListener('click', () => createCustomerFromServiceOrderFields(inputId, onSelect));
+                        }
+                    } catch (error) {
+                        renderCustomerSelection(resultId, [], null, error.message || 'Não foi possível buscar o cliente.');
+                    }
+                }, 350);
+            });
+            input.dataset.customerLookupBound = 'true';
+        }
+
+        async function createCustomerFromServiceOrderFields(phoneInputId, onSelect) {
+            const isWalkIn = phoneInputId === 'walkInWhatsApp';
+            const nameInput = document.getElementById(isWalkIn ? 'walkInClientName' : 'osClientName');
+            const phoneInput = document.getElementById(phoneInputId);
+            const nome = nameInput?.value.trim() || '';
+            const telefone = phoneInput?.value.trim() || '';
+            if (!nome || !isValidBrazilMobilePhone(telefone)) {
+                showAlert('Informe nome e celular válido antes de cadastrar o cliente.', 'warning');
+                return;
+            }
+            const saved = await saveCustomerProfile({ nome, telefone });
+            onSelect(saved);
+            showAlert('Novo cliente cadastrado e identificado.', 'success');
+        }
+
+        function applyCustomerToServiceOrder(customer) {
+            const profile = normalizeCustomerProfileForQuote(customer);
+            document.getElementById('osCustomerId').value = profile.id || '';
+            document.getElementById('osClientName').value = profile.nome || '';
+            document.getElementById('osPhone').value = profile.telefone || '';
+            document.getElementById('osAddress').value = profile.endereco || '';
+            renderCustomerSelection('osCustomerLookup', [customer], () => applyCustomerToServiceOrder(customer));
+        }
+
+        function applyCustomerToWalkIn(customer) {
+            const profile = normalizeCustomerProfileForQuote(customer);
+            document.getElementById('walkInCustomerId').value = profile.id || '';
+            document.getElementById('walkInClientName').value = profile.nome || '';
+            document.getElementById('walkInWhatsApp').value = profile.telefone || '';
+            renderCustomerSelection('walkInCustomerLookup', [customer], () => applyCustomerToWalkIn(customer));
         }
 
         function normalizeCustomerProfileForQuote(profile = {}) {
@@ -7542,6 +7633,11 @@
             const client = ensureSupabaseClient(true);
             if (!client) {
                 throw new Error('Supabase não configurado.');
+            }
+
+            const existingCustomers = await findCustomersByPhone(profile.telefone_normalizado);
+            if (existingCustomers.length) {
+                throw new Error('Já existe cadastro para este celular. Selecione o cliente encontrado para continuar.');
             }
 
             const payload = {
@@ -9372,6 +9468,12 @@
                 bindPhoneField('newCustomerPhone');
                 bindPhoneField('adminCustomerSearchPhone');
                 bindPhoneField('adminCustomerPhone');
+                bindPhoneField('osPhone');
+                bindPhoneField('walkInWhatsApp');
+            });
+            safeRun('bind customer lookups in O.S.', () => {
+                bindCustomerPhoneLookup('osPhone', 'osCustomerLookup', applyCustomerToServiceOrder);
+                bindCustomerPhoneLookup('walkInWhatsApp', 'walkInCustomerLookup', applyCustomerToWalkIn);
             });
             safeRun('bind expenseForm submit', () => {
                 const expenseForm = document.getElementById('expenseForm');
@@ -9572,15 +9674,28 @@
             const status = document.getElementById('identificationStatus');
             if (!input || !status) return;
             try {
-                const customer = await findCustomerByPhone(input.value);
-                if (!customer) {
+                const customers = await findCustomersByPhone(input.value);
+                if (!customers.length) {
                     resetIdentificationModalState();
                     status.textContent = 'Celular/WhatsApp não encontrado. Você pode continuar com novo cadastro.';
                     status.style.color = 'var(--warning)';
                     return;
                 }
-                pendingExistingCustomer = customer;
-                renderExistingCustomerCard(customer);
+                if (customers.length > 1) {
+                    const card = document.getElementById('existingCustomerCard');
+                    renderCustomerSelection('existingCustomerCard', customers, (customer) => {
+                        pendingExistingCustomer = customer;
+                        renderExistingCustomerCard(customer);
+                        status.textContent = 'Cadastro selecionado. Confirme para continuar o orçamento.';
+                        status.style.color = 'var(--success)';
+                    });
+                    card.style.display = 'block';
+                    status.textContent = 'Há mais de um cadastro para este telefone. Selecione o cliente correto.';
+                    status.style.color = 'var(--warning)';
+                    return;
+                }
+                pendingExistingCustomer = customers[0];
+                renderExistingCustomerCard(customers[0]);
                 status.textContent = 'Cadastro encontrado. Confirme para continuar o orçamento.';
                 status.style.color = 'var(--success)';
             } catch (error) {
@@ -12063,7 +12178,7 @@ async function calcularFrete(cep) {
                     query = query.ilike('nome', `%${adminCustomerFilters.name}%`);
                 }
                 if (adminCustomerFilters.phone) {
-                    query = query.eq('telefone_normalizado', adminCustomerFilters.phone);
+                    query = query.in('telefone_normalizado', [adminCustomerFilters.phone, `55${adminCustomerFilters.phone}`]);
                 }
 
                 const { data: customers, error } = await query;
@@ -12135,8 +12250,32 @@ async function calcularFrete(cep) {
                 const status = document.getElementById('adminCustomerStatus');
                 if (status) status.textContent = '';
                 document.getElementById('customerAdminModal').style.display = 'block';
+                await loadCustomerServiceOrderHistory(data.id);
             } catch (error) {
                 showAlert(error.message || 'Erro ao carregar cliente.', 'error');
+            }
+        }
+
+        async function loadCustomerServiceOrderHistory(customerId) {
+            const container = document.getElementById('customerOrderHistory');
+            if (!container) return;
+            container.style.display = 'block';
+            container.innerHTML = '<strong>Histórico de O.S.</strong><p>Carregando...</p>';
+            try {
+                const client = ensureSupabaseClient(true);
+                if (!client) return;
+                const { data, error } = await client.from('ordens_servico')
+                    .select('id, numero_os, marca, modelo, servico, status, data_criacao')
+                    .eq('cliente_id', customerId)
+                    .order('data_criacao', { ascending: false });
+                if (error) throw error;
+                if (!data?.length) {
+                    container.innerHTML = '<strong>Histórico de O.S.</strong><p>Nenhuma O.S. vinculada a este cliente.</p>';
+                    return;
+                }
+                container.innerHTML = `<strong>Histórico de O.S.</strong>${data.map((os) => `<div style="margin-top:.6rem;"><b>${escapeHtml(os.numero_os || 'O.S.')}</b> · ${escapeHtml([os.marca, os.modelo].filter(Boolean).join(' ') || 'Aparelho não informado')}<br><small>${escapeHtml(os.servico || 'Serviço não informado')} · ${escapeHtml(formatStatus(os.status || ''))}</small></div>`).join('')}`;
+            } catch (error) {
+                container.innerHTML = `<strong>Histórico de O.S.</strong><p>Não foi possível carregar o histórico: ${escapeHtml(error.message || '')}</p>`;
             }
         }
 
@@ -13464,6 +13603,8 @@ async function getMelhorEnvioShipping(cep, type) {
             document.getElementById('serviceOrderForm')?.reset();
             document.getElementById('editingServiceOrderId').value = '';
             document.getElementById('osInternalOrderId').value = '';
+            document.getElementById('osCustomerId').value = '';
+            renderCustomerSelection('osCustomerLookup', [], null);
             document.getElementById('saveServiceOrderBtn').textContent = 'Salvar O.S.';
             document.getElementById('cancelServiceOrderEditBtn').style.display = 'none';
             currentServiceOrderId = null;
@@ -13505,6 +13646,8 @@ async function getMelhorEnvioShipping(cep, type) {
             if (!modal) return;
             const form = document.getElementById('walkInServiceOrderForm');
             form?.reset();
+            document.getElementById('walkInCustomerId').value = '';
+            renderCustomerSelection('walkInCustomerLookup', [], null);
             modal.style.display = 'block';
         }
 
@@ -13542,7 +13685,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 observacoes: walkInData.notes ? `Atendimento balcão | ${walkInData.notes}` : 'Atendimento balcão',
                 tipo_envio: null,
                 itens_json: JSON.stringify([{ tipo: 'atendimento_balcao', descricao: walkInData.defect, valor: 0 }]),
-                cliente_id: null
+                cliente_id: walkInData.customerId || null
             }, 'insert_walk_in');
 
             const { data, error } = await client.from('pedidos').insert([payload]).select('*').single();
@@ -13564,12 +13707,13 @@ async function getMelhorEnvioShipping(cep, type) {
                 const model = document.getElementById('walkInDeviceModel').value.trim();
                 const defect = document.getElementById('walkInDefect').value.trim();
                 const notes = document.getElementById('walkInNotes').value.trim();
+                const customerId = document.getElementById('walkInCustomerId').value.trim();
 
-                if (!clientName || !whatsapp || !brand || !model || !defect) {
-                    throw new Error('Preencha os dados mínimos para abrir O.S. avulsa.');
+                if (!clientName || !whatsapp || !brand || !model || !defect || !customerId) {
+                    throw new Error('Identifique ou cadastre o cliente antes de abrir a O.S. avulsa.');
                 }
 
-                const order = await createMinimalAdministrativeOrder({ clientName, whatsapp, brand, model, defect, notes });
+                const order = await createMinimalAdministrativeOrder({ clientName, whatsapp, brand, model, defect, notes, customerId });
                 if (!order?.id || order?.numero_pedido == null) {
                     throw new Error('Pedido administrativo criado sem identificadores obrigatórios.');
                 }
@@ -13580,6 +13724,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 document.getElementById('osInternalOrderId').value = String(order.id);
                 document.getElementById('osClientName').value = clientName;
                 document.getElementById('osPhone').value = whatsapp;
+                document.getElementById('osCustomerId').value = customerId;
                 document.getElementById('osBrand').value = brand;
                 document.getElementById('osModel').value = model;
                 document.getElementById('osDefect').value = defect;
@@ -13777,6 +13922,7 @@ async function getMelhorEnvioShipping(cep, type) {
             const internalOrderId = document.getElementById('osInternalOrderId').value.trim();
             const clientName = document.getElementById('osClientName').value.trim();
             const phone = document.getElementById('osPhone').value.trim();
+            const customerId = document.getElementById('osCustomerId').value.trim();
             const address = document.getElementById('osAddress').value.trim();
             const totalValue = Number(document.getElementById('osTotalValue').value || 0);
             const partUsed = document.getElementById('osPartUsed').value.trim();
@@ -13786,14 +13932,15 @@ async function getMelhorEnvioShipping(cep, type) {
             const status = document.getElementById('osStatusInline').value;
             const notes = document.getElementById('osNotes').value.trim();
 
-            if (!clientName) throw new Error('Cliente é obrigatório.');
+            const isEditing = Boolean(document.getElementById('editingServiceOrderId')?.value.trim());
+            if (!clientName || (!customerId && !isEditing)) throw new Error('Selecione um cliente pelo telefone antes de salvar a O.S.');
             if (!brand) throw new Error('Marca é obrigatória.');
             if (!model) throw new Error('Modelo é obrigatório.');
             if (!defect) throw new Error('Defeito é obrigatório.');
             if (!status) throw new Error('Status é obrigatório.');
             if (!Number.isFinite(totalValue) || totalValue < 0) throw new Error('Valor total inválido.');
 
-            return { orderNumber, internalOrderId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes };
+            return { orderNumber, internalOrderId, customerId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes };
         }
 
         function extractPartFromOrder(order) {
@@ -13818,6 +13965,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 document.getElementById('osInternalOrderId').value = String(pedido.id || '');
                 document.getElementById('osClientName').value = pedido.cliente_nome || '';
                 document.getElementById('osPhone').value = pedido.whatsapp || '';
+                document.getElementById('osCustomerId').value = pedido.cliente_id || '';
                 document.getElementById('osAddress').value = pedido.endereco || '';
                 document.getElementById('osTotalValue').value = Number(pedido.valor_total || 0);
 
@@ -13886,7 +14034,7 @@ async function getMelhorEnvioShipping(cep, type) {
             setButtonLoading(saveBtn, true, 'Salvando...');
             try {
                 const editingId = parsePersistedServiceOrderId(document.getElementById('editingServiceOrderId').value);
-                const { orderNumber, internalOrderId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes } = getServiceOrderFormData();
+                const { orderNumber, internalOrderId, customerId, clientName, phone, address, totalValue, partUsed, brand, model, defect, status, notes } = getServiceOrderFormData();
                 let resolvedOrderId = internalOrderId || null;
                 if (!resolvedOrderId && orderNumber) {
                     const pedido = await fetchOrderByNumeroPedido(orderNumber.replace(/\D+/g, ''));
@@ -13911,6 +14059,8 @@ async function getMelhorEnvioShipping(cep, type) {
                     status,
                     observacoes: notes || null
                 };
+
+                if (customerId) payload.cliente_id = customerId;
 
                 if (!editingId) {
                     payload.numero_os = 'OS-' + Date.now();
@@ -13942,6 +14092,7 @@ async function getMelhorEnvioShipping(cep, type) {
             try {
                 const payload = {
                     numero_os: 'OS-' + Date.now(),
+                    cliente_id: quote.customerId || null,
                     cliente_nome: quote.customerName,
                     cliente_telefone: quote.customerWhatsApp || null,
                     cliente_endereco: quote.customerAddress,
@@ -14094,6 +14245,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 }
                 document.getElementById('osClientName').value = data.cliente_nome || '';
                 document.getElementById('osPhone').value = data.cliente_telefone || '';
+                document.getElementById('osCustomerId').value = data.cliente_id || '';
                 document.getElementById('osAddress').value = data.cliente_endereco || '';
                 document.getElementById('osTotalValue').value = Number(data.valor_total || 0);
                 document.getElementById('osPartUsed').value = data.peca || '';
