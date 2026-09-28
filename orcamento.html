@@ -3144,6 +3144,21 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
         }
+        #adminPanel #service-orders .os-photos-section { margin: 1rem 0; padding: .9rem; border: 1px solid var(--border-color); border-radius: 8px; }
+        #adminPanel #service-orders .os-photos-header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+        #adminPanel #service-orders .os-photos-header h4 { margin: 0; font-size: .95rem; }
+        #adminPanel #service-orders .os-photos-header p, #adminPanel #service-orders .os-photos-empty { margin: .25rem 0 0; font-size: .8rem; color: var(--text-secondary); }
+        #adminPanel #service-orders .os-photos-add-button { margin: 0; cursor: pointer; min-height: 36px; display: inline-flex; align-items: center; }
+        #adminPanel #service-orders .os-photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: .75rem; margin-top: .75rem; }
+        #adminPanel #service-orders .os-photo-card { position: relative; aspect-ratio: 1; overflow: hidden; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,.1); }
+        #adminPanel #service-orders .os-photo-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        #adminPanel #service-orders .os-photo-delete { position: absolute; right: .35rem; bottom: .35rem; min-width: 34px; min-height: 34px; padding: .25rem; border: 0; border-radius: 50%; background: rgba(127, 29, 29, .92); color: #fff; cursor: pointer; font-size: 1rem; }
+        .budget-preview-photos { break-inside: avoid; page-break-inside: avoid; }
+        .budget-photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+        .budget-photo-grid figure { margin: 0; min-width: 0; }
+        .budget-photo-grid img { display: block; width: 100%; max-height: 260px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+        .budget-photo-grid figcaption { margin-top: .3rem; color: #64748b; font-size: .72rem; overflow-wrap: anywhere; }
+        @media (max-width: 480px) { .budget-photo-grid { grid-template-columns: 1fr; } }
         #adminPanel #service-orders .os-view-toggle {
             display: flex;
             gap: 0.65rem;
@@ -7049,6 +7064,18 @@
                                         <input type="text" id="osPartUsed" placeholder="Ex: Tela OLED iPhone 11">
                                     </div>
                                 </div>
+                                <section class="os-photos-section" aria-labelledby="osPhotosTitle">
+                                    <div class="os-photos-header">
+                                        <div>
+                                            <h4 id="osPhotosTitle">Fotos do aparelho na entrada</h4>
+                                            <p>Registre o estado do aparelho antes do atendimento.</p>
+                                        </div>
+                                        <label class="btn btn-secondary os-photos-add-button" for="osPhotosInput">Adicionar fotos</label>
+                                        <input id="osPhotosInput" type="file" accept="image/*" multiple hidden>
+                                    </div>
+                                    <p id="osPhotosEmptyState" class="os-photos-empty">Salve a O.S. para adicionar fotos.</p>
+                                    <div id="osPhotosGrid" class="os-photos-grid" aria-live="polite"></div>
+                                </section>
                                 <div class="form-group">
                                     <label for="osAddress">Endereço do Cliente:</label>
                                     <input type="text" id="osAddress" placeholder="Rua, número - bairro">
@@ -9407,6 +9434,28 @@
             });
             safeRun('bind serviceOrderForm', () => {
                 document.getElementById('serviceOrderForm')?.addEventListener('submit', handleServiceOrderFormSubmit);
+            });
+            safeRun('bind service order photos', () => {
+                document.getElementById('osPhotosInput')?.addEventListener('change', async (event) => {
+                    try {
+                        await uploadServiceOrderPhotos(event.target.files);
+                        showAlert('Foto(s) adicionada(s) à O.S.', 'success');
+                    } catch (error) {
+                        showAlert(`Erro ao adicionar fotos: ${error.message}`, 'error');
+                    } finally {
+                        event.target.value = '';
+                    }
+                });
+                document.getElementById('osPhotosGrid')?.addEventListener('click', async (event) => {
+                    const button = event.target.closest('[data-os-photo-id]');
+                    if (!button) return;
+                    try {
+                        await deleteServiceOrderPhoto(button.dataset.osPhotoId);
+                        showAlert('Foto excluída da O.S.', 'success');
+                    } catch (error) {
+                        showAlert(`Erro ao excluir foto: ${error.message}`, 'error');
+                    }
+                });
             });
             safeRun('bind walkInServiceOrderForm', () => {
                 document.getElementById('walkInServiceOrderForm')?.addEventListener('submit', handleWalkInServiceOrderSubmit);
@@ -13161,6 +13210,10 @@ async function getMelhorEnvioShipping(cep, type) {
         let currentServiceOrderId = null;
         let currentServiceOrderPreviewData = null;
         let currentCustomerBudgetDraft = null;
+        let currentServiceOrderPhotos = [];
+        let currentCustomerBudgetPhotos = [];
+        const SERVICE_ORDER_PHOTOS_BUCKET = 'os-fotos';
+        const SERVICE_ORDER_PHOTO_MAX_BYTES = 10 * 1024 * 1024;
         const CUSTOMER_BUDGET_LOGO_URL = 'assets/logo.png';
         const CUSTOMER_BUDGET_DEFAULT_WARRANTY = 'Garantia de 90 dias para o serviço executado e peça aplicada, conforme condições de uso e ausência de dano físico, líquido ou intervenção de terceiros.';
         let currentServiceOrderView = SERVICE_ORDER_VIEW.KANBAN;
@@ -13273,6 +13326,96 @@ async function getMelhorEnvioShipping(cep, type) {
             return data;
         }
 
+        function getCurrentServiceOrderPhotoId() {
+            return parseCustomerBudgetServiceOrderId(document.getElementById('editingServiceOrderId')?.value || currentServiceOrderId);
+        }
+
+        function renderServiceOrderPhotos(photos = currentServiceOrderPhotos) {
+            const grid = document.getElementById('osPhotosGrid');
+            const empty = document.getElementById('osPhotosEmptyState');
+            if (!grid || !empty) return;
+            currentServiceOrderPhotos = photos || [];
+            const hasPersistedOrder = Boolean(getCurrentServiceOrderPhotoId());
+            empty.textContent = currentServiceOrderPhotos.length
+                ? ''
+                : (hasPersistedOrder ? 'Nenhuma foto adicionada.' : 'Salve a O.S. para adicionar fotos.');
+            empty.style.display = currentServiceOrderPhotos.length ? 'none' : 'block';
+            grid.innerHTML = currentServiceOrderPhotos.map((photo) => `
+                <article class="os-photo-card">
+                    <img src="${escapeHtml(photo.signed_url || '')}" alt="${escapeHtml(photo.nome_arquivo || 'Foto do aparelho')}" loading="lazy">
+                    <button type="button" class="os-photo-delete" data-os-photo-id="${escapeHtml(String(photo.id))}" aria-label="Excluir ${escapeHtml(photo.nome_arquivo || 'foto')}">🗑</button>
+                </article>`).join('');
+        }
+
+        async function loadServiceOrderPhotos(serviceOrderId = getCurrentServiceOrderPhotoId()) {
+            if (!serviceOrderId) {
+                renderServiceOrderPhotos([]);
+                return [];
+            }
+            const client = ensureSupabaseClient(true);
+            if (!client) return [];
+            const { data, error } = await client.from('os_fotos')
+                .select('id, os_id, storage_path, nome_arquivo, ordem, created_at')
+                .eq('os_id', serviceOrderId)
+                .order('ordem', { ascending: true })
+                .order('created_at', { ascending: true });
+            if (error) throw error;
+            const photos = await Promise.all((data || []).map(async (photo) => {
+                const { data: signed, error: signedError } = await client.storage
+                    .from(SERVICE_ORDER_PHOTOS_BUCKET)
+                    .createSignedUrl(photo.storage_path, 60 * 60);
+                if (signedError) throw signedError;
+                return { ...photo, signed_url: signed.signedUrl };
+            }));
+            currentServiceOrderPhotos = photos;
+            renderServiceOrderPhotos(photos);
+            return photos;
+        }
+
+        function validateServiceOrderPhoto(file) {
+            if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error(`${file.name}: use JPG, PNG ou WEBP.`);
+            if (file.size > SERVICE_ORDER_PHOTO_MAX_BYTES) throw new Error(`${file.name}: máximo de 10 MB por foto.`);
+        }
+
+        async function uploadServiceOrderPhotos(files) {
+            const serviceOrderId = getCurrentServiceOrderPhotoId();
+            if (!serviceOrderId) throw new Error('Salve a O.S. antes de adicionar fotos.');
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+            const selectedFiles = Array.from(files || []);
+            selectedFiles.forEach(validateServiceOrderPhoto);
+            let nextOrder = currentServiceOrderPhotos.reduce((max, photo) => Math.max(max, Number(photo.ordem) || 0), 0);
+            for (const file of selectedFiles) {
+                const extension = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : 'jpg';
+                const storagePath = `${serviceOrderId}/${crypto.randomUUID()}.${extension}`;
+                const { error: uploadError } = await client.storage.from(SERVICE_ORDER_PHOTOS_BUCKET)
+                    .upload(storagePath, file, { contentType: file.type, upsert: false });
+                if (uploadError) throw uploadError;
+                const { error: insertError } = await client.from('os_fotos').insert([{
+                    os_id: serviceOrderId, storage_path: storagePath, nome_arquivo: file.name, ordem: ++nextOrder
+                }]);
+                if (insertError) {
+                    await client.storage.from(SERVICE_ORDER_PHOTOS_BUCKET).remove([storagePath]);
+                    throw insertError;
+                }
+            }
+            await loadServiceOrderPhotos(serviceOrderId);
+        }
+
+        async function deleteServiceOrderPhoto(photoId) {
+            const photo = currentServiceOrderPhotos.find((item) => String(item.id) === String(photoId));
+            if (!photo || !confirm(`Excluir a foto "${photo.nome_arquivo || 'selecionada'}"?`)) return;
+            const serviceOrderId = getCurrentServiceOrderPhotoId();
+            if (!serviceOrderId || String(photo.os_id) !== String(serviceOrderId)) throw new Error('Foto não pertence à O.S. atual.');
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+            const { error: storageError } = await client.storage.from(SERVICE_ORDER_PHOTOS_BUCKET).remove([photo.storage_path]);
+            if (storageError) throw storageError;
+            const { error: deleteError } = await client.from('os_fotos').delete().eq('id', photo.id).eq('os_id', serviceOrderId);
+            if (deleteError) throw deleteError;
+            await loadServiceOrderPhotos(serviceOrderId);
+        }
+
 
         function parseCustomerBudgetServiceOrderId(serviceOrderId) {
             const persistedServiceOrderId = parsePersistedServiceOrderId(serviceOrderId);
@@ -13287,6 +13430,7 @@ async function getMelhorEnvioShipping(cep, type) {
 
                 const existingBudget = await loadCustomerBudgetByServiceOrder(persistedServiceOrderId);
                 if (existingBudget?.status_orcamento === 'rascunho') {
+                    currentCustomerBudgetPhotos = await loadServiceOrderPhotosForBudget(persistedServiceOrderId);
                     openCustomerBudgetModal(existingBudget);
                     showAlert('Rascunho de orçamento carregado.', 'info');
                     return;
@@ -13294,6 +13438,7 @@ async function getMelhorEnvioShipping(cep, type) {
 
                 const serviceOrder = await loadServiceOrderForCustomerBudget(persistedServiceOrderId);
                 const budget = await createCustomerBudgetDraft(serviceOrder);
+                currentCustomerBudgetPhotos = await loadServiceOrderPhotosForBudget(persistedServiceOrderId);
                 openCustomerBudgetModal(budget);
                 showAlert('Rascunho de orçamento criado.', 'success');
             } catch (error) {
@@ -13324,6 +13469,24 @@ async function getMelhorEnvioShipping(cep, type) {
             const serviceOrder = await fetchServiceOrderById(persistedServiceOrderId);
             if (!serviceOrder?.id) throw new Error('O.S. não encontrada.');
             return serviceOrder;
+        }
+
+        async function loadServiceOrderPhotosForBudget(serviceOrderId) {
+            const client = ensureSupabaseClient(true);
+            if (!client) throw new Error('Supabase não configurado.');
+            const { data, error } = await client.from('os_fotos')
+                .select('id, storage_path, nome_arquivo, ordem, created_at')
+                .eq('os_id', serviceOrderId)
+                .order('ordem', { ascending: true })
+                .order('created_at', { ascending: true });
+            if (error) throw error;
+            return Promise.all((data || []).map(async (photo) => {
+                const { data: signed, error: signedError } = await client.storage
+                    .from(SERVICE_ORDER_PHOTOS_BUCKET)
+                    .createSignedUrl(photo.storage_path, 60 * 60);
+                if (signedError) throw signedError;
+                return { ...photo, signed_url: signed.signedUrl };
+            }));
         }
 
         async function createCustomerBudgetDraft(serviceOrder) {
@@ -13466,6 +13629,11 @@ async function getMelhorEnvioShipping(cep, type) {
                                 <h5>Observações para o cliente</h5>
                                 <p>${safe(budget.observacoes_cliente)}</p>
                             </section>` : '';
+            const photosSection = currentCustomerBudgetPhotos.length ? `
+                            <section class="budget-preview-card budget-preview-card-full budget-preview-photos">
+                                <h5>Fotos do aparelho na entrada</h5>
+                                <div class="budget-photo-grid">${currentCustomerBudgetPhotos.map((photo) => `<figure><img src="${escapeHtml(photo.signed_url)}" alt="${escapeHtml(photo.nome_arquivo || 'Foto do aparelho')}"><figcaption>${escapeHtml(photo.nome_arquivo || 'Foto do aparelho')}</figcaption></figure>`).join('')}</div>
+                            </section>` : '';
             return `
                 <article class="budget-preview-document" aria-label="Prévia profissional do orçamento">
                     <header class="budget-preview-header">
@@ -13514,6 +13682,7 @@ async function getMelhorEnvioShipping(cep, type) {
                                 <p><span class="budget-preview-label">Condição de pagamento:</span>${safe(budget.forma_pagamento)}</p>
                             </section>
                             ${clientNotes}
+                            ${photosSection}
                         </div>
                         <div class="budget-preview-total">
                             <span>Total para aprovação</span>
@@ -13558,7 +13727,11 @@ async function getMelhorEnvioShipping(cep, type) {
                             .budget-preview-label { display: inline-block; min-width: 150px; color: #64748b; font-weight: 700; }
                             .budget-preview-total { margin-top: 1rem; padding: 1rem; border-radius: 14px; background: linear-gradient(135deg, #15803d, #22c55e); color: #ffffff; display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-weight: 800; }
                             .budget-preview-total span:last-child { font-size: 1.4rem; }
-                            @media print { body { padding: 0; background: #ffffff; } .budget-preview-document { max-width: none; } }
+                            .budget-photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+                            .budget-photo-grid figure { margin: 0; break-inside: avoid; page-break-inside: avoid; }
+                            .budget-photo-grid img { display: block; width: 100%; max-height: 260px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+                            .budget-photo-grid figcaption { margin-top: .3rem; color: #64748b; font-size: .72rem; overflow-wrap: anywhere; }
+                            @media print { body { padding: 0; background: #ffffff; } .budget-preview-document { max-width: none; } .budget-preview-photos { break-inside: avoid; page-break-inside: avoid; } }
                         </style>
                     </head>
                     <body>${buildCustomerBudgetPreviewHtml(budget)}</body>
@@ -13571,9 +13744,9 @@ async function getMelhorEnvioShipping(cep, type) {
                 const budget = collectCustomerBudgetFormPayload();
                 const printWindow = window.open('', '', 'width=920,height=700');
                 if (!printWindow) throw new Error('Não foi possível abrir a janela de impressão.');
+                printWindow.onload = () => setTimeout(() => printWindow.print(), 100);
                 printWindow.document.write(getCustomerBudgetPrintableHtml(budget));
                 printWindow.document.close();
-                setTimeout(() => printWindow.print(), 500);
             } catch (error) {
                 showAlert(`Erro ao imprimir orçamento: ${error.message}`, 'error');
             }
@@ -13583,6 +13756,7 @@ async function getMelhorEnvioShipping(cep, type) {
             const modal = document.getElementById('customerBudgetModal');
             if (modal) modal.style.display = 'none';
             currentCustomerBudgetDraft = null;
+            currentCustomerBudgetPhotos = [];
         }
 
         async function refreshServiceOrderPreviewFromForm() {
@@ -13607,6 +13781,8 @@ async function getMelhorEnvioShipping(cep, type) {
             renderCustomerSelection('osCustomerLookup', [], null);
             document.getElementById('saveServiceOrderBtn').textContent = 'Salvar O.S.';
             document.getElementById('cancelServiceOrderEditBtn').style.display = 'none';
+            currentServiceOrderPhotos = [];
+            renderServiceOrderPhotos([]);
             currentServiceOrderId = null;
         }
 
@@ -14074,6 +14250,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 if (!persistedServiceOrderId) {
                     throw new Error('O.S. salva sem ID interno persistido válido.');
                 }
+                await loadServiceOrderPhotos(persistedServiceOrderId);
                 await loadServiceOrdersTable();
                 setServiceOrderView(SERVICE_ORDER_VIEW.FORM);
             } catch (error) {
@@ -14255,6 +14432,7 @@ async function getMelhorEnvioShipping(cep, type) {
                 document.getElementById('osStatusInline').value = data.status || ORDER_STATUS.PENDENTE;
                 document.getElementById('osNotes').value = data.observacoes || '';
                 renderServiceOrderPreview(data);
+                await loadServiceOrderPhotos(data.id || osId);
                 setServiceOrderView(SERVICE_ORDER_VIEW.FORM);
                 showAlert('O.S. carregada para edição.', 'info');
             } catch (error) {
